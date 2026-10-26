@@ -1,4 +1,4 @@
-package com.sprm.apexgym.feature.main
+package com.sprm.apexgym.feature.auth
 
 import android.os.Bundle
 import android.view.View
@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.textfield.TextInputEditText
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
@@ -60,7 +59,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
-                    val response = RetrofitClient.apiService.login(
+                    val response = RetrofitClient.authService.login(
                         LoginRequest(
                             email = correo,
                             contrasenia = contrasena
