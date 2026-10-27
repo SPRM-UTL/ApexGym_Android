@@ -120,6 +120,30 @@
             android:textColor="#FFFFFF"
             android:backgroundTint="#fd6900"
             android:layout_marginTop="28dp" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¿Ya tienes una cuenta? "
+                android:textColor="#7A8194" />
+
+            <TextView
+                android:id="@+id/tvLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="Iniciar Sesión"
+                android:textColor="#fd6900"
+                android:textStyle="bold" />
+
+        </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progressRegistro"

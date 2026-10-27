@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import com.sprm.apexgym.R
@@ -30,6 +31,14 @@ class ClienteFragment : Fragment(R.layout.fragment_cliente) {
         val txtApeMa = view.findViewById<EditText>(R.id.etApeMaterno)
         val txtFecha = view.findViewById<EditText>(R.id.etFechaNacimiento)
         val spGenero = view.findViewById<Spinner>(R.id.spGenero)
+        val txtLogin = view.findViewById<TextView>(R.id.tvLogin)
+
+        txtLogin.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_login, LoginFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
         val generos = listOf(
             "Selecciona un género",

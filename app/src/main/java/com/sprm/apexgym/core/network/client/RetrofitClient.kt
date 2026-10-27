@@ -35,6 +35,10 @@ data class LoginRequest(
     val checkbox: Boolean = false
 )
 
+data class CorreoRequest(
+    val correo: String
+)
+
 data class RegistroRequest(
     var usuario: String,
     val email: String,

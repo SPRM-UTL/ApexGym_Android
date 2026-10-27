@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import com.sprm.apexgym.R
@@ -25,6 +26,15 @@ class ContactoFragment : Fragment(R.layout.fragment_contacto) {
         val txtContactoTelefono = view.findViewById<EditText>(R.id.etContactoETelefono)
         val progress = view.findViewById<ProgressBar>(R.id.progressRegistro)
         val btnRegistro = view.findViewById<Button>(R.id.btnRegistro)
+        val txtLogin = view.findViewById<TextView>(R.id.tvLogin)
+
+        txtLogin.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_login, LoginFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+
         txtTelefono.setText(viewModel.telefono)
         txtDireccion.setText(viewModel.direccion)
         txtContacto.setText(viewModel.contactoEmergenciaNombre)
