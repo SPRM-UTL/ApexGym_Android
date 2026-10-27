@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -13,14 +14,11 @@
         android:gravity="center"
         android:padding="28dp">
 
-        <TextView
+        <ImageView
+            android:id="@+id/imageView"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Bienvenido"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:textColor="#222B45"
-            android:layout_marginBottom="8dp" />
+            android:layout_height="150dp"
+            app:srcCompat="@drawable/apex_gym" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -42,10 +40,10 @@
             android:id="@+id/etCorreo"
             android:layout_width="match_parent"
             android:layout_height="55dp"
+            android:backgroundTint="#fd6900"
             android:hint="ejemplo@correo.com"
             android:inputType="textEmailAddress"
             android:padding="14dp"
-            android:backgroundTint="#5267DF"
             android:singleLine="true" />
 
         <TextView
@@ -61,33 +59,33 @@
             android:id="@+id/etContrasena"
             android:layout_width="match_parent"
             android:layout_height="55dp"
+            android:backgroundTint="#fd6900"
             android:hint="Ingresa tu contraseña"
             android:inputType="textPassword"
             android:padding="14dp"
-            android:backgroundTint="#5267DF"
             android:singleLine="true" />
 
         <TextView
             android:id="@+id/tvRecuperar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="¿Olvidaste tu contraseña?"
-            android:textColor="#5267DF"
-            android:gravity="end"
             android:layout_marginTop="12dp"
             android:clickable="true"
-            android:focusable="true" />
+            android:focusable="true"
+            android:gravity="end"
+            android:text="¿Olvidaste tu contraseña?"
+            android:textColor="#fd6900" />
 
         <Button
             android:id="@+id/btnIniciarSesion"
             android:layout_width="match_parent"
             android:layout_height="55dp"
+            android:layout_marginTop="28dp"
+            android:backgroundTint="#fd6900"
             android:text="Iniciar sesión"
             android:textAllCaps="false"
-            android:textSize="16sp"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#5267DF"
-            android:layout_marginTop="28dp" />
+            android:textSize="16sp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -106,11 +104,11 @@
                 android:id="@+id/tvRegistrarse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Regístrate"
-                android:textColor="#5267DF"
-                android:textStyle="bold"
                 android:clickable="true"
-                android:focusable="true" />
+                android:focusable="true"
+                android:text="Regístrate"
+                android:textColor="#fd6900"
+                android:textStyle="bold" />
 
         </LinearLayout>
 

@@ -11,13 +11,16 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface AuthApiService {
-    @POST("api/usuarios/verificarCredenciales")
+    @POST("api/clientes/verificarCredenciales")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     @POST("api/clientes/registrar")
     suspend fun registrarCliente(
         @Body datos: RegistroRequest
     ): Response<Unit>
+
+    @POST("api/usuarios/logout")
+    suspend fun logout(): Response<Unit>
 
     @GET("api/estados-cliente")
     suspend fun probarcookie(): Response<ApiResponse<List<EstadoCliente>>>

@@ -3,6 +3,7 @@ package com.sprm.apexgym.feature.auth
 import android.os.Bundle
 import android.view.View
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -22,26 +23,26 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
     ) {
         super.onViewCreated(view, savedInstanceState)
 
-        val etCorreo = view.findViewById<EditText>(
-            R.id.etCorreo
-        )
+        val txtCorreo = view.findViewById<EditText>(R.id.etCorreo)
+        val txtContrasena = view.findViewById<EditText>(R.id.etContrasena)
+        val txtRegistrarse = view.findViewById<TextView>(R.id.tvRegistrarse)
+        val btnIniciarSesion = view.findViewById<MaterialButton>(R.id.btnIniciarSesion)
 
-        val etContrasena = view.findViewById<EditText>(
-            R.id.etContrasena
-        )
-
-        val btnIniciarSesion = view.findViewById<MaterialButton>(
-            R.id.btnIniciarSesion
-        )
+        txtRegistrarse.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_login, RegistroFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
         btnIniciarSesion.setOnClickListener {
 
-            val correo = etCorreo.text
+            val correo = txtCorreo.text
                 ?.toString()
                 ?.trim()
                 .orEmpty()
 
-            val contrasena = etContrasena.text
+            val contrasena = txtContrasena.text
                 ?.toString()
                 .orEmpty()
 
@@ -70,9 +71,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                         val resultado = response.body()
 
                         if (resultado != null) {
-                            // Procesar la respuesta de autenticación.
-                            // Por ejemplo, guardar el token de sesión
-                            // y navegar a la pantalla principal.
                             Toast.makeText(
                                 requireContext(),
                                 "Inicio de sesión correcto",

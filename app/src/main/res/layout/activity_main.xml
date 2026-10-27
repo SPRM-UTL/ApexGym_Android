@@ -9,6 +9,16 @@
 
 
     <Button
+        android:id="@+id/btnProbar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Probar Cookie"
+        app:layout_constraintBottom_toTopOf="@+id/btnMostrarLogin"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+    
+    <Button
         android:id="@+id/btnMostrarLogin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -26,12 +36,12 @@
         tools:layout_editor_absoluteY="209dp" />
 
     <Button
-        android:id="@+id/btnProbar"
+        android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
-        android:text="Probar Cookie"
-        app:layout_constraintBottom_toTopOf="@+id/btnMostrarLogin"
+        android:text="LogOut"
+        app:layout_constraintBottom_toTopOf="@+id/btnProbar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 

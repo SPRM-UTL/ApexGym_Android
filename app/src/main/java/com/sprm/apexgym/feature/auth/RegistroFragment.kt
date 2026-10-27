@@ -21,13 +21,38 @@ class RegistroFragment : Fragment(R.layout.fragment_registro) {
         val txtEmail = view.findViewById<EditText>(R.id.etCorreo)
         val txtContrasenia = view.findViewById<EditText>(R.id.etContrasena)
 
-        // Recuperar datos si regresa a este paso
         txtNombre.setText(viewModel.usuario)
         txtEmail.setText(viewModel.email)
         txtContrasenia.setText(viewModel.contrasenia)
 
         view.findViewById<Button>(R.id.btnContinuar)
             .setOnClickListener {
+
+                val usuario = txtNombre.text.toString().trim()
+                val correo = txtEmail.text.toString().trim()
+                val contrasenia = txtContrasenia.text.toString()
+
+                var valido = true
+
+                if (usuario.length < 3) {
+                    txtNombre.error = "Mínimo 3 caracteres"
+                    valido = false
+                }
+
+                if (!android.util.Patterns.EMAIL_ADDRESS
+                        .matcher(correo).matches()
+                ) {
+                    txtEmail.error = "Ingresa un correo válido"
+                    valido = false
+                }
+
+                if (contrasenia.length < 8) {
+                    txtContrasenia.error =
+                        "La contraseña debe tener al menos 8 caracteres"
+                    valido = false
+                }
+
+                if (!valido) return@setOnClickListener
 
                 viewModel.usuario = txtNombre.text.toString()
                 viewModel.email = txtEmail.text.toString()

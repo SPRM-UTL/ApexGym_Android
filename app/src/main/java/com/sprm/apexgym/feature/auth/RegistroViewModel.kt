@@ -6,12 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sprm.apexgym.core.network.client.RegistroRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient.authService
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class RegistroViewModel: ViewModel() {
 
     private val _mensaje = MutableLiveData<String>()
     val mensaje: LiveData<String> = _mensaje
+    private val _cargando = MutableLiveData(false)
+    val cargando: LiveData<Boolean> = _cargando
 
     // Datos del usuario
     var usuario: String = ""
@@ -50,6 +53,7 @@ class RegistroViewModel: ViewModel() {
     fun registrarCliente(datos: RegistroRequest) {
         viewModelScope.launch {
             try {
+                _cargando.value = true
                 val response = authService.registrarCliente(datos)
 
                 if (response.isSuccessful) {
@@ -59,6 +63,9 @@ class RegistroViewModel: ViewModel() {
                 }
             } catch (e: Exception) {
                 _mensaje.value = "Error de conexión: ${e.message}"
+            } finally {
+                delay(2000)
+                _cargando.value = false
             }
         }
     }

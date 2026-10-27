@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.feature.auth.LoginFragment
 import com.sprm.apexgym.feature.auth.RegistroFragment
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -28,10 +29,11 @@ class MainActivity : AppCompatActivity() {
 
         val btnMostrar = findViewById<Button>(R.id.btnMostrarLogin)
         val btnProbar = findViewById<Button>(R.id.btnProbar)
+        val btnLogout = findViewById<Button>(R.id.btnLogout)
 
         btnMostrar.setOnClickListener {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_login, RegistroFragment())
+                .replace(R.id.fragment_login, LoginFragment())
                 .addToBackStack(null)
                 .commit()
         }
@@ -54,6 +56,53 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(
                                 this@MainActivity,
                                 "No Funciono",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+                } catch (e: IOException) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "No se pudo conectar con el servidor",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } catch (e: HttpException) {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Error HTTP: ${e.code()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } catch (e: Exception) {
+                    Log.e("Api-Error",e.toString())
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Ocurrió un error al iniciar sesión: ",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+
+        btnLogout.setOnClickListener {
+            lifecycleScope.launch {
+                try {
+                    val response = RetrofitClient.authService.logout()
+
+                    if (response.isSuccessful) {
+                        val resultado = response.body()
+
+                        if (resultado != null) {
+                            RetrofitClient.cookieJar.clear()
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Cookies de sesión eliminadas correctamente",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Error",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }

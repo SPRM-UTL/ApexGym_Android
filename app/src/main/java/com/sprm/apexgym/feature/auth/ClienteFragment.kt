@@ -4,12 +4,16 @@ import android.app.DatePickerDialog
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.activityViewModels
 import com.sprm.apexgym.R
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class ClienteFragment : Fragment(R.layout.fragment_cliente) {
@@ -25,77 +29,143 @@ class ClienteFragment : Fragment(R.layout.fragment_cliente) {
         val txtApePa = view.findViewById<EditText>(R.id.etApePaterno)
         val txtApeMa = view.findViewById<EditText>(R.id.etApeMaterno)
         val txtFecha = view.findViewById<EditText>(R.id.etFechaNacimiento)
-        val txtGenero = view.findViewById<EditText>(R.id.etGenero)
-        val txtTelefono = view.findViewById<EditText>(R.id.etTelefono)
-        val txtDireccion = view.findViewById<EditText>(R.id.etDireccion)
-        val txtContacto = view.findViewById<EditText>(R.id.etContactoENombre)
-        val txtContactoTelefono = view.findViewById<EditText>(R.id.etContactoETelefono)
+        val spGenero = view.findViewById<Spinner>(R.id.spGenero)
+
+        val generos = listOf(
+            "Selecciona un género",
+            "Masculino",
+            "Femenino",
+            "Otro"
+        )
+
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            generos
+        )
+
+        adapter.setDropDownViewResource(
+            android.R.layout.simple_spinner_dropdown_item
+        )
+
+        spGenero.adapter = adapter
 
         txtNombre.setText(viewModel.nombre)
         txtApePa.setText(viewModel.apellidoPaterno)
         txtApeMa.setText(viewModel.apellidoMaterno)
         txtFecha.setText(viewModel.fechaNacimiento)
-        txtGenero.setText(viewModel.genero)
-        txtTelefono.setText(viewModel.telefono)
-        txtDireccion.setText(viewModel.direccion)
-        txtContacto.setText(viewModel.contactoEmergenciaNombre)
-        txtContactoTelefono.setText(viewModel.contactoEmergenciaTelefono)
+        val posicion = generos.indexOf(viewModel.genero)
 
-        txtFecha.setOnClickListener {
+        if (posicion >= 0) {
+            spGenero.setSelection(posicion)
+        }
 
-            val calendario = Calendar.getInstance()
-
-            val anio = calendario.get(Calendar.YEAR)
-            val mes = calendario.get(Calendar.MONTH)
-            val dia = calendario.get(Calendar.DAY_OF_MONTH)
-
-            val datePicker = DatePickerDialog(
-                requireContext(),
-                { _, anioSeleccionado, mesSeleccionado, diaSeleccionado ->
-
-                    val fecha = String.format(
-                        Locale.getDefault(),
-                        "%04d-%02d-%02d",
-                        anioSeleccionado,
-                        mesSeleccionado + 1,
-                        diaSeleccionado
-                    )
-
-                    txtFecha.setText(fecha)
-                },
-                anio,
-                mes,
-                dia
-            )
-
-            // No permitir seleccionar fechas futuras
-            datePicker.datePicker.maxDate =
-                System.currentTimeMillis()
-
-            datePicker.show()
+        txtFecha.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_UP) {
+                mostrarDatePicker(txtFecha)
+            }
+            true
         }
 
         view.findViewById<Button>(R.id.btnRegistro)
             .setOnClickListener {
+
+                val nombre = txtNombre.text.toString().trim()
+                val apePa = txtApePa.text.toString().trim()
+                val apeMa = txtApeMa.text.toString().trim()
+                val fecha = txtFecha.text.toString().trim()
+                val genero = spGenero.selectedItem.toString()
+
+                val patronNombre = Regex(
+                    "^[\\p{L}][\\p{L} '-]*$"
+                )
+
+                var valido = true
+
+                if (!patronNombre.matches(nombre)) {
+                    txtNombre.error = "Ingresa un nombre válido"
+                    valido = false
+                }
+
+                if (!patronNombre.matches(apePa)) {
+                    txtApePa.error = "Ingresa un apellido válido"
+                    valido = false
+                }
+
+                if (!patronNombre.matches(apeMa)) {
+                    txtApeMa.error = "Ingresa un apellido válido"
+                    valido = false
+                }
+
+                val formato = SimpleDateFormat(
+                    "yyyy-MM-dd",
+                    Locale.US
+                ).apply {
+                    isLenient = false
+                }
+
+                val fechaValida = try {
+                    val date = formato.parse(fecha)
+                    date != null &&
+                            formato.format(date) == fecha &&
+                            !date.after(Date())
+                } catch (e: Exception) {
+                    false
+                }
+
+                if (!fechaValida) {
+                    txtFecha.error = "Selecciona una fecha válida"
+                    valido = false
+                }
+
+                if (genero == "Selecciona un género") {
+                    Toast.makeText(
+                        requireContext(),
+                        "Selecciona un género",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    valido = false
+                }
+
+                if (!valido) return@setOnClickListener
+
                 viewModel.nombre = txtNombre.text.toString()
                 viewModel.apellidoPaterno = txtApePa.text.toString()
                 viewModel.apellidoMaterno = txtApeMa.text.toString()
                 viewModel.fechaNacimiento = txtFecha.text.toString()
-                viewModel.genero = txtGenero.text.toString()
-                viewModel.telefono = txtTelefono.text.toString()
-                viewModel.direccion = txtDireccion.text.toString()
-                viewModel.contactoEmergenciaNombre = txtContacto.text.toString()
-                viewModel.contactoEmergenciaTelefono = txtContactoTelefono.text.toString()
+                viewModel.genero = spGenero.selectedItem.toString()
 
-                val datos = viewModel.obtenerDatos()
-                viewModel.registrarCliente(datos)
-                viewModel.mensaje.observe(viewLifecycleOwner) { mensaje ->
-                    Toast.makeText(
-                        requireContext(),
-                        mensaje,
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_login, ContactoFragment())
+                    .addToBackStack(null)
+                    .commit()
             }
+    }
+
+    private fun mostrarDatePicker(
+        campoFecha: EditText
+    ) {
+        val calendario = Calendar.getInstance()
+
+        val dialogo = DatePickerDialog(
+            requireContext(),
+            { _, anio, mes, dia ->
+                val fecha = String.format(
+                    Locale.getDefault(),
+                    "%04d-%02d-%02d",
+                    anio,
+                    mes + 1,
+                    dia
+                )
+
+                campoFecha.setText(fecha)
+            },
+            calendario.get(Calendar.YEAR),
+            calendario.get(Calendar.MONTH),
+            calendario.get(Calendar.DAY_OF_MONTH)
+        )
+
+        dialogo.datePicker.maxDate = System.currentTimeMillis()
+        dialogo.show()
     }
 }
