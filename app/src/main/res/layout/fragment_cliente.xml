@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#FFFFFF">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Registro"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#222B45"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Datos Personales"
+            android:textSize="16sp"
+            android:textColor="#7A8194"
+            android:layout_marginBottom="36dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="Nombre"
+                    android:textColor="#222B45"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etNombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:backgroundTint="#fd6900"
+                    android:hint="Ángel Guillermo"
+                    android:inputType="textEmailAddress"
+                    android:padding="14dp"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Apellido Paterno"
+                    android:textColor="#222B45"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etApePaterno"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:backgroundTint="#fd6900"
+                    android:hint="Cuellar"
+                    android:padding="14dp"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="Apellido Materno"
+                    android:textColor="#222B45"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etApeMaterno"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:backgroundTint="#fd6900"
+                    android:hint="Cuellar"
+                    android:padding="14dp"
+                    android:singleLine="true" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginBottom="8dp"
+                            android:text="Fecha de Nacimiento"
+                            android:textColor="#222B45"
+                            android:textStyle="bold" />
+
+                        <EditText
+                            android:id="@+id/etFechaNacimiento"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:backgroundTint="#fd6900"
+                            android:clickable="true"
+                            android:cursorVisible="false"
+                            android:hint="1999-04-23"
+                            android:inputType="none"
+                            android:padding="14dp"
+                            android:singleLine="true" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="match_parent"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginBottom="8dp"
+                            android:text="Genero"
+                            android:textColor="#222B45"
+                            android:textStyle="bold" />
+
+                        <Spinner
+                            android:id="@+id/spGenero"
+                            android:layout_width="match_parent"
+                            android:layout_height="55dp"
+                            android:backgroundTint="#fd6900"
+                            android:padding="14dp"
+                            android:spinnerMode="dropdown" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+        <Button
+            android:id="@+id/btnRegistro"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:text="Continuar"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#fd6900"
+            android:layout_marginTop="28dp" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="¿Ya tienes una cuenta? "
+                android:textColor="#7A8194" />
+
+            <TextView
+                android:id="@+id/tvLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:text="Iniciar Sesión"
+                android:textColor="#fd6900"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+</ScrollView>
