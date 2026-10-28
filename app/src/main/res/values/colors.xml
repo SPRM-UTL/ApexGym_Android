@@ -2,4 +2,21 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- ApexGym Brand & Mockup Palette -->
+    <color name="apex_orange">#FFF26513</color>
+    <color name="apex_orange_light">#FFFF7A29</color>
+    <color name="apex_orange_translucent">#26F26513</color>
+
+    <color name="apex_bg_screen">#FFF5F6F8</color>
+    <color name="apex_card_dark">#FF161618</color>
+    <color name="apex_card_dark_elevated">#FF1F1F23</color>
+    <color name="apex_card_product_img">#FF222226</color>
+
+    <color name="apex_text_primary">#FF121214</color>
+    <color name="apex_text_secondary">#FF7A8194</color>
+    <color name="apex_text_on_dark_secondary">#FFA6AAB4</color>
+
+    <color name="apex_stroke_light">#FFE4E6EB</color>
+    <color name="apex_nav_inactive">#FF9E9EA6</color>
 </resources>

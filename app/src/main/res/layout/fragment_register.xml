@@ -1,0 +1,780 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollRegister"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:fillViewport="true"
+    android:overScrollMode="never"
+    tools:context=".feature.main.RegisterFragment">
+
+    <LinearLayout
+        android:id="@+id/llRegisterRoot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="28dp">
+
+        <!-- ======================================================= -->
+        <!-- 1. BARRA SUPERIOR: Navegación Atrás / Volver al inicio  -->
+        <!-- ======================================================= -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/btnVolverLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="4dp">
+
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_circle_white_elevated">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@string/register_back_to_login"
+                        android:src="@drawable/ic_arrow_left" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvBackLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:text="@string/register_back_to_login"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <!-- Acceso directo a Login desde cualquier paso -->
+            <TextView
+                android:id="@+id/tvTopIrALogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="6dp"
+                android:text="@string/register_go_to_login"
+                android:textColor="@color/apex_orange"
+                android:textSize="13.5sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- ======================================================= -->
+        <!-- 2. INDICADOR DE PROGRESO (Stepper de 3 Pasos M3)        -->
+        <!-- ======================================================= -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:weightSum="3">
+
+            <View
+                android:id="@+id/viewStep1"
+                android:layout_width="0dp"
+                android:layout_height="5dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_step_active" />
+
+            <View
+                android:id="@+id/viewStep2"
+                android:layout_width="0dp"
+                android:layout_height="5dp"
+                android:layout_marginHorizontal="3dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_step_inactive" />
+
+            <View
+                android:id="@+id/viewStep3"
+                android:layout_width="0dp"
+                android:layout_height="5dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_step_inactive" />
+        </LinearLayout>
+
+        <!-- Encabezado Dinámico del Paso Actual -->
+        <TextView
+            android:id="@+id/tvStepOverline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:letterSpacing="0.08"
+            android:text="@string/register_step1_overline"
+            android:textColor="@color/apex_orange"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvStepTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/register_step1_title"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="25sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvStepSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/register_step1_subtitle"
+            android:textColor="@color/apex_text_secondary"
+            android:textSize="13.5sp" />
+
+        <!-- ======================================================= -->
+        <!-- PASO 1: DATOS DE CUENTA (fotoUrl, usuario, email, pass) -->
+        <!-- ======================================================= -->
+        <LinearLayout
+            android:id="@+id/layoutStep1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <!-- Selector circular de foto de perfil (fotoUrl) -->
+            <LinearLayout
+                android:id="@+id/llSelectorFoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="18dp"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="82dp"
+                    android:layout_height="82dp">
+
+                    <FrameLayout
+                        android:layout_width="78dp"
+                        android:layout_height="78dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/bg_avatar_ring">
+
+                        <ImageView
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/register_photo_hint"
+                            android:src="@drawable/ic_avatar_placeholder" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="bottom|end"
+                        android:background="@drawable/bg_circle_orange"
+                        android:elevation="2dp">
+
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_camera_plus" />
+                    </FrameLayout>
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/register_photo_hint"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Campo: Nombre de usuario (usuario) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilUsuarioRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:hint="@string/register_username_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_user_profile"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etUsuarioRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Campo: Correo electrónico (email) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCorreoRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:hint="@string/login_email_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_mail_outline"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCorreoRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textEmailAddress"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Campo: Contraseña (contrasenia) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilContrasenaRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:hint="@string/login_password_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:endIconMode="password_toggle"
+                app:endIconTint="@color/apex_text_secondary"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_lock_outline"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etContrasenaRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Campo: Confirmar Contraseña -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilConfirmarContrasenaRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:hint="@string/register_confirm_password_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:endIconMode="password_toggle"
+                app:endIconTint="@color/apex_text_secondary"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_lock_outline"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etConfirmarContrasenaRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionDone"
+                    android:inputType="textPassword"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+
+        <!-- ======================================================= -->
+        <!-- PASO 2: DATOS PERSONALES (nombre, apellidos, nac, gen)  -->
+        <!-- ======================================================= -->
+        <LinearLayout
+            android:id="@+id/layoutStep2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Campo: Nombre(s) (nombre) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilNombreRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:hint="@string/register_first_name_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_user_profile"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etNombreRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textPersonName|textCapWords"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Fila de 2 columnas: Apellido Paterno y Apellido Materno -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <!-- Apellido Paterno (apellidoPaterno) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilApellidoPaterno"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:hint="@string/register_last_name_p_label"
+                    app:boxBackgroundColor="@color/apex_bg_screen"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="1dp"
+                    app:hintTextColor="@color/apex_orange">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etApellidoPaterno"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionNext"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Apellido Materno (apellidoMaterno - opcional) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilApellidoMaterno"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:hint="@string/register_last_name_m_label"
+                    app:boxBackgroundColor="@color/apex_bg_screen"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="1dp"
+                    app:hintTextColor="@color/apex_orange">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etApellidoMaterno"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionNext"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Campo: Fecha de Nacimiento (fechaNacimiento - abre DatePicker) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilFechaNacimiento"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:hint="@string/register_birthdate_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_calendar"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFechaNacimiento"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:focusable="false"
+                    android:inputType="none"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Selector de Género (genero: Masculino / Femenino / Otro) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="@string/register_gender_label"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="13.5sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:weightSum="3">
+
+                <TextView
+                    android:id="@+id/chipGeneroMasculino"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="@string/gender_masculino"
+                    android:textColor="@color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/chipGeneroFemenino"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginHorizontal="3dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="@string/gender_femenino"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/chipGeneroOtro"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_chip_unselected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="@string/gender_otro"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ======================================================= -->
+        <!-- PASO 3: CONTACTO Y EMERGENCIA (telefono, dir, emerg)    -->
+        <!-- ======================================================= -->
+        <LinearLayout
+            android:id="@+id/layoutStep3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Campo: Teléfono móvil (telefono - obligatorio) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilTelefonoRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:hint="@string/register_phone_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_phone_outline"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTelefonoRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="phone"
+                    android:maxLength="10"
+                    android:maxLines="1"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Campo: Dirección (direccion - opcional) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDireccionRegistro"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:hint="@string/register_address_label"
+                app:boxBackgroundColor="@color/apex_bg_screen"
+                app:boxCornerRadiusBottomEnd="16dp"
+                app:boxCornerRadiusBottomStart="16dp"
+                app:boxCornerRadiusTopEnd="16dp"
+                app:boxCornerRadiusTopStart="16dp"
+                app:boxStrokeColor="@color/apex_orange"
+                app:boxStrokeWidth="1dp"
+                app:hintTextColor="@color/apex_orange"
+                app:startIconDrawable="@drawable/ic_location_outline"
+                app:startIconTint="@color/apex_text_secondary">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDireccionRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionNext"
+                    android:inputType="textPostalAddress|textCapSentences"
+                    android:maxLines="2"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14.5sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Bloque Agrupado: Contacto de Emergencia (opcional) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_emergency_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_emergency_outline" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/register_emergency_section_title"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/register_emergency_section_subtitle"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="12sp" />
+
+                <!-- Contacto Emergencia: Nombre (contactoEmergenciaNombre) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilEmergenciaNombre"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/register_emergency_name_label"
+                    app:boxBackgroundColor="@color/white"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="1dp"
+                    app:hintTextColor="@color/apex_orange"
+                    app:startIconDrawable="@drawable/ic_user_profile"
+                    app:startIconTint="@color/apex_text_secondary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmergenciaNombre"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionNext"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Contacto Emergencia: Teléfono (contactoEmergenciaTelefono) -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilEmergenciaTelefono"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:hint="@string/register_emergency_phone_label"
+                    app:boxBackgroundColor="@color/white"
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="1dp"
+                    app:hintTextColor="@color/apex_orange"
+                    app:startIconDrawable="@drawable/ic_phone_outline"
+                    app:startIconTint="@color/apex_text_secondary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEmergenciaTelefono"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionDone"
+                        android:inputType="phone"
+                        android:maxLength="10"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- ======================================================= -->
+        <!-- 4. BOTÓN PRINCIPAL DE AVANCE / COMPLETAR REGISTRO       -->
+        <!-- ======================================================= -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCrearCuenta"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="24dp"
+            android:text="@string/register_btn_next"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="15.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/apex_orange"
+            app:cornerRadius="28dp"
+            app:elevation="2dp"
+            app:icon="@drawable/ic_arrow_right"
+            app:iconGravity="textEnd"
+            app:iconPadding="8dp"
+            app:iconTint="@color/white" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- ======================================================= -->
+        <!-- 5. PIE DE PÁGINA: Enlace directo a Login ("Ingresar")   -->
+        <!-- ======================================================= -->
+        <LinearLayout
+            android:id="@+id/llIrALogin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingVertical="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/register_has_account"
+                android:textColor="@color/apex_text_secondary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tvIrALogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingVertical="4dp"
+                android:text="@string/register_go_to_login"
+                android:textColor="@color/apex_orange"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

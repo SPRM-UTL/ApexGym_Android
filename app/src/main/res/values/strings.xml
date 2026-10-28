@@ -1,5 +1,101 @@
 <resources>
     <string name="app_name">ApexGym</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <!-- Login Screen (POST /api/clientes/verificarCredenciales: email, contrasenia) -->
+    <string name="login_badge">ACCESO SOCIOS</string>
+    <string name="login_card_title">Bienvenido de nuevo</string>
+    <string name="login_card_subtitle">Ingresa tu correo y contraseña de socio para acceder</string>
+    <string name="login_email_label">Correo electrónico</string>
+    <string name="login_email_hint">socio@correo.com</string>
+    <string name="login_password_label">Contraseña</string>
+    <string name="login_password_hint">Tu contraseña</string>
+    <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_btn_submit">Iniciar sesión</string>
+    <string name="login_no_account">¿Aún no eres socio?</string>
+    <string name="login_go_to_register">Registrarme</string>
+
+    <!-- Register Screen (POST /api/clientes/registrar) -->
+    <string name="register_back_to_login">Volver al inicio</string>
+    <string name="register_prev_step">Paso anterior</string>
+    <string name="register_step1_overline">PASO 1 DE 3 • TU CUENTA</string>
+    <string name="register_step1_title">Crea tu acceso</string>
+    <string name="register_step1_subtitle">Configura tu usuario y correo para iniciar sesión en la app</string>
+    <string name="register_step2_overline">PASO 2 DE 3 • DATOS PERSONALES</string>
+    <string name="register_step2_title">Cuéntanos sobre ti</string>
+    <string name="register_step2_subtitle">Información requerida para tu expediente de socio ApexGym</string>
+    <string name="register_step3_overline">PASO 3 DE 3 • CONTACTO Y EMERGENCIA</string>
+    <string name="register_step3_title">Datos de contacto</string>
+    <string name="register_step3_subtitle">Para mantenerte informado y actuar en caso de emergencia</string>
+
+    <!-- Step 1 Fields (Usuario: fotoUrl, usuario, email, contrasenia) -->
+    <string name="register_photo_hint">Foto de perfil (opcional)</string>
+    <string name="register_username_label">Nombre de usuario</string>
+    <string name="register_confirm_password_label">Confirmar contraseña</string>
+
+    <!-- Step 2 Fields (Cliente: nombre, apellidoPaterno, apellidoMaterno, fechaNacimiento, genero) -->
+    <string name="register_first_name_label">Nombre(s) *</string>
+    <string name="register_last_name_p_label">Apellido paterno *</string>
+    <string name="register_last_name_m_label">Apellido materno</string>
+    <string name="register_birthdate_label">Fecha de nacimiento *</string>
+    <string name="register_gender_label">Género *</string>
+    <string name="gender_masculino">Masculino</string>
+    <string name="gender_femenino">Femenino</string>
+    <string name="gender_otro">Otro</string>
+
+    <!-- Step 3 Fields (Cliente: telefono, direccion, contactoEmergenciaNombre, contactoEmergenciaTelefono) -->
+    <string name="register_phone_label">Teléfono móvil (10 dígitos) *</string>
+    <string name="register_address_label">Dirección (opcional)</string>
+    <string name="register_emergency_section_title">Contacto de emergencia (opcional)</string>
+    <string name="register_emergency_section_subtitle">Persona a quien contactar dentro del gimnasio si ocurre algún incidente</string>
+    <string name="register_emergency_name_label">Nombre del contacto</string>
+    <string name="register_emergency_phone_label">Teléfono de emergencia</string>
+
+    <!-- Register Buttons -->
+    <string name="register_btn_next">Continuar</string>
+    <string name="register_btn_submit">Completar registro</string>
+    <string name="register_has_account">¿Ya tienes una cuenta?</string>
+    <string name="register_go_to_login">Ingresar</string>
+
+    <!-- Header (Home) -->
+    <string name="home_greeting">Hola, Ángel</string>
+    <string name="home_welcome_subtitle">Bienvenido a ApexGym</string>
+
+    <!-- Notifications Bottom Sheet -->
+    <string name="notifications_title">Notificaciones</string>
+    <string name="notifications_empty_title">No tienes notificaciones</string>
+    <string name="notifications_empty_subtitle">Aquí aparecerán los avisos sobre tu membresía, pagos y novedades de ApexGym.</string>
+
+    <!-- Search & Filters -->
+    <string name="home_search_hint">Buscar productos, membresías o pagos…</string>
+    <string name="chip_membresia">Membresía</string>
+    <string name="chip_pagos">Pagos</string>
+    <string name="chip_acceso_qr">Acceso QR</string>
+    <string name="chip_insumos">Insumos</string>
+
+    <!-- Hero Membership Card -->
+    <string name="hero_plan_badge">PLAN BLACK VIP</string>
+    <string name="hero_title">Vigencia de Membresía</string>
+    <string name="hero_subtitle">Activa hasta 30 Nov 2026 - Días restantes: 42</string>
+
+    <!-- Quick Action Cards -->
+    <string name="card_pagos_title">Pagos y\nRenovaciones</string>
+    <string name="card_pagos_label">Saldo pendiente</string>
+    <string name="card_pagos_amount">$0.00 MXN</string>
+    <string name="card_pagos_action">Pagar</string>
+
+    <!-- Tienda Card -->
+    <string name="card_tienda_title">Tienda de Insumos</string>
+    <string name="card_tienda_subtitle">Suplementos, proteínas\ny bebidas</string>
+    <string name="card_tienda_action">Comprar</string>
+
+    <!-- Popular Products Section -->
+    <string name="section_tienda_overline">TIENDA APEX</string>
+    <string name="section_insumos_title">Insumos Populares</string>
+    <string name="section_ver_catalogo">Ver catálogo</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_inicio">INICIO</string>
+    <string name="nav_membresia">MEMBRESIA</string>
+    <string name="nav_tienda">TIENDA</string>
+    <string name="nav_perfil">PERFIL</string>
 </resources>

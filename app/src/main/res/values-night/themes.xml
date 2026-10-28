@@ -1,7 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.ApexGym" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+    <!-- Keep consistent light surface + dark cards for the mockup preview -->
+    <style name="Base.Theme.ApexGym" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/apex_orange</item>
+        <item name="android:statusBarColor">@color/apex_bg_screen</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

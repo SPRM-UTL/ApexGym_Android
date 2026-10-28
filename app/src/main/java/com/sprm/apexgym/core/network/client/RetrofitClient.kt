@@ -1,23 +1,12 @@
 package com.sprm.apexgym.core.network.client
 
-import com.sprm.apexgym.BuildConfig
-import com.sprm.apexgym.core.network.client.*
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
-import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.Multipart
-import retrofit2.http.Part
 import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
 
 data class ApiResponse<T>(
     val success: Boolean,
@@ -25,10 +14,34 @@ data class ApiResponse<T>(
     val data: T
 )
 
+/** Request para POST /api/clientes/verificarCredenciales */
 data class LoginRequest(
     val email: String,
+    val contrasenia: String
+)
+
+/** Request para POST /api/clientes/verificarCorreo */
+data class VerificarCorreoRequest(
+    val correo: String
+)
+
+/** Request para POST /api/clientes/registrar */
+data class RegistroClienteRequest(
+    // Datos de cuenta (Usuario)
+    val usuario: String,
+    val email: String,
     val contrasenia: String,
-    val checkbox: Boolean = false
+    val fotoUrl: String? = null,
+    // Datos personales (Cliente)
+    val nombre: String,
+    val apellidoPaterno: String,
+    val apellidoMaterno: String? = null,
+    val fechaNacimiento: String,
+    val genero: String,
+    val telefono: String,
+    val direccion: String? = null,
+    val contactoEmergenciaNombre: String? = null,
+    val contactoEmergenciaTelefono: String? = null
 )
 
 data class LoginResponse(
@@ -40,16 +53,22 @@ data class LoginResponse(
 data class UserData(
     val id: Int,
     val nombre: String?,
-    val token: String
+    val token: String?
 )
 
 interface AuthApiService {
-    @POST("api/usuarios/verificarCredenciales")
+    @POST("api/clientes/verificarCredenciales")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+    @POST("api/clientes/verificarCorreo")
+    suspend fun verificarCorreo(@Body request: VerificarCorreoRequest): Response<ApiResponse<Any>>
+
+    @POST("api/clientes/registrar")
+    suspend fun registrarCliente(@Body request: RegistroClienteRequest): Response<ApiResponse<Any>>
 }
 
 object RetrofitClient {
-    private val okHttpClient : OkHttpClient by lazy {
+    private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
@@ -58,7 +77,7 @@ object RetrofitClient {
             .build()
     }
 
-    private val retrofit : Retrofit by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl("http://192.168.100.60:3000")
             .client(okHttpClient)

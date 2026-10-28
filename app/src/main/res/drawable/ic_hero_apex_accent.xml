@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="140dp"
+    android:height="140dp"
+    android:viewportWidth="140"
+    android:viewportHeight="140">
+    <!-- Subtle geometric Apex peak background accent for Hero card -->
+    <path
+        android:fillColor="#14FFFFFF"
+        android:pathData="M75,15 L135,140 L15,140 Z" />
+    <path
+        android:fillColor="#18181A"
+        android:pathData="M75,45 L112,140 L38,140 Z" />
+    <path
+        android:fillColor="#4DF26513"
+        android:pathData="M100,140 L140,85 L140,140 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M85,140 L140,65"
+        android:strokeWidth="2"
+        android:strokeColor="#80F26513" />
+</vector>
