@@ -7,7 +7,7 @@
     android:background="@color/white"
     android:fillViewport="true"
     android:overScrollMode="never"
-    tools:context=".feature.main.LoginFragment">
+    tools:context=".feature.auth.LoginFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,9 +23,7 @@
             android:layout_height="0dp"
             android:layout_weight="0.4" />
 
-        <!-- ======================================================= -->
-        <!-- 1. LOGO OFICIAL APEX GYM + ENCABEZADO                   -->
-        <!-- ======================================================= -->
+        <!-- 1. LOGO OFICIAL APEX GYM + ENCABEZADO -->
         <ImageView
             android:id="@+id/ivLogoApex"
             android:layout_width="210dp"
@@ -36,6 +34,7 @@
             android:src="@drawable/logo_apex_gym" />
 
         <TextView
+            android:id="@+id/tvBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
@@ -68,11 +67,8 @@
             android:textColor="@color/apex_text_secondary"
             android:textSize="14sp" />
 
-        <!-- ======================================================= -->
-        <!-- 2. CAMPOS DEL ENDPOINT (/api/clientes/verificarCredenciales) -->
-        <!-- ======================================================= -->
-
-        <!-- Campo 1: Correo electrónico (email) -->
+        <!-- 2. CAMPOS DEL FORMULARIO -->
+        <!-- Campo 1: Correo electrónico -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCorreo"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -102,7 +98,7 @@
                 android:textSize="14.5sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Campo 2: Contraseña (contrasenia) -->
+        <!-- Campo 2: Contraseña -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilContrasena"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -149,9 +145,7 @@
             android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- ======================================================= -->
-        <!-- 3. BOTÓN PRINCIPAL DE ACCIÓN                            -->
-        <!-- ======================================================= -->
+        <!-- 3. BOTÓN PRINCIPAL -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnIniciarSesion"
             android:layout_width="match_parent"
@@ -175,9 +169,7 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- ======================================================= -->
-        <!-- 4. PIE DE PÁGINA: Enlace a Registro                     -->
-        <!-- ======================================================= -->
+        <!-- 4. PIE DE PÁGINA: Registro -->
         <LinearLayout
             android:id="@+id/llIrARegistro"
             android:layout_width="match_parent"

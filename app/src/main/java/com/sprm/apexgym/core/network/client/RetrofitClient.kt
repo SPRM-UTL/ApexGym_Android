@@ -1,17 +1,17 @@
 package com.sprm.apexgym.core.network.client
 
+import android.content.Context
+import com.sprm.apexgym.core.network.api.AuthApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.POST
 
 data class ApiResponse<T>(
-    val success: Boolean,
-    val status: Int,
-    val data: T
+    val data: T,
+    val statusCode: Int,
+    val message: String,
+    val responseFlag: Int
 )
 
 /** Request para POST /api/clientes/verificarCredenciales */
@@ -27,12 +27,10 @@ data class VerificarCorreoRequest(
 
 /** Request para POST /api/clientes/registrar */
 data class RegistroClienteRequest(
-    // Datos de cuenta (Usuario)
     val usuario: String,
     val email: String,
     val contrasenia: String,
     val fotoUrl: String? = null,
-    // Datos personales (Cliente)
     val nombre: String,
     val apellidoPaterno: String,
     val apellidoMaterno: String? = null,
@@ -56,24 +54,25 @@ data class UserData(
     val token: String?
 )
 
-interface AuthApiService {
-    @POST("api/clientes/verificarCredenciales")
-    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
-
-    @POST("api/clientes/verificarCorreo")
-    suspend fun verificarCorreo(@Body request: VerificarCorreoRequest): Response<ApiResponse<Any>>
-
-    @POST("api/clientes/registrar")
-    suspend fun registrarCliente(@Body request: RegistroClienteRequest): Response<ApiResponse<Any>>
-}
-
 object RetrofitClient {
+
+    private lateinit var appContext: Context
+
+    fun initialize(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    val cookieJar: SessionCookieJar by lazy {
+        SessionCookieJar(appContext)
+    }
+
     private val okHttpClient: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         OkHttpClient.Builder()
             .addInterceptor(logging)
+            .cookieJar(cookieJar)
             .build()
     }
 
@@ -85,7 +84,7 @@ object RetrofitClient {
             .build()
     }
 
-    val apiService: AuthApiService by lazy {
+    val authService: AuthApiService by lazy {
         retrofit.create(AuthApiService::class.java)
     }
 }
