@@ -3,7 +3,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- ApexGym Brand & Mockup Palette -->
     <color name="apex_orange">#FFF26513</color>
     <color name="apex_orange_light">#FFFF7A29</color>
     <color name="apex_orange_translucent">#26F26513</color>

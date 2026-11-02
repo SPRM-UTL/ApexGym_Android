@@ -35,7 +35,7 @@ class ClienteFragment : Fragment(R.layout.fragment_cliente) {
 
         txtLogin.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_login, LoginFragment())
+                .replace(R.id.fragment_container, LoginFragment())
                 .addToBackStack(null)
                 .commit()
         }
@@ -145,7 +145,7 @@ class ClienteFragment : Fragment(R.layout.fragment_cliente) {
                 viewModel.genero = spGenero.selectedItem.toString()
 
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_login, ContactoFragment())
+                    .replace(R.id.fragment_container, ContactoFragment())
                     .addToBackStack(null)
                     .commit()
             }

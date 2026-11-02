@@ -8,50 +8,58 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 data class ApiResponse<T>(
-    val data: T,
+    val data: T?,
     val statusCode: Int,
-    val message: String,
+    val message: String?,
     val responseFlag: Int
 )
 
 /** Request para POST /api/clientes/verificarCredenciales */
 data class LoginRequest(
     val email: String,
-    val contrasenia: String
+    val contrasenia: String,
+    val checkbox: Boolean = false
 )
 
 /** Request para POST /api/clientes/verificarCorreo */
-data class VerificarCorreoRequest(
+data class CorreoRequest(
     val correo: String
 )
 
 /** Request para POST /api/clientes/registrar */
-data class RegistroClienteRequest(
-    val usuario: String,
+data class RegistroRequest(
+    var usuario: String,
     val email: String,
     val contrasenia: String,
-    val fotoUrl: String? = null,
+    var fotoUrl: String,
     val nombre: String,
-    val apellidoPaterno: String,
-    val apellidoMaterno: String? = null,
-    val fechaNacimiento: String,
-    val genero: String,
+    var apellidoPaterno: String,
+    var apellidoMaterno: String,
+    var fechaNacimiento: String,
+    var genero: String,
     val telefono: String,
-    val direccion: String? = null,
-    val contactoEmergenciaNombre: String? = null,
-    val contactoEmergenciaTelefono: String? = null
+    val direccion: String,
+    var contactoEmergenciaNombre: String,
+    var contactoEmergenciaTelefono: String
+)
+
+data class UsuarioRemoto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val email: String? = null,
+    val fotoUrl: String? = null
+)
+
+data class AuthDataResponse(
+    val usuario: UsuarioRemoto? = null,
+    val nuevoUsuario: UsuarioRemoto? = null
 )
 
 data class LoginResponse(
-    val success: Boolean,
-    val status: Int,
-    val data: UserData
-)
-
-data class UserData(
-    val id: Int,
-    val nombre: String?,
-    val token: String?
+    val data: AuthDataResponse? = null,
+    val statusCode: Int = 200,
+    val message: String? = null,
+    val responseFlag: Int = 0
 )
 
 object RetrofitClient {
@@ -78,7 +86,7 @@ object RetrofitClient {
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl("http://192.168.100.60:3000")
+            .baseUrl("http://192.168.100.10:3000/")
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

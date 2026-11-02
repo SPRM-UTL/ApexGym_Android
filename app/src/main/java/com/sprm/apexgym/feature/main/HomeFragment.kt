@@ -3,30 +3,29 @@ package com.sprm.apexgym.feature.main
 import android.animation.ValueAnimator
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.transition.AutoTransition
 import android.transition.ChangeBounds
 import android.transition.TransitionManager
 import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
+import androidx.core.widget.NestedScrollView
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import com.sprm.apexgym.R
+import com.sprm.apexgym.feature.auth.LoginFragment
 
-/**
- * Plantilla / Mockup de la pantalla principal (Inicio) de ApexGym.
- * Incluye:
- * - Animación fluida de deslizamiento e intercambio en el menú inferior (Inicio, Membresía, Tienda, Perfil).
- * - Apertura de la pantalla de Notificaciones de abajo hacia arriba (BottomSheet).
- */
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var selectedTabIndex = 0
+    private var isQrVisible = false
     private var pillAnimator: ValueAnimator? = null
 
     private data class NavTabItem(
@@ -38,7 +37,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. Botón de Notificaciones -> Abre pantalla de abajo hacia arriba
+        val scrollHome = view.findViewById<NestedScrollView>(R.id.scrollHome)
+        val llMainContentRoot = view.findViewById<ViewGroup>(R.id.llMainContentRoot)
+        val llTopHeaderAndSearch = view.findViewById<View>(R.id.llTopHeaderAndSearch)
+        val llHomeSection = view.findViewById<View>(R.id.llHomeSection)
+        val llTiendaSection = view.findViewById<View>(R.id.llTiendaSection)
+        val llQrAccessSection = view.findViewById<View>(R.id.llQrAccessSection)
+        val etSearchMockup = view.findViewById<EditText>(R.id.etSearchMockup)
+
         val flNotifications = view.findViewById<View>(R.id.flNotifications)
         flNotifications?.setOnClickListener {
             val existing = childFragmentManager.findFragmentByTag(NotificationsBottomSheetFragment.TAG)
@@ -50,19 +56,35 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
 
-        // Avatar permite volver al Login durante las pruebas del prototipo
-        val flAvatar = view.findViewById<View>(R.id.flAvatar)
-        flAvatar?.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out
+        val openProfileSheet = {
+            val existing = childFragmentManager.findFragmentByTag(ProfileBottomSheetFragment.TAG)
+            if (existing == null) {
+                ProfileBottomSheetFragment().show(
+                    childFragmentManager,
+                    ProfileBottomSheetFragment.TAG
                 )
-                .replace(R.id.fragment_container, LoginFragment())
-                .commit()
+            }
         }
 
-        // 2. Configuración y animación del Menú Inferior
+        val flAvatar = view.findViewById<View>(R.id.flAvatar)
+        flAvatar?.setOnClickListener {
+            openProfileSheet()
+        }
+
+        val storeCategoryChips = listOf<TextView>(
+            view.findViewById(R.id.chipTiendaTodos),
+            view.findViewById(R.id.chipTiendaProteinas),
+            view.findViewById(R.id.chipTiendaCreatinas),
+            view.findViewById(R.id.chipTiendaBebidas),
+            view.findViewById(R.id.chipTiendaAccesorios),
+            view.findViewById(R.id.chipTiendaRopa)
+        )
+        storeCategoryChips.forEach { chip ->
+            chip.setOnClickListener {
+                updateStoreCategoryChips(storeCategoryChips, chip)
+            }
+        }
+
         val llNavTabsRow = view.findViewById<LinearLayout>(R.id.llNavTabsRow)
         val viewActiveNavPill = view.findViewById<View>(R.id.viewActiveNavPill)
 
@@ -89,7 +111,31 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             )
         )
 
-        // Posicionar inicialmente la píldora blanca exactamente bajo el tab activo (INICIO)
+        fun showSectionForTab(tabIndex: Int) {
+            isQrVisible = false
+
+            val transition = AutoTransition().apply {
+                duration = 220L
+                interpolator = FastOutSlowInInterpolator()
+            }
+            TransitionManager.beginDelayedTransition(llMainContentRoot, transition)
+
+            llQrAccessSection.visibility = View.GONE
+            llTopHeaderAndSearch.visibility = View.VISIBLE
+
+            if (tabIndex == 2) {
+                llHomeSection.visibility = View.GONE
+                llTiendaSection.visibility = View.VISIBLE
+                etSearchMockup.setHint(R.string.tienda_search_hint)
+            } else {
+                llTiendaSection.visibility = View.GONE
+                llHomeSection.visibility = View.VISIBLE
+                etSearchMockup.setHint(R.string.home_search_hint)
+            }
+
+            scrollHome.smoothScrollTo(0, 0)
+        }
+
         llNavTabsRow.post {
             val activeTab = tabs[selectedTabIndex].container
             viewActiveNavPill.translationX = activeTab.left.toFloat()
@@ -100,12 +146,95 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         tabs.forEachIndexed { index, tabItem ->
             tabItem.container.setOnClickListener {
-                animateBottomNavSelection(
-                    targetIndex = index,
-                    tabs = tabs,
-                    llNavTabsRow = llNavTabsRow,
-                    viewActiveNavPill = viewActiveNavPill
-                )
+                if (index == 3) {
+                    openProfileSheet()
+                    return@setOnClickListener
+                }
+
+                if (isQrVisible && index == selectedTabIndex) {
+                    showSectionForTab(index)
+                } else {
+                    animateBottomNavSelection(
+                        targetIndex = index,
+                        tabs = tabs,
+                        llNavTabsRow = llNavTabsRow,
+                        viewActiveNavPill = viewActiveNavPill
+                    )
+                    showSectionForTab(index)
+                }
+            }
+        }
+
+        val goToTiendaListener = View.OnClickListener {
+            animateBottomNavSelection(
+                targetIndex = 2,
+                tabs = tabs,
+                llNavTabsRow = llNavTabsRow,
+                viewActiveNavPill = viewActiveNavPill
+            )
+            showSectionForTab(2)
+        }
+        view.findViewById<View>(R.id.cardTienda)?.setOnClickListener(goToTiendaListener)
+        view.findViewById<View>(R.id.btnComprarMockup)?.setOnClickListener(goToTiendaListener)
+        view.findViewById<View>(R.id.btnVerCatalogoMockup)?.setOnClickListener(goToTiendaListener)
+        view.findViewById<View>(R.id.chipHomeInsumos)?.setOnClickListener(goToTiendaListener)
+
+        val flQrCodeBox = view.findViewById<View>(R.id.flQrCodeBox)
+        val btnGenerarNuevoQr = view.findViewById<View>(R.id.btnGenerarNuevoQr)
+
+        val openQrAccessListener = View.OnClickListener {
+            val transition = AutoTransition().apply {
+                duration = 240L
+                interpolator = FastOutSlowInInterpolator()
+            }
+            TransitionManager.beginDelayedTransition(llMainContentRoot, transition)
+
+            isQrVisible = true
+            llTopHeaderAndSearch.visibility = View.GONE
+            llHomeSection.visibility = View.GONE
+            llTiendaSection.visibility = View.GONE
+            llQrAccessSection.visibility = View.VISIBLE
+
+            scrollHome.smoothScrollTo(0, 0)
+        }
+
+        view.findViewById<View>(R.id.fabQrMockup)?.setOnClickListener(openQrAccessListener)
+        view.findViewById<View>(R.id.chipHomeAccesoQr)?.setOnClickListener(openQrAccessListener)
+
+        val closeQrListener = View.OnClickListener {
+            showSectionForTab(selectedTabIndex)
+        }
+        view.findViewById<View>(R.id.btnQrBack)?.setOnClickListener(closeQrListener)
+        view.findViewById<View>(R.id.btnQrClose)?.setOnClickListener(closeQrListener)
+
+        btnGenerarNuevoQr?.setOnClickListener {
+            flQrCodeBox?.animate()
+                ?.scaleX(0.94f)
+                ?.scaleY(0.94f)
+                ?.setDuration(110L)
+                ?.withEndAction {
+                    flQrCodeBox.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(160L)
+                        .start()
+                }
+                ?.start()
+        }
+    }
+
+    private fun updateStoreCategoryChips(chips: List<TextView>, selected: TextView) {
+        val context = requireContext()
+        val colorWhite = ContextCompat.getColor(context, R.color.white)
+        val colorPrimary = ContextCompat.getColor(context, R.color.apex_text_primary)
+
+        chips.forEach { chip ->
+            if (chip == selected) {
+                chip.setBackgroundResource(R.drawable.bg_chip_selected)
+                chip.setTextColor(colorWhite)
+            } else {
+                chip.setBackgroundResource(R.drawable.bg_chip_unselected)
+                chip.setTextColor(colorPrimary)
             }
         }
     }
@@ -127,7 +256,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val startWidth = viewActiveNavPill.width
         val targetContainer = tabs[targetIndex].container
 
-        // Listener registrado ANTES de TransitionManager para leer las coordenadas finales exactas tras onLayout
         llNavTabsRow.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
             override fun onPreDraw(): Boolean {
                 llNavTabsRow.viewTreeObserver.removeOnPreDrawListener(this)
@@ -153,14 +281,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         })
 
-        // Transición fluida de expansión/contracción de las pestañas
         val transition = ChangeBounds().apply {
             duration = 320L
             interpolator = FastOutSlowInInterpolator()
         }
         TransitionManager.beginDelayedTransition(llNavTabsRow, transition)
 
-        // Actualizar el estado visual de cada opción
         tabs.forEachIndexed { index, item ->
             val isSelected = index == targetIndex
 

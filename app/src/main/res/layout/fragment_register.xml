@@ -19,9 +19,6 @@
         android:paddingTop="16dp"
         android:paddingBottom="28dp">
 
-        <!-- ======================================================= -->
-        <!-- 1. BARRA SUPERIOR: Navegación Atrás / Volver al inicio  -->
-        <!-- ======================================================= -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,30 +58,8 @@
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
-
-            <!-- Acceso directo a Login desde cualquier paso -->
-            <TextView
-                android:id="@+id/tvTopIrALogin"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="true"
-                android:focusable="true"
-                android:paddingHorizontal="8dp"
-                android:paddingVertical="6dp"
-                android:text="@string/register_go_to_login"
-                android:textColor="@color/apex_orange"
-                android:textSize="13.5sp"
-                android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- ======================================================= -->
-        <!-- 2. INDICADOR DE PROGRESO (Stepper de 3 Pasos M3)        -->
-        <!-- ======================================================= -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -117,23 +92,11 @@
                 android:background="@drawable/bg_step_inactive" />
         </LinearLayout>
 
-        <!-- Encabezado Dinámico del Paso Actual -->
-        <TextView
-            android:id="@+id/tvStepOverline"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:letterSpacing="0.08"
-            android:text="@string/register_step1_overline"
-            android:textColor="@color/apex_orange"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tvStepTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="16dp"
             android:text="@string/register_step1_title"
             android:textColor="@color/apex_text_primary"
             android:textSize="25sp"
@@ -148,9 +111,6 @@
             android:textColor="@color/apex_text_secondary"
             android:textSize="13.5sp" />
 
-        <!-- ======================================================= -->
-        <!-- PASO 1: DATOS DE CUENTA (fotoUrl, usuario, email, pass) -->
-        <!-- ======================================================= -->
         <LinearLayout
             android:id="@+id/layoutStep1"
             android:layout_width="match_parent"
@@ -158,7 +118,6 @@
             android:orientation="vertical"
             android:visibility="visible">
 
-            <!-- Selector circular de foto de perfil (fotoUrl) -->
             <LinearLayout
                 android:id="@+id/llSelectorFoto"
                 android:layout_width="wrap_content"
@@ -211,7 +170,6 @@
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Campo: Nombre de usuario (usuario) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilUsuarioRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -241,7 +199,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo: Correo electrónico (email) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilCorreoRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -271,7 +228,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo: Contraseña (contrasenia) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilContrasenaRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -303,7 +259,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo: Confirmar Contraseña -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilConfirmarContrasenaRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -337,9 +292,6 @@
 
         </LinearLayout>
 
-        <!-- ======================================================= -->
-        <!-- PASO 2: DATOS PERSONALES (nombre, apellidos, nac, gen)  -->
-        <!-- ======================================================= -->
         <LinearLayout
             android:id="@+id/layoutStep2"
             android:layout_width="match_parent"
@@ -347,7 +299,6 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Campo: Nombre(s) (nombre) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilNombreRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -377,7 +328,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Fila de 2 columnas: Apellido Paterno y Apellido Materno -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -386,7 +336,6 @@
                 android:orientation="horizontal"
                 android:weightSum="2">
 
-                <!-- Apellido Paterno (apellidoPaterno) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilApellidoPaterno"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -415,7 +364,6 @@
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Apellido Materno (apellidoMaterno - opcional) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilApellidoMaterno"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -445,7 +393,6 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
-            <!-- Campo: Fecha de Nacimiento (fechaNacimiento - abre DatePicker) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilFechaNacimiento"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -477,7 +424,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Selector de Género (genero: Masculino / Femenino / Otro) -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -542,9 +488,6 @@
 
         </LinearLayout>
 
-        <!-- ======================================================= -->
-        <!-- PASO 3: CONTACTO Y EMERGENCIA (telefono, dir, emerg)    -->
-        <!-- ======================================================= -->
         <LinearLayout
             android:id="@+id/layoutStep3"
             android:layout_width="match_parent"
@@ -552,7 +495,6 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Campo: Teléfono móvil (telefono - obligatorio) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilTelefonoRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -583,7 +525,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Campo: Dirección (direccion - opcional) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilDireccionRegistro"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -613,7 +554,6 @@
                     android:textSize="14.5sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Bloque Agrupado: Contacto de Emergencia (opcional) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -652,7 +592,6 @@
                     android:textColor="@color/apex_text_secondary"
                     android:textSize="12sp" />
 
-                <!-- Contacto Emergencia: Nombre (contactoEmergenciaNombre) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilEmergenciaNombre"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -682,7 +621,6 @@
                         android:textSize="14sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Contacto Emergencia: Teléfono (contactoEmergenciaTelefono) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilEmergenciaTelefono"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -717,9 +655,6 @@
 
         </LinearLayout>
 
-        <!-- ======================================================= -->
-        <!-- 4. BOTÓN PRINCIPAL DE AVANCE / COMPLETAR REGISTRO       -->
-        <!-- ======================================================= -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCrearCuenta"
             android:layout_width="match_parent"
@@ -732,20 +667,13 @@
             android:textStyle="bold"
             app:backgroundTint="@color/apex_orange"
             app:cornerRadius="28dp"
-            app:elevation="2dp"
-            app:icon="@drawable/ic_arrow_right"
-            app:iconGravity="textEnd"
-            app:iconPadding="8dp"
-            app:iconTint="@color/white" />
+            app:elevation="2dp" />
 
         <Space
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-        <!-- ======================================================= -->
-        <!-- 5. PIE DE PÁGINA: Enlace directo a Login ("Ingresar")   -->
-        <!-- ======================================================= -->
         <LinearLayout
             android:id="@+id/llIrALogin"
             android:layout_width="match_parent"

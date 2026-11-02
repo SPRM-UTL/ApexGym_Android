@@ -1,42 +1,70 @@
 package com.sprm.apexgym.feature.auth
 
 import android.os.Bundle
+import android.util.Patterns
 import android.view.View
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.feature.main.HomeFragment
+import com.sprm.apexgym.feature.main.RegisterFragment
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
+import org.json.JSONObject
 import java.io.IOException
 
+/**
+ * Pantalla de Inicio de Sesión conectada a POST /api/clientes/verificarCredenciales.
+ */
 class LoginFragment : Fragment(R.layout.fragment_login) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val tilCorreo = view.findViewById<TextInputLayout>(R.id.tilCorreo)
         val etCorreo = view.findViewById<TextInputEditText>(R.id.etCorreo)
+        val tilContrasena = view.findViewById<TextInputLayout>(R.id.tilContrasena)
         val etContrasena = view.findViewById<TextInputEditText>(R.id.etContrasena)
+
         val btnIniciarSesion = view.findViewById<MaterialButton>(R.id.btnIniciarSesion)
         val tvRegistrarse = view.findViewById<View>(R.id.tvRegistrarse)
         val llIrARegistro = view.findViewById<View>(R.id.llIrARegistro)
 
-        // Acción Iniciar Sesión con API
+        etCorreo.setText("")
+        etContrasena.setText("")
+
+        etCorreo.doAfterTextChanged { tilCorreo.error = null }
+        etContrasena.doAfterTextChanged { tilContrasena.error = null }
+
         btnIniciarSesion.setOnClickListener {
             val correo = etCorreo.text?.toString()?.trim().orEmpty()
             val contrasena = etContrasena.text?.toString().orEmpty()
 
-            if (correo.isBlank() || contrasena.isBlank()) {
-                mostrarMensaje("Ingresa tu correo y contraseña")
-                return@setOnClickListener
+            var valido = true
+
+            if (correo.isEmpty()) {
+                tilCorreo.error = "Ingresa tu correo electrónico"
+                valido = false
+            } else if (!Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+                tilCorreo.error = "Ingresa un correo electrónico válido"
+                valido = false
             }
 
+            if (contrasena.isEmpty()) {
+                tilContrasena.error = "Ingresa tu contraseña"
+                valido = false
+            }
+
+            if (!valido) return@setOnClickListener
+
             btnIniciarSesion.isEnabled = false
+            btnIniciarSesion.text = "Iniciando sesión..."
 
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
@@ -47,10 +75,16 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                         )
                     )
 
-                    if (response.isSuccessful && response.body() != null) {
-                        Toast.makeText(requireContext(), "Inicio de sesión correcto", Toast.LENGTH_SHORT).show()
+                    if (response.isSuccessful && response.body()?.responseFlag == 0) {
+                        val nombreSocio = response.body()?.data?.usuario?.nombre
+                        if (!nombreSocio.isNullOrBlank()) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Bienvenido, $nombreSocio",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
 
-                        // Transición animada hacia Home
                         parentFragmentManager.beginTransaction()
                             .setCustomAnimations(
                                 android.R.anim.fade_in,
@@ -59,31 +93,39 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                                 android.R.anim.fade_out
                             )
                             .replace(R.id.fragment_container, HomeFragment())
-                            .addToBackStack("login_to_home")
                             .commit()
                     } else {
-                        val errorMsg = when (response.code()) {
-                            401 -> "Correo o contraseña incorrectos"
-                            403 -> "No tienes permiso para acceder"
-                            else -> "Error del servidor: ${response.code()}"
-                        }
-                        mostrarMensaje(errorMsg)
+                        val mensajeServidor = extraerMensajeError(response.errorBody()?.string())
+                            ?: response.body()?.message
+                            ?: "Credenciales incorrectas"
+
+                        Toast.makeText(
+                            requireContext(),
+                            mensajeServidor,
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
-                } catch (e: IOException) {
-                    mostrarMensaje("No se pudo conectar con el servidor")
-                } catch (e: HttpException) {
-                    mostrarMensaje("Error HTTP: ${e.code()}")
+                } catch (_: IOException) {
+                    Toast.makeText(
+                        requireContext(),
+                        "No se pudo conectar con el servidor. Verifica tu conexión.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 } catch (e: Exception) {
-                    mostrarMensaje("Ocurrió un error al iniciar sesión")
+                    Toast.makeText(
+                        requireContext(),
+                        "Error al iniciar sesión: ${e.localizedMessage ?: "desconocido"}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 } finally {
                     if (isAdded) {
                         btnIniciarSesion.isEnabled = true
+                        btnIniciarSesion.setText(R.string.login_btn_submit)
                     }
                 }
             }
         }
 
-        // Navegación a Registro con animación
         val irARegistroListener = View.OnClickListener {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
@@ -101,9 +143,12 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         llIrARegistro.setOnClickListener(irARegistroListener)
     }
 
-    private fun mostrarMensaje(mensaje: String) {
-        if (isAdded) {
-            Toast.makeText(requireContext(), mensaje, Toast.LENGTH_SHORT).show()
+    private fun extraerMensajeError(rawJson: String?): String? {
+        if (rawJson.isNullOrBlank()) return null
+        return try {
+            JSONObject(rawJson).optString("message").takeIf { it.isNotBlank() }
+        } catch (_: Exception) {
+            null
         }
     }
 }
