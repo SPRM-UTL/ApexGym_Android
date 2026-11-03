@@ -58,11 +58,12 @@
     <string name="notifications_empty_subtitle">Aquí aparecerán los avisos sobre tu membresía, pagos y novedades de ApexGym.</string>
 
     <string name="home_search_hint">Buscar productos, membresías o pagos…</string>
-    <string name="tienda_search_hint">Buscar suplementos, ropa, accesorios…</string>
+    <string name="tienda_search_hint">Buscar productos o categorías…</string>
+    <string name="servicios_search_hint">Buscar servicios disponibles…</string>
     <string name="chip_membresia">Membresía</string>
     <string name="chip_pagos">Pagos</string>
     <string name="chip_acceso_qr">Acceso QR</string>
-    <string name="chip_insumos">Insumos</string>
+    <string name="chip_insumos">Productos</string>
 
     <string name="tienda_cat_todos">Todos</string>
     <string name="tienda_cat_proteinas">Proteínas</string>
@@ -74,6 +75,9 @@
     <string name="tienda_promo_title">Whey Protein Isolate</string>
     <string name="tienda_promo_discount">20% OFF</string>
     <string name="tienda_promo_dates">Del 27 Oct al 3 Nov 2026</string>
+
+    <string name="servicios_title">Servicios ApexGym</string>
+    <string name="servicios_subtitle">Complementa tu entrenamiento con atención personalizada</string>
 
     <string name="qr_screen_title">Acceso al Gimnasio</string>
     <string name="qr_membership_badge">MEMBRESÍA ACTIVA - PLAN BLACK VIP</string>
@@ -94,16 +98,16 @@
     <string name="card_pagos_amount">$0.00 MXN</string>
     <string name="card_pagos_action">Pagar</string>
 
-    <string name="card_tienda_title">Tienda de Insumos</string>
+    <string name="card_tienda_title">Catálogo de Productos</string>
     <string name="card_tienda_subtitle">Suplementos, proteínas\ny bebidas</string>
-    <string name="card_tienda_action">Comprar</string>
+    <string name="card_tienda_action">Ver productos</string>
 
-    <string name="section_tienda_overline">TIENDA APEX</string>
-    <string name="section_insumos_title">Insumos Populares</string>
+    <string name="section_tienda_overline">CATÁLOGO APEX</string>
+    <string name="section_insumos_title">Productos Populares</string>
     <string name="section_ver_catalogo">Ver catálogo</string>
 
     <string name="nav_inicio">INICIO</string>
     <string name="nav_membresia">MEMBRESIA</string>
-    <string name="nav_tienda">TIENDA</string>
-    <string name="nav_perfil">PERFIL</string>
+    <string name="nav_tienda">PRODUCTOS</string>
+    <string name="nav_perfil">SERVICIOS</string>
 </resources>

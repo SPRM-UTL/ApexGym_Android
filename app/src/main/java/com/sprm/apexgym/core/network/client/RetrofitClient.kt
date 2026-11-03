@@ -62,12 +62,57 @@ data class LoginResponse(
     val responseFlag: Int = 0
 )
 
+data class CategoriaProductoDto(
+    val id: Int = 0,
+    val nombre: String? = null
+)
+
+data class ProductoClienteDto(
+    val id: Int = 0,
+    val categoriaProductoId: Int? = null,
+    val codigoBarras: String? = null,
+    val nombre: String = "",
+    val descripcion: String? = null,
+    val precioVenta: Double = 0.0,
+    val precioCompra: Double? = null,
+    val stockActual: Int = 0,
+    val stockMinimo: Int = 1,
+    val estado: String? = null,
+    val disponibleCompra: Boolean = true,
+    val imagenUrl: String? = null,
+    val imagenPublicId: String? = null,
+    val categoria: CategoriaProductoDto? = null
+)
+
+data class ServicioClienteDto(
+    val id: Int = 0,
+    val nombre: String = "",
+    val descripcion: String? = null,
+    val precio: Double = 0.0,
+    val estado: String? = null,
+    val disponibleCompra: Boolean = true,
+    val imagenUrl: String? = null,
+    val imagenPublicId: String? = null
+)
+
 object RetrofitClient {
+
+    const val BASE_URL = "http://192.168.100.10:3000/"
 
     private lateinit var appContext: Context
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
+    }
+
+    fun resolverUrlImagen(ruta: String?): String? {
+        if (ruta.isNullOrBlank()) return null
+        if (ruta.startsWith("http://") || ruta.startsWith("https://") || ruta.startsWith("data:")) {
+            return ruta
+        }
+        val baseSinSlash = BASE_URL.trimEnd('/')
+        val rutaNormalizada = if (ruta.startsWith("/")) ruta else "/$ruta"
+        return "$baseSinSlash$rutaNormalizada"
     }
 
     val cookieJar: SessionCookieJar by lazy {
@@ -86,7 +131,7 @@ object RetrofitClient {
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl("http://192.168.100.10:3000/")
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

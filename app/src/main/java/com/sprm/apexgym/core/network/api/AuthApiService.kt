@@ -6,7 +6,9 @@ import com.sprm.apexgym.core.network.client.ApiResponse
 import com.sprm.apexgym.core.network.client.CorreoRequest
 import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.LoginResponse
+import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RegistroRequest
+import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -29,4 +31,10 @@ interface AuthApiService {
 
     @GET("api/estados-cliente")
     suspend fun probarcookie(): Response<ApiResponse<List<EstadoCliente>>>
+
+    @GET("api/productos/productosClientes/traer")
+    suspend fun obtenerProductosCliente(): Response<ApiResponse<List<ProductoClienteDto>>>
+
+    @GET("api/servicios/serviciosClientes/traer")
+    suspend fun obtenerServiciosCliente(): Response<ApiResponse<List<ServicioClienteDto>>>
 }

@@ -636,6 +636,7 @@
                     android:scrollbars="none">
 
                     <LinearLayout
+                        android:id="@+id/llHomePopularProductsContainer"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
@@ -964,6 +965,7 @@
                     android:scrollbars="none">
 
                     <LinearLayout
+                        android:id="@+id/llTiendaCategoryChipsContainer"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
@@ -1172,327 +1174,68 @@
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
 
+                <TextView
+                    android:id="@+id/tvTiendaEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:text="Cargando productos disponibles..."
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
                 <LinearLayout
+                    android:id="@+id/llTiendaProductsGridContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llServiciosSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/servicios_title"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/servicios_subtitle"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="13.5sp" />
+
+                <TextView
+                    android:id="@+id/tvServiciosEmptyState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="24dp"
+                    android:gravity="center"
+                    android:padding="16dp"
+                    android:text="Cargando servicios disponibles..."
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/llServiciosListContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal"
-                    android:weightSum="2">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="228dp"
-                        android:layout_marginEnd="7dp"
-                        android:layout_weight="1"
-                        app:cardBackgroundColor="@color/apex_card_dark"
-                        app:cardCornerRadius="22dp"
-                        app:cardElevation="3dp"
-                        app:strokeWidth="0dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="112dp"
-                                android:background="@drawable/bg_product_image_container" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="Whey Isolate 2kg"
-                                android:textColor="@color/white"
-                                android:textSize="13.5sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="Proteínas"
-                                android:textColor="@color/apex_text_on_dark_secondary"
-                                android:textSize="11.5sp" />
-
-                            <Space
-                                android:layout_width="match_parent"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="$1,250 MXN"
-                                    android:textColor="@color/apex_orange"
-                                    android:textSize="15sp"
-                                    android:textStyle="bold" />
-
-                                <FrameLayout
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
-                                    android:background="@drawable/bg_circle_orange">
-
-                                    <ImageView
-                                        android:layout_width="16dp"
-                                        android:layout_height="16dp"
-                                        android:layout_gravity="center"
-                                        android:contentDescription="Agregar"
-                                        android:src="@drawable/ic_plus" />
-                                </FrameLayout>
-                            </LinearLayout>
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="228dp"
-                        android:layout_marginStart="7dp"
-                        android:layout_weight="1"
-                        app:cardBackgroundColor="@color/apex_card_dark"
-                        app:cardCornerRadius="22dp"
-                        app:cardElevation="3dp"
-                        app:strokeWidth="0dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="112dp"
-                                android:background="@drawable/bg_product_image_container" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="Shaker ApexGym"
-                                android:textColor="@color/white"
-                                android:textSize="13.5sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="Accesorios"
-                                android:textColor="@color/apex_text_on_dark_secondary"
-                                android:textSize="11.5sp" />
-
-                            <Space
-                                android:layout_width="match_parent"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="$250 MXN"
-                                    android:textColor="@color/apex_orange"
-                                    android:textSize="15sp"
-                                    android:textStyle="bold" />
-
-                                <FrameLayout
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
-                                    android:background="@drawable/bg_circle_orange">
-
-                                    <ImageView
-                                        android:layout_width="16dp"
-                                        android:layout_height="16dp"
-                                        android:layout_gravity="center"
-                                        android:contentDescription="Agregar"
-                                        android:src="@drawable/ic_plus" />
-                                </FrameLayout>
-                            </LinearLayout>
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="14dp"
-                    android:baselineAligned="false"
-                    android:orientation="horizontal"
-                    android:weightSum="2">
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="228dp"
-                        android:layout_marginEnd="7dp"
-                        android:layout_weight="1"
-                        app:cardBackgroundColor="@color/apex_card_dark"
-                        app:cardCornerRadius="22dp"
-                        app:cardElevation="3dp"
-                        app:strokeWidth="0dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="112dp"
-                                android:background="@drawable/bg_product_image_container" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="Creatina Monohidratada 1kg"
-                                android:textColor="@color/white"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="Creatinas"
-                                android:textColor="@color/apex_text_on_dark_secondary"
-                                android:textSize="11.5sp" />
-
-                            <Space
-                                android:layout_width="match_parent"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="$550 MXN"
-                                    android:textColor="@color/apex_orange"
-                                    android:textSize="15sp"
-                                    android:textStyle="bold" />
-
-                                <FrameLayout
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
-                                    android:background="@drawable/bg_circle_orange">
-
-                                    <ImageView
-                                        android:layout_width="16dp"
-                                        android:layout_height="16dp"
-                                        android:layout_gravity="center"
-                                        android:contentDescription="Agregar"
-                                        android:src="@drawable/ic_plus" />
-                                </FrameLayout>
-                            </LinearLayout>
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="228dp"
-                        android:layout_marginStart="7dp"
-                        android:layout_weight="1"
-                        app:cardBackgroundColor="@color/apex_card_dark"
-                        app:cardCornerRadius="22dp"
-                        app:cardElevation="3dp"
-                        app:strokeWidth="0dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="112dp"
-                                android:background="@drawable/bg_product_image_container" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="Straps de Levantamiento"
-                                android:textColor="@color/white"
-                                android:textSize="13sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:text="Accesorios"
-                                android:textColor="@color/apex_text_on_dark_secondary"
-                                android:textSize="11.5sp" />
-
-                            <Space
-                                android:layout_width="match_parent"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:text="$350 MXN"
-                                    android:textColor="@color/apex_orange"
-                                    android:textSize="15sp"
-                                    android:textStyle="bold" />
-
-                                <FrameLayout
-                                    android:layout_width="32dp"
-                                    android:layout_height="32dp"
-                                    android:background="@drawable/bg_circle_orange">
-
-                                    <ImageView
-                                        android:layout_width="16dp"
-                                        android:layout_height="16dp"
-                                        android:layout_gravity="center"
-                                        android:contentDescription="Agregar"
-                                        android:src="@drawable/ic_plus" />
-                                </FrameLayout>
-                            </LinearLayout>
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
+                    android:orientation="vertical" />
 
             </LinearLayout>
 
@@ -1857,7 +1600,7 @@
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:contentDescription="@string/nav_perfil"
-                        android:src="@drawable/ic_user_profile"
+                        android:src="@drawable/ic_fitness_service"
                         app:tint="@color/apex_nav_inactive" />
 
                     <TextView
