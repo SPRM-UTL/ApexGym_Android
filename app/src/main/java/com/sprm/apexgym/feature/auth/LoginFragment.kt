@@ -11,6 +11,7 @@ import com.google.android.material.button.MaterialButton
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.feature.membresia.MembresiaFragment
 import kotlinx.coroutines.launch
 import java.io.IOException
 import retrofit2.HttpException
@@ -76,6 +77,12 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                                 "Inicio de sesión correcto",
                                 Toast.LENGTH_SHORT
                             ).show()
+
+                            parentFragmentManager.beginTransaction()
+                                .replace(R.id.fragment_login, MembresiaFragment())
+                                .addToBackStack(null)
+                                .commit()
+                            return@launch
                         } else {
                             mostrarMensaje("El servidor no devolvió datos")
                         }

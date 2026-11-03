@@ -14,6 +14,7 @@ import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.feature.auth.LoginFragment
 import com.sprm.apexgym.feature.auth.RegistroFragment
+import com.sprm.apexgym.feature.membresia.MembresiaFragment
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.Console
@@ -30,6 +31,14 @@ class MainActivity : AppCompatActivity() {
         val btnMostrar = findViewById<Button>(R.id.btnMostrarLogin)
         val btnProbar = findViewById<Button>(R.id.btnProbar)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
+        val btnMembresia = findViewById<Button>(R.id.btnMembresia)
+
+        btnMembresia.setOnClickListener {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_login, MembresiaFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
         btnMostrar.setOnClickListener {
             supportFragmentManager.beginTransaction()

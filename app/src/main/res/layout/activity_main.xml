@@ -7,12 +7,31 @@
     android:layout_height="match_parent"
     tools:context=".feature.main.MainActivity">
 
+    <Button
+        android:id="@+id/btnMembresia"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Mi Membresía"
+        app:layout_constraintBottom_toTopOf="@+id/btnLogout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="LogOut"
+        app:layout_constraintBottom_toTopOf="@+id/btnProbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/btnProbar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         android:text="Probar Cookie"
         app:layout_constraintBottom_toTopOf="@+id/btnMostrarLogin"
         app:layout_constraintEnd_toEndOf="parent"
@@ -34,16 +53,5 @@
         android:layout_height="match_parent"
         tools:layout_editor_absoluteX="165dp"
         tools:layout_editor_absoluteY="209dp" />
-
-    <Button
-        android:id="@+id/btnLogout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:text="LogOut"
-        app:layout_constraintBottom_toTopOf="@+id/btnProbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

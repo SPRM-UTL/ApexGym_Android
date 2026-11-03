@@ -57,6 +57,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("com.google.zxing:core:3.5.3")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")

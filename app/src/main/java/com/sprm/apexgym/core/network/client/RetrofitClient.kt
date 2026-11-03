@@ -4,6 +4,7 @@ import android.content.Context
 import com.sprm.apexgym.BuildConfig
 import com.sprm.apexgym.core.db.models.EstadoCliente
 import com.sprm.apexgym.core.network.api.AuthApiService
+import com.sprm.apexgym.core.network.api.MembresiaApiService
 import com.sprm.apexgym.core.network.client.*
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -93,6 +94,10 @@ object RetrofitClient {
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    val membresiaService: MembresiaApiService by lazy {
+        retrofit.create(MembresiaApiService::class.java)
     }
 
     val authService: AuthApiService by lazy {
