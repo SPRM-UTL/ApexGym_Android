@@ -139,6 +139,51 @@ data class MiMembresiaResponseDto(
     val historial: List<ClienteMembresiaDto>? = null
 )
 
+data class EstadoClienteDto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val descripcion: String? = null,
+    val color: String? = null
+)
+
+data class ClienteDetallePerfilDto(
+    val id: Int = 0,
+    val estadoClienteId: Int = 0,
+    val nombre: String? = null,
+    val apellidoPaterno: String? = null,
+    val apellidoMaterno: String? = null,
+    val fechaNacimiento: String? = null,
+    val genero: String? = null,
+    val telefono: String? = null,
+    val correo: String? = null,
+    val direccion: String? = null,
+    val contactoEmergenciaNombre: String? = null,
+    val contactoEmergenciaTelefono: String? = null,
+    val fechaRegistro: String? = null,
+    val estadoCliente: EstadoClienteDto? = null
+)
+
+data class MiPerfilResponseDto(
+    val usuario: UsuarioRemoto? = null,
+    val cliente: ClienteDetallePerfilDto? = null
+)
+
+data class ActualizarMiPerfilRequest(
+    val usuario: String,
+    val email: String,
+    val contraseniaActual: String? = null,
+    val nuevaContrasenia: String? = null,
+    val nombre: String,
+    val apellidoPaterno: String,
+    val apellidoMaterno: String,
+    val fechaNacimiento: String,
+    val genero: String,
+    val telefono: String,
+    val direccion: String,
+    val contactoEmergenciaNombre: String,
+    val contactoEmergenciaTelefono: String
+)
+
 object RetrofitClient {
 
     const val BASE_URL = "http://192.168.100.10:3000/"

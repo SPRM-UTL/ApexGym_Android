@@ -113,6 +113,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
 
+        childFragmentManager.setFragmentResultListener(
+            EditProfileBottomSheetFragment.RESULT_KEY_PERFIL_ACTUALIZADO,
+            viewLifecycleOwner
+        ) { _, _ ->
+            cargarMembresiaDesdeBackend(view)
+        }
+
         etSearchMockup?.doAfterTextChanged { editable ->
             textoBusqueda = editable?.toString()?.trim().orEmpty()
             renderizarGridProductos(llTiendaProductsGridContainer, tvTiendaEmptyState)

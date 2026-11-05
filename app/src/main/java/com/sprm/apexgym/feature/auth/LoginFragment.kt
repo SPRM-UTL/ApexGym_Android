@@ -76,15 +76,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     )
 
                     if (response.isSuccessful && response.body()?.responseFlag == 0) {
-                        val nombreSocio = response.body()?.data?.usuario?.nombre
-                        if (!nombreSocio.isNullOrBlank()) {
-                            Toast.makeText(
-                                requireContext(),
-                                "Bienvenido, $nombreSocio",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-
                         parentFragmentManager.beginTransaction()
                             .setCustomAnimations(
                                 android.R.anim.fade_in,

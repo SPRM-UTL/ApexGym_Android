@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -54,6 +53,24 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         val btnOpcionMiPerfil = view.findViewById<View>(R.id.btnOpcionMiPerfil)
         val btnOpcionCerrarSesion = view.findViewById<View>(R.id.btnOpcionCerrarSesion)
         val tvCerrarSesionTitulo = view.findViewById<TextView>(R.id.tvCerrarSesionTitulo)
+        val tvProfileSheetName = view.findViewById<TextView>(R.id.tvProfileSheetName)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.authService.obtenerMiPerfil()
+                if (!isAdded) return@launch
+                if (response.isSuccessful && response.body()?.responseFlag == 0) {
+                    val data = response.body()?.data
+                    val soloNombre = data?.cliente?.nombre?.trim()?.takeIf { it.isNotBlank() }
+                        ?: data?.usuario?.nombre?.trim().orEmpty()
+
+                    if (soloNombre.isNotBlank()) {
+                        tvProfileSheetName?.text = soloNombre
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
 
         btnCerrarProfileSheet?.setOnClickListener {
             if (!cerrandoSesion) dismiss()
@@ -61,12 +78,15 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
         btnOpcionMiPerfil?.setOnClickListener {
             if (cerrandoSesion) return@setOnClickListener
-            Toast.makeText(
-                requireContext(),
-                "Proximamente",
-                Toast.LENGTH_SHORT
-            ).show()
-            dismiss()
+            val fm = parentFragmentManager
+            dismissAllowingStateLoss()
+            val existing = fm.findFragmentByTag(EditProfileBottomSheetFragment.TAG)
+            if (existing == null) {
+                EditProfileBottomSheetFragment().show(
+                    fm,
+                    EditProfileBottomSheetFragment.TAG
+                )
+            }
         }
 
         btnOpcionCerrarSesion?.setOnClickListener {
@@ -84,11 +104,6 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
                     if (isAdded) {
                         val hostFragmentManager = requireActivity().supportFragmentManager
-                        Toast.makeText(
-                            requireContext(),
-                            "Sesión cerrada correctamente",
-                            Toast.LENGTH_SHORT
-                        ).show()
 
                         dismissAllowingStateLoss()
 
