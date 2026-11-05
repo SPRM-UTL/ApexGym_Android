@@ -33,14 +33,20 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
+import com.sprm.apexgym.core.network.client.ClienteMembresiaDto
+import com.sprm.apexgym.core.network.client.MiMembresiaResponseDto
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
+import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import java.text.NumberFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -51,6 +57,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var listaProductos: List<ProductoClienteDto> = emptyList()
     private var listaServicios: List<ServicioClienteDto> = emptyList()
+    private var listaPlanesMembresia: List<TipoMembresiaDto> = emptyList()
+    private var miMembresiaData: MiMembresiaResponseDto? = null
     private var categoriaSeleccionada: String = "Todos"
     private var textoBusqueda: String = ""
     private val bitmapCache = LruCache<String, Bitmap>(40)
@@ -67,7 +75,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val scrollHome = view.findViewById<NestedScrollView>(R.id.scrollHome)
         val llMainContentRoot = view.findViewById<ViewGroup>(R.id.llMainContentRoot)
         val llTopHeaderAndSearch = view.findViewById<View>(R.id.llTopHeaderAndSearch)
+        val llSearchBarRow = view.findViewById<View>(R.id.llSearchBarRow)
         val llHomeSection = view.findViewById<View>(R.id.llHomeSection)
+        val llMembresiaSection = view.findViewById<View>(R.id.llMembresiaSection)
         val llTiendaSection = view.findViewById<View>(R.id.llTiendaSection)
         val llServiciosSection = view.findViewById<View>(R.id.llServiciosSection)
         val llQrAccessSection = view.findViewById<View>(R.id.llQrAccessSection)
@@ -148,22 +158,35 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             llTopHeaderAndSearch.visibility = View.VISIBLE
 
             when (tabIndex) {
+                1 -> {
+                    llHomeSection.visibility = View.GONE
+                    llTiendaSection.visibility = View.GONE
+                    llServiciosSection.visibility = View.GONE
+                    llMembresiaSection?.visibility = View.VISIBLE
+                    llSearchBarRow?.visibility = View.GONE
+                }
                 2 -> {
                     llHomeSection.visibility = View.GONE
+                    llMembresiaSection?.visibility = View.GONE
                     llServiciosSection.visibility = View.GONE
                     llTiendaSection.visibility = View.VISIBLE
+                    llSearchBarRow?.visibility = View.VISIBLE
                     etSearchMockup.setHint(R.string.tienda_search_hint)
                 }
                 3 -> {
                     llHomeSection.visibility = View.GONE
+                    llMembresiaSection?.visibility = View.GONE
                     llTiendaSection.visibility = View.GONE
                     llServiciosSection.visibility = View.VISIBLE
+                    llSearchBarRow?.visibility = View.VISIBLE
                     etSearchMockup.setHint(R.string.servicios_search_hint)
                 }
                 else -> {
+                    llMembresiaSection?.visibility = View.GONE
                     llTiendaSection.visibility = View.GONE
                     llServiciosSection.visibility = View.GONE
                     llHomeSection.visibility = View.VISIBLE
+                    llSearchBarRow?.visibility = View.VISIBLE
                     etSearchMockup.setHint(R.string.home_search_hint)
                 }
             }
@@ -193,7 +216,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     showSectionForTab(index)
                 }
 
-                if (index == 0 || index == 2 || index == 3) {
+                if (index == 1) {
+                    cargarMembresiaDesdeBackend(view)
+                } else {
                     cargarCatalogoDesdeBackend(
                         llHomePopularProductsContainer = llHomePopularProductsContainer,
                         llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
@@ -205,6 +230,20 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
             }
         }
+
+        val goToMembresiaListener = View.OnClickListener {
+            animateBottomNavSelection(
+                targetIndex = 1,
+                tabs = tabs,
+                llNavTabsRow = llNavTabsRow,
+                viewActiveNavPill = viewActiveNavPill
+            )
+            showSectionForTab(1)
+            cargarMembresiaDesdeBackend(view)
+        }
+        view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(goToMembresiaListener)
+        view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(goToMembresiaListener)
+        view.findViewById<View>(R.id.chipHomeMembresia)?.setOnClickListener(goToMembresiaListener)
 
         val goToProductosListener = View.OnClickListener {
             animateBottomNavSelection(
@@ -233,6 +272,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             isQrVisible = true
             llTopHeaderAndSearch.visibility = View.GONE
             llHomeSection.visibility = View.GONE
+            llMembresiaSection?.visibility = View.GONE
             llTiendaSection.visibility = View.GONE
             llServiciosSection.visibility = View.GONE
             llQrAccessSection.visibility = View.VISIBLE
@@ -242,6 +282,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         view.findViewById<View>(R.id.fabQrMockup)?.setOnClickListener(openQrAccessListener)
         view.findViewById<View>(R.id.chipHomeAccesoQr)?.setOnClickListener(openQrAccessListener)
+        view.findViewById<View>(R.id.btnMembresiaAbrirQr)?.setOnClickListener(openQrAccessListener)
 
         val closeQrListener = View.OnClickListener {
             showSectionForTab(selectedTabIndex)
@@ -272,6 +313,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             llServiciosListContainer = llServiciosListContainer,
             tvServiciosEmptyState = tvServiciosEmptyState
         )
+        cargarMembresiaDesdeBackend(view)
     }
 
     private fun cargarCatalogoDesdeBackend(
@@ -557,6 +599,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 dpToPx(86)
             )
             setBackgroundResource(R.drawable.bg_product_image_container)
+            clipToOutline = true
 
             val icon = ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(38), dpToPx(38), Gravity.CENTER)
@@ -564,6 +607,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
             addView(icon)
         }
+        cargarImagenEnContenedor(producto.imagenUrl, imgBox)
         inner.addView(imgBox)
 
         val tvNombre = TextView(context).apply {
@@ -633,6 +677,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 setImageResource(R.drawable.ic_plus)
             }
             addView(plusIcon)
+            setOnClickListener {
+                abrirDetalleProducto(producto)
+            }
         }
         bottomRow.addView(btnAdd)
 
@@ -640,11 +687,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         card.addView(inner)
 
         card.setOnClickListener {
-            Toast.makeText(
-                context,
-                "${producto.nombre} • ${formatearPrecio(producto.precioVenta)} MXN",
-                Toast.LENGTH_SHORT
-            ).show()
+            abrirDetalleProducto(producto)
         }
 
         return card
@@ -769,6 +812,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 setImageResource(R.drawable.ic_plus)
             }
             addView(plusIcon)
+            setOnClickListener {
+                abrirDetalleProducto(producto)
+            }
         }
         bottomRow.addView(btnAdd)
 
@@ -776,11 +822,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         card.addView(inner)
 
         card.setOnClickListener {
-            Toast.makeText(
-                context,
-                "${producto.nombre} • ${formatearPrecio(producto.precioVenta)} MXN",
-                Toast.LENGTH_SHORT
-            ).show()
+            abrirDetalleProducto(producto)
         }
 
         return card
@@ -932,11 +974,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             addView(plusIcon)
 
             setOnClickListener {
-                Toast.makeText(
-                    context,
-                    "${servicio.nombre} • ${formatearPrecio(servicio.precio)} MXN",
-                    Toast.LENGTH_SHORT
-                ).show()
+                abrirDetalleServicio(servicio)
             }
         }
         bottomRow.addView(btnAdd)
@@ -945,14 +983,406 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         card.addView(container)
 
         card.setOnClickListener {
+            abrirDetalleServicio(servicio)
+        }
+
+        return card
+    }
+
+    private fun abrirDetalleProducto(producto: ProductoClienteDto) {
+        val existing = childFragmentManager.findFragmentByTag(ProductDetailBottomSheetFragment.TAG)
+        if (existing == null) {
+            ProductDetailBottomSheetFragment.newInstance(producto)
+                .show(childFragmentManager, ProductDetailBottomSheetFragment.TAG)
+        }
+    }
+
+    private fun abrirDetalleServicio(servicio: ServicioClienteDto) {
+        val existing = childFragmentManager.findFragmentByTag(ServiceDetailBottomSheetFragment.TAG)
+        if (existing == null) {
+            ServiceDetailBottomSheetFragment.newInstance(servicio)
+                .show(childFragmentManager, ServiceDetailBottomSheetFragment.TAG)
+        }
+    }
+
+    private fun cargarMembresiaDesdeBackend(rootView: View) {
+        val tvMembresiaPlanesEmpty = rootView.findViewById<TextView>(R.id.tvMembresiaPlanesEmpty)
+        tvMembresiaPlanesEmpty?.visibility = View.VISIBLE
+        tvMembresiaPlanesEmpty?.text = "Cargando planes de membresía..."
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val resMiMembresia = RetrofitClient.authService.obtenerMiMembresia()
+                if (resMiMembresia.isSuccessful && resMiMembresia.body()?.responseFlag == 0) {
+                    miMembresiaData = resMiMembresia.body()?.data
+                }
+            } catch (_: Exception) {
+            }
+
+            try {
+                val resPlanes = RetrofitClient.authService.obtenerTiposMembresiaCliente()
+                if (resPlanes.isSuccessful && resPlanes.body()?.responseFlag == 0) {
+                    listaPlanesMembresia = resPlanes.body()?.data.orEmpty()
+                } else {
+                    listaPlanesMembresia = emptyList()
+                }
+            } catch (_: Exception) {
+                listaPlanesMembresia = emptyList()
+            }
+
+            if (!isAdded) return@launch
+            renderizarSeccionMembresia(rootView)
+        }
+    }
+
+    private fun renderizarSeccionMembresia(rootView: View) {
+        val tvMembresiaEstadoBadge = rootView.findViewById<TextView>(R.id.tvMembresiaEstadoBadge)
+        val tvMembresiaRenovacionBadge = rootView.findViewById<TextView>(R.id.tvMembresiaRenovacionBadge)
+        val tvMembresiaPlanActualNombre = rootView.findViewById<TextView>(R.id.tvMembresiaPlanActualNombre)
+        val tvMembresiaDiasRestantesNumero = rootView.findViewById<TextView>(R.id.tvMembresiaDiasRestantesNumero)
+        val tvMembresiaDiasRestantesTexto = rootView.findViewById<TextView>(R.id.tvMembresiaDiasRestantesTexto)
+        val tvMembresiaFechaInicio = rootView.findViewById<TextView>(R.id.tvMembresiaFechaInicio)
+        val tvMembresiaFechaFin = rootView.findViewById<TextView>(R.id.tvMembresiaFechaFin)
+        val tvMembresiaPlanesEmpty = rootView.findViewById<TextView>(R.id.tvMembresiaPlanesEmpty)
+        val llMembresiaPlanesContainer = rootView.findViewById<LinearLayout>(R.id.llMembresiaPlanesContainer)
+        val llMembresiaHistorialWrapper = rootView.findViewById<View>(R.id.llMembresiaHistorialWrapper)
+        val llMembresiaHistorialContainer = rootView.findViewById<LinearLayout>(R.id.llMembresiaHistorialContainer)
+
+        val cliente = miMembresiaData?.cliente
+        if (cliente != null && !cliente.nombre.isNullOrBlank()) {
+            val tvGreeting = rootView.findViewById<TextView>(R.id.tvGreeting)
+            tvGreeting?.text = "Hola, ${cliente.nombre.trim().split(" ").firstOrNull() ?: cliente.nombre}"
+        }
+
+        val activa = miMembresiaData?.membresiaActiva
+        if (activa != null) {
+            val estadoNombre = (activa.estadoMembresia?.nombre ?: "VIGENTE").uppercase(Locale.getDefault())
+            tvMembresiaEstadoBadge?.text = "MEMBRESÍA $estadoNombre"
+            tvMembresiaRenovacionBadge?.text = if (activa.renovacionAutomatica) {
+                "Renovación automática"
+            } else {
+                "Renovación manual"
+            }
+            tvMembresiaPlanActualNombre?.text = activa.tipoMembresia?.nombre ?: "Plan Activo ApexGym"
+
+            val diasRestantes = calcularDiasRestantes(activa.fechaFin)
+            if (diasRestantes != null) {
+                tvMembresiaDiasRestantesNumero?.text = diasRestantes.coerceAtLeast(0).toString()
+                tvMembresiaDiasRestantesTexto?.text = if (diasRestantes == 1L) {
+                    "día restante de vigencia"
+                } else {
+                    "días restantes de vigencia"
+                }
+            } else {
+                tvMembresiaDiasRestantesNumero?.text = (activa.tipoMembresia?.duracionDias ?: 30).toString()
+                tvMembresiaDiasRestantesTexto?.text = "días de duración del plan"
+            }
+
+            tvMembresiaFechaInicio?.text = formatearFechaCorta(activa.fechaInicio)
+            tvMembresiaFechaFin?.text = formatearFechaCorta(activa.fechaFin)
+        } else {
+            tvMembresiaEstadoBadge?.text = "SIN MEMBRESÍA ACTIVA"
+            tvMembresiaRenovacionBadge?.text = "Inactiva"
+            tvMembresiaPlanActualNombre?.text = "Activa tu plan en ApexGym"
+            tvMembresiaDiasRestantesNumero?.text = "0"
+            tvMembresiaDiasRestantesTexto?.text = "días vigentes • Elige un plan abajo"
+            tvMembresiaFechaInicio?.text = "Sin registro"
+            tvMembresiaFechaFin?.text = "Sin vigencia"
+        }
+
+        llMembresiaPlanesContainer?.removeAllViews()
+        if (listaPlanesMembresia.isEmpty()) {
+            tvMembresiaPlanesEmpty?.visibility = View.VISIBLE
+            tvMembresiaPlanesEmpty?.text = "No hay planes de membresía registrados por el momento"
+        } else {
+            tvMembresiaPlanesEmpty?.visibility = View.GONE
+            val idPlanActivo = activa?.tipoMembresia?.id ?: activa?.tipoMembresiaId
+            listaPlanesMembresia.forEach { plan ->
+                val esPlanActual = idPlanActivo != null && idPlanActivo == plan.id && activa != null
+                llMembresiaPlanesContainer?.addView(crearTarjetaPlanMembresia(plan, esPlanActual))
+            }
+        }
+
+        val historial = miMembresiaData?.historial.orEmpty()
+        llMembresiaHistorialContainer?.removeAllViews()
+        if (historial.isEmpty()) {
+            llMembresiaHistorialWrapper?.visibility = View.GONE
+        } else {
+            llMembresiaHistorialWrapper?.visibility = View.VISIBLE
+            historial.take(5).forEach { item ->
+                llMembresiaHistorialContainer?.addView(crearTarjetaHistorialMembresia(item))
+            }
+        }
+    }
+
+    private fun crearTarjetaPlanMembresia(
+        plan: TipoMembresiaDto,
+        esPlanActual: Boolean
+    ): MaterialCardView {
+        val context = requireContext()
+        val card = MaterialCardView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dpToPx(14)
+            }
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
+            radius = dpToPx(22).toFloat()
+            cardElevation = dpToPx(3).toFloat()
+            strokeWidth = if (esPlanActual) dpToPx(2) else dpToPx(1)
+            strokeColor = if (esPlanActual) {
+                ContextCompat.getColor(context, R.color.apex_orange)
+            } else {
+                0x1AFFFFFF
+            }
+        }
+
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(dpToPx(18), dpToPx(18), dpToPx(18), dpToPx(16))
+        }
+
+        val topRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val tvDuracionBadge = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundResource(R.drawable.bg_badge_vip_outline)
+            setPadding(dpToPx(12), dpToPx(4), dpToPx(12), dpToPx(4))
+            text = "${plan.duracionDias} DÍAS"
+            setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        topRow.addView(tvDuracionBadge)
+
+        if (esPlanActual) {
+            val tvActualBadge = TextView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginStart = dpToPx(8)
+                }
+                setBackgroundResource(R.drawable.bg_chip_selected)
+                setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4))
+                text = "TU PLAN ACTUAL"
+                setTextColor(ContextCompat.getColor(context, R.color.white))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+                setTypeface(typeface, Typeface.BOLD)
+            }
+            topRow.addView(tvActualBadge)
+        }
+
+        container.addView(topRow)
+
+        val tvNombre = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dpToPx(12)
+            }
+            text = plan.nombre
+            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        container.addView(tvNombre)
+
+        val desc = plan.descripcion?.takeIf { it.isNotBlank() }
+            ?: "Acceso completo a instalaciones y áreas de entrenamiento en sucursal ApexGym."
+
+        val tvDescripcion = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dpToPx(4)
+            }
+            text = desc
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+            setLineSpacing(0f, 1.15f)
+        }
+        container.addView(tvDescripcion)
+
+        val divider = View(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dpToPx(1)
+            ).apply {
+                topMargin = dpToPx(14)
+                bottomMargin = dpToPx(12)
+            }
+            setBackgroundColor(0x1FFFFFFF)
+        }
+        container.addView(divider)
+
+        val bottomRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val tvPrecio = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            text = "${formatearPrecio(plan.precio)} MXN"
+            setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        bottomRow.addView(tvPrecio)
+
+        val btnElegir = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                dpToPx(36)
+            )
+            gravity = Gravity.CENTER
+            setPadding(dpToPx(16), 0, dpToPx(16), 0)
+            setBackgroundResource(
+                if (esPlanActual) R.drawable.bg_badge_vip_outline else R.drawable.bg_badge_orange
+            )
+            text = if (esPlanActual) "Renovar" else "Solicitar plan"
+            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        bottomRow.addView(btnElegir)
+
+        container.addView(bottomRow)
+        card.addView(container)
+
+        card.setOnClickListener {
             Toast.makeText(
                 context,
-                "${servicio.nombre} • ${formatearPrecio(servicio.precio)} MXN",
-                Toast.LENGTH_SHORT
+                "${plan.nombre} (${plan.duracionDias} días • ${formatearPrecio(plan.precio)} MXN). Solicítalo en recepción.",
+                Toast.LENGTH_LONG
             ).show()
         }
 
         return card
+    }
+
+    private fun crearTarjetaHistorialMembresia(item: ClienteMembresiaDto): View {
+        val context = requireContext()
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dpToPx(10)
+            }
+            setBackgroundResource(R.drawable.bg_profile_option_card)
+            setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14))
+        }
+
+        val iconCircle = FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(dpToPx(40), dpToPx(40))
+            setBackgroundResource(R.drawable.bg_icon_circle_orange_outline)
+
+            val icon = ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
+                setImageResource(R.drawable.ic_membership_card)
+                ImageViewCompat.setImageTintList(
+                    this,
+                    ColorStateList.valueOf(ContextCompat.getColor(context, R.color.apex_orange))
+                )
+            }
+            addView(icon)
+        }
+        row.addView(iconCircle)
+
+        val infoCol = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dpToPx(12)
+                marginEnd = dpToPx(8)
+            }
+        }
+
+        val tvPlan = TextView(context).apply {
+            text = item.tipoMembresia?.nombre ?: "Membresía ApexGym"
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        infoCol.addView(tvPlan)
+
+        val tvFechas = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dpToPx(2)
+            }
+            text = "${formatearFechaCorta(item.fechaInicio)} al ${formatearFechaCorta(item.fechaFin)}"
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+        }
+        infoCol.addView(tvFechas)
+        row.addView(infoCol)
+
+        val estadoStr = (item.estadoMembresia?.nombre ?: "Registrada").uppercase(Locale.getDefault())
+        val tvEstado = TextView(context).apply {
+            text = estadoStr
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(
+                if (estadoStr.contains("VIGENTE")) {
+                    ContextCompat.getColor(context, R.color.apex_orange)
+                } else {
+                    ContextCompat.getColor(context, R.color.apex_text_secondary)
+                }
+            )
+        }
+        row.addView(tvEstado)
+
+        return row
+    }
+
+    private fun calcularDiasRestantes(fechaFinIso: String?): Long? {
+        if (fechaFinIso.isNullOrBlank()) return null
+        return try {
+            val fechaStr = fechaFinIso.take(10)
+            val fin = LocalDate.parse(fechaStr)
+            val hoy = LocalDate.now()
+            ChronoUnit.DAYS.between(hoy, fin)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun formatearFechaCorta(fechaIso: String?): String {
+        if (fechaIso.isNullOrBlank()) return "—"
+        return try {
+            val fechaStr = fechaIso.take(10)
+            val date = LocalDate.parse(fechaStr)
+            val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "MX"))
+            date.format(formatter)
+        } catch (_: Exception) {
+            fechaIso.take(10)
+        }
     }
 
     private fun formatearPrecio(monto: Double): String {

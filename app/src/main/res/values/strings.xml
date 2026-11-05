@@ -50,7 +50,7 @@
     <string name="register_has_account">¿Ya tienes una cuenta?</string>
     <string name="register_go_to_login">Ingresar</string>
 
-    <string name="home_greeting">Hola, Ángel</string>
+    <string name="home_greeting">Hola, José</string>
     <string name="home_welcome_subtitle">Bienvenido a ApexGym</string>
 
     <string name="notifications_title">Notificaciones</string>
@@ -83,7 +83,7 @@
     <string name="qr_membership_badge">MEMBRESÍA ACTIVA - PLAN BLACK VIP</string>
     <string name="qr_refresh_prefix">El código se actualiza en </string>
     <string name="qr_refresh_time_default">00:45 s</string>
-    <string name="qr_member_name">Ángel</string>
+    <string name="qr_member_name">José</string>
     <string name="qr_member_id">ID: #APX-84920</string>
     <string name="qr_instruction_text">Acerca este código al lector del torniquete\npara ingresar</string>
     <string name="qr_btn_generate">Generar nuevo código</string>

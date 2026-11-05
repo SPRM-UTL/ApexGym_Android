@@ -95,6 +95,50 @@ data class ServicioClienteDto(
     val imagenPublicId: String? = null
 )
 
+data class TipoMembresiaDto(
+    val id: Int = 0,
+    val nombre: String = "",
+    val descripcion: String? = null,
+    val duracionDias: Int = 30,
+    val precio: Double = 0.0,
+    val estado: String? = null
+)
+
+data class EstadoMembresiaDto(
+    val id: Int = 0,
+    val nombre: String = "",
+    val descripcion: String? = null,
+    val color: String? = null
+)
+
+data class ClienteMembresiaDto(
+    val id: Int = 0,
+    val clienteId: Int = 0,
+    val tipoMembresiaId: Int = 0,
+    val estadoMembresiaId: Int = 0,
+    val fechaInicio: String? = null,
+    val fechaFin: String? = null,
+    val renovacionAutomatica: Boolean = false,
+    val tipoMembresia: TipoMembresiaDto? = null,
+    val estadoMembresia: EstadoMembresiaDto? = null
+)
+
+data class ClientePerfilDto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val apellidoPaterno: String? = null,
+    val apellidoMaterno: String? = null,
+    val correo: String? = null,
+    val telefono: String? = null,
+    val fechaRegistro: String? = null
+)
+
+data class MiMembresiaResponseDto(
+    val cliente: ClientePerfilDto? = null,
+    val membresiaActiva: ClienteMembresiaDto? = null,
+    val historial: List<ClienteMembresiaDto>? = null
+)
+
 object RetrofitClient {
 
     const val BASE_URL = "http://192.168.100.10:3000/"

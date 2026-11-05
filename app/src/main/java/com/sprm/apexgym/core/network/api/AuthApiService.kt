@@ -6,9 +6,11 @@ import com.sprm.apexgym.core.network.client.ApiResponse
 import com.sprm.apexgym.core.network.client.CorreoRequest
 import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.LoginResponse
+import com.sprm.apexgym.core.network.client.MiMembresiaResponseDto
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RegistroRequest
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
+import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -37,4 +39,10 @@ interface AuthApiService {
 
     @GET("api/servicios/serviciosClientes/traer")
     suspend fun obtenerServiciosCliente(): Response<ApiResponse<List<ServicioClienteDto>>>
+
+    @GET("api/tipos-membresia/membresiasCliente")
+    suspend fun obtenerTiposMembresiaCliente(): Response<ApiResponse<List<TipoMembresiaDto>>>
+
+    @GET("api/clientes-membresias/mi-membresia")
+    suspend fun obtenerMiMembresia(): Response<ApiResponse<MiMembresiaResponseDto>>
 }
