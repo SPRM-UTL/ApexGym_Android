@@ -34,7 +34,7 @@ class RegistroFragment : Fragment(R.layout.fragment_registro) {
 
         txtLogin.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_login, LoginFragment())
+                .replace(R.id.fragment_container, LoginFragment())
                 .addToBackStack(null)
                 .commit()
         }
@@ -117,7 +117,7 @@ class RegistroFragment : Fragment(R.layout.fragment_registro) {
                 viewModel.contrasenia = txtContrasenia.text.toString()
 
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.fragment_login, ClienteFragment())
+                    .replace(R.id.fragment_container, ClienteFragment())
                     .addToBackStack(null)
                     .commit()
             }

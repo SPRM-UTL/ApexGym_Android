@@ -8,8 +8,9 @@ import com.sprm.apexgym.core.network.client.RegistroRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient.authService
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
-class RegistroViewModel: ViewModel() {
+class RegistroViewModel : ViewModel() {
 
     private val _mensaje = MutableLiveData<String>()
     val mensaje: LiveData<String> = _mensaje
@@ -59,7 +60,15 @@ class RegistroViewModel: ViewModel() {
                 if (response.isSuccessful) {
                     _mensaje.value = "Registro exitoso"
                 } else {
-                    _mensaje.value = "Error al registrar: ${response.code()}"
+                    val detalleError = try {
+                        val rawError = response.errorBody()?.string()
+                        if (!rawError.isNullOrBlank()) {
+                            JSONObject(rawError).optString("message").takeIf { it.isNotBlank() }
+                        } else null
+                    } catch (_: Exception) {
+                        null
+                    }
+                    _mensaje.value = detalleError ?: "Error al registrar: ${response.code()}"
                 }
             } catch (e: Exception) {
                 _mensaje.value = "Error de conexión: ${e.message}"
