@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/apex_bg_screen"
+    android:clipToPadding="false"
+    android:overScrollMode="never"
+    android:paddingBottom="100dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="18dp"
+        android:paddingTop="16dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/flClose"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:background="@drawable/bg_circle_white_elevated"
+                android:elevation="2dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_arrow_left"
+                    app:tint="@color/apex_text_primary" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Nuevo Seguimiento"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="46dp"
+                android:layout_height="46dp" />
+        </LinearLayout>
+
+        <!-- Prospect Quick Info -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/apex_card_dark"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="3dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/ivSegProspectAvatar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_circle_white_elevated"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_user_profile"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Apex.Circle"
+                    app:strokeColor="@color/apex_orange"
+                    app:strokeWidth="2dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvSegProspectNombre"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="María González"
+                        android:textColor="@color/white"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvSegProspectEstado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Estado: En Negociación"
+                        android:textColor="@color/apex_orange"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSegUltimoContacto"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:text="Último: hace 3 días"
+                    android:textColor="@color/apex_text_on_dark_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tipo de Seguimiento -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Tipo de Contacto"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/cgTipoContacto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:chipSpacing="8dp"
+                    android:padding="4dp"
+                    app:singleLine="false"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipLlamada"
+                        style="@style/Widget.Material3.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:checked="true"
+                        android:text="📞 Llamada Telefónica"
+                        android:textSize="13sp"
+                        app:chipBackgroundColor="@color/apex_chip_bg_selector"
+                        app:chipCornerRadius="100dp"
+                        app:chipStrokeColor="@color/apex_chip_stroke_selector"
+                        app:chipStrokeWidth="1.5dp"
+                        app:icon="@drawable/ic_call"
+                        app:iconTint="@color/apex_orange" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWhatsApp"
+                        style="@style/Widget.Material3.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:text="💬 WhatsApp"
+                        android:textSize="13sp"
+                        app:chipBackgroundColor="@color/apex_chip_bg_selector"
+                        app:chipCornerRadius="100dp"
+                        app:chipStrokeColor="@color/apex_chip_stroke_selector"
+                        app:chipStrokeWidth="1.5dp"
+                        app:icon="@drawable/ic_whatsapp"
+                        app:iconTint="#FF4CAF50" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEmail"
+                        style="@style/Widget.Material3.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:text="📧 Email"
+                        android:textSize="13sp"
+                        app:chipBackgroundColor="@color/apex_chip_bg_selector"
+                        app:chipCornerRadius="100dp"
+                        app:chipStrokeColor="@color/apex_chip_stroke_selector"
+                        app:chipStrokeWidth="1.5dp"
+                        app:icon="@drawable/ic_email"
+                        app:iconTint="@color/apex_orange" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipPresencial"
+                        style="@style/Widget.Material3.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:text="🏢 Visita Presencial"
+                        android:textSize="13sp"
+                        app:chipBackgroundColor="@color/apex_chip_bg_selector"
+                        app:chipCornerRadius="100dp"
+                        app:chipStrokeColor="@color/apex_chip_stroke_selector"
+                        app:chipStrokeWidth="1.5dp"
+                        app:icon="@drawable/ic_location"
+                        app:iconTint="@color/apex_orange" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipVideollamada"
+                        style="@style/Widget.Material3.Chip.Choice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checkable="true"
+                        android:text="📹 Videollamada"
+                        android:textSize="13sp"
+                        app:chipBackgroundColor="@color/apex_chip_bg_selector"
+                        app:chipCornerRadius="100dp"
+                        app:chipStrokeColor="@color/apex_chip_stroke_selector"
+                        app:chipStrokeWidth="1.5dp"
+                        app:icon="@drawable/ic_videocam"
+                        app:iconTint="@color/apex_orange" />
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Fecha y Hora -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Fecha y Hora"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        app:boxBackgroundMode="outline"
+                        app:boxStrokeColor="@color/apex_orange"
+                        app:boxStrokeWidth="2dp"
+                        app:cornerRadius="12dp"
+                        app:hintTextColor="@color/apex_text_secondary">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etFechaSeguimiento"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Fecha *"
+                            android:inputType="date"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="16sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        app:boxBackgroundMode="outline"
+                        app:boxStrokeColor="@color/apex_orange"
+                        app:boxStrokeWidth="2dp"
+                        app:cornerRadius="12dp"
+                        app:hintTextColor="@color/apex_text_secondary">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraSeguimiento"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Hora *"
+                            android:inputType="time"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="16sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/cbAhora"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/apex_orange"
+                    android:text="Ahora mismo"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Resultado del Seguimiento -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Resultado del Contacto"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="2dp"
+                    app:cornerRadius="12dp"
+                    app:hintTextColor="@color/apex_text_secondary">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvResultado"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:hint="Resultado *"
+                        android:inputType="none"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="2dp"
+                    app:cornerRadius="12dp"
+                    app:hintTextColor="@color/apex_text_secondary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etResumenConversacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="80dp"
+                        android:gravity="top"
+                        android:hint="Resumen de la conversación..."
+                        android:inputType="textMultiLine"
+                        android:maxLines="3"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Próxima Acción Requerida"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="13sp" />
+
+                    <androidx.appcompat.widget.AppCompatCheckBox
+                        android:id="@+id/cbRequiereAccion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:buttonTint="@color/apex_orange" />
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilProximaAccion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="2dp"
+                    app:cornerRadius="12dp"
+                    app:hintTextColor="@color/apex_text_secondary">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etProximaAccion"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:hint="Describe la próxima acción (ej. Enviar propuesta, Llamar en 2 días...)"
+                        android:inputType="text"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Próximo Seguimiento Programado -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Programar Próximo Seguimiento"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/cbProgramarProximo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:buttonTint="@color/apex_orange"
+                    android:text="Programar recordatorio para próximo seguimiento"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:id="@+id/llProximoSeguimiento"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:orientation="horizontal"
+                        android:weightSum="2">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            app:boxBackgroundMode="outline"
+                            app:boxStrokeColor="@color/apex_orange"
+                            app:boxStrokeWidth="2dp"
+                            app:cornerRadius="12dp"
+                            app:hintTextColor="@color/apex_text_secondary">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etProximaFecha"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:hint="Fecha"
+                                android:inputType="date"
+                                android:textColor="@color/apex_text_primary"
+                                android:textSize="16sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            app:boxBackgroundMode="outline"
+                            app:boxStrokeColor="@color/apex_orange"
+                            app:boxStrokeWidth="2dp"
+                            app:cornerRadius="12dp"
+                            app:hintTextColor="@color/apex_text_secondary">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etProximaHora"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:hint="Hora"
+                                android:inputType="time"
+                                android:textColor="@color/apex_text_primary"
+                                android:textSize="16sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:boxBackgroundMode="outline"
+                        app:boxStrokeColor="@color/apex_orange"
+                        app:boxStrokeWidth="2dp"
+                        app:cornerRadius="12dp"
+                        app:hintTextColor="@color/apex_text_secondary">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etProximaNota"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:hint="Nota para el recordatorio"
+                            android:inputType="text"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="8dp">
+
+            <Button
+                android:id="@+id/btnCancelar"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:text="Cancelar"
+                android:textAllCaps="false"
+                android:textColor="@color/apex_orange"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="28dp"
+                app:strokeColor="@color/apex_orange"
+                app:strokeWidth="2dp" />
+
+            <Button
+                android:id="@+id/btnGuardarSeguimiento"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:backgroundTint="@color/apex_orange"
+                android:text="Guardar Seguimiento"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
