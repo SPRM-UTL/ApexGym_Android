@@ -101,6 +101,9 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                 } catch (_: Exception) {
                 } finally {
                     RetrofitClient.cookieJar.clear()
+                    if (isAdded) {
+                        CartManager.vaciarCarrito(requireContext())
+                    }
 
                     if (isAdded) {
                         val hostFragmentManager = requireActivity().supportFragmentManager

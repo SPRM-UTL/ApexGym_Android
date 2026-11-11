@@ -186,7 +186,7 @@ data class ActualizarMiPerfilRequest(
 
 object RetrofitClient {
 
-    const val BASE_URL = "http://192.168.1.2:3000/"
+    const val BASE_URL = "http://192.168.100.10:3000/"
 
     private lateinit var appContext: Context
 

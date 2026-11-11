@@ -62,7 +62,7 @@
                         android:layout_marginEnd="8dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        app:layout_constraintEnd_toStartOf="@+id/flNotifications"
+                        app:layout_constraintEnd_toStartOf="@+id/flCartHeader"
                         app:layout_constraintStart_toEndOf="@id/flAvatar"
                         app:layout_constraintTop_toTopOf="@id/flAvatar">
 
@@ -84,9 +84,46 @@
                         android:text="@string/home_welcome_subtitle"
                         android:textColor="@color/apex_text_secondary"
                         android:textSize="13sp"
-                        app:layout_constraintEnd_toStartOf="@id/flNotifications"
+                        app:layout_constraintEnd_toStartOf="@id/flCartHeader"
                         app:layout_constraintStart_toStartOf="@id/llGreetingRow"
                         app:layout_constraintTop_toBottomOf="@id/llGreetingRow" />
+
+                    <FrameLayout
+                        android:id="@+id/flCartHeader"
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_circle_white_elevated"
+                        android:clickable="true"
+                        android:elevation="2dp"
+                        android:focusable="true"
+                        android:tag="cart_header_button"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/flNotifications"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <ImageView
+                            android:layout_width="21dp"
+                            android:layout_height="21dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Carrito de compras"
+                            android:src="@drawable/ic_shopping_cart"
+                            app:tint="@color/apex_text_primary" />
+
+                        <TextView
+                            android:id="@+id/tvCartHeaderBadge"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="top|end"
+                            android:background="@drawable/bg_circle_orange"
+                            android:gravity="center"
+                            android:tag="cart_header_badge"
+                            android:text="0"
+                            android:textColor="@color/white"
+                            android:textSize="9.5sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </FrameLayout>
 
                     <FrameLayout
                         android:id="@+id/flNotifications"

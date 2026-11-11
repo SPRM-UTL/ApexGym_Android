@@ -60,6 +60,7 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val args = arguments ?: Bundle()
+        val idProducto = args.getInt(ARG_ID, 0)
         val nombre = args.getString(ARG_NOMBRE, "Producto ApexGym")
         val categoria = args.getString(ARG_CATEGORIA, "General")
         val codigoBarras = args.getString(ARG_CODIGO, "")
@@ -161,13 +162,33 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnConfirmarProducto?.setOnClickListener {
-            val total = precioVenta * cantidadSeleccionada
+            val productoDto = ProductoClienteDto(
+                id = idProducto,
+                nombre = nombre,
+                codigoBarras = codigoBarras,
+                descripcion = descripcion,
+                precioVenta = precioVenta,
+                stockActual = stockActual,
+                stockMinimo = stockMinimo,
+                imagenUrl = imagenUrl,
+                categoria = com.sprm.apexgym.core.network.client.CategoriaProductoDto(
+                    id = 0,
+                    nombre = categoria
+                )
+            )
+            val resultado = CartManager.agregarProducto(
+                context = requireContext(),
+                producto = productoDto,
+                cantidadAgregar = cantidadSeleccionada
+            )
             Toast.makeText(
                 requireContext(),
-                "Solicitud lista: $cantidadSeleccionada x $nombre (${formatearPrecio(total)} MXN). Pasa a recepción.",
-                Toast.LENGTH_LONG
+                resultado.mensaje,
+                Toast.LENGTH_SHORT
             ).show()
-            dismiss()
+            if (resultado.exito) {
+                dismiss()
+            }
         }
     }
 
