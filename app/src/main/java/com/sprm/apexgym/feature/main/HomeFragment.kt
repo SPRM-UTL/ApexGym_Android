@@ -39,6 +39,7 @@ import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
+import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -98,6 +99,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 NotificationsBottomSheetFragment().show(
                     childFragmentManager,
                     NotificationsBottomSheetFragment.TAG
+                )
+            }
+        }
+
+        val flCart = view.findViewById<View>(R.id.flCart)
+        flCart?.setOnClickListener {
+            val existing = childFragmentManager.findFragmentByTag(CarritoBottomSheetFragment.TAG)
+            if (existing == null) {
+                CarritoBottomSheetFragment().show(
+                    childFragmentManager,
+                    CarritoBottomSheetFragment.TAG
                 )
             }
         }

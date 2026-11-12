@@ -31,11 +31,31 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
         binding.tvAlertCount.text = "1"
 
         binding.tvVerTodosMovimientos.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
-                .replace(R.id.fragment_container, MovimientosCajaFragment())
-                .addToBackStack(null)
-                .commit()
+            navegar(MovimientosCajaFragment())
         }
+
+        binding.btnAccionAbrirCaja.setOnClickListener {
+            navegar(AperturaCajaFragment())
+        }
+
+        binding.btnAccionCorteCaja.setOnClickListener {
+            navegar(CorteCajaFragment())
+        }
+
+        binding.btnAccionHistorialCortes.setOnClickListener {
+            navegar(HistorialCortesFragment())
+        }
+
+        binding.btnAccionConfigCaja.setOnClickListener {
+            navegar(ConfiguracionCajaFragment())
+        }
+    }
+
+    private fun navegar(fragment: androidx.fragment.app.Fragment) {
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 }

@@ -22,6 +22,7 @@ import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
 import com.sprm.apexgym.feature.notificaciones.ConfiguracionNotificacionesFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
+import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
 import com.sprm.apexgym.feature.visitas.VisitasListFragment
 import kotlinx.coroutines.launch
 
@@ -61,6 +62,7 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         val btnOpcionMiPerfil = view.findViewById<View>(R.id.btnOpcionMiPerfil)
         val btnOpcionNotificaciones = view.findViewById<View>(R.id.btnOpcionNotificaciones)
         val btnOpcionConfigNotificaciones = view.findViewById<View>(R.id.btnOpcionConfigNotificaciones)
+        val btnOpcionHistorialCompras = view.findViewById<View>(R.id.btnOpcionHistorialCompras)
         val btnOpcionEmpleados = view.findViewById<View>(R.id.btnOpcionEmpleados)
         val btnOpcionVisitas = view.findViewById<View>(R.id.btnOpcionVisitas)
         val btnOpcionRecepcion = view.findViewById<View>(R.id.btnOpcionRecepcion)
@@ -128,6 +130,10 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
         btnOpcionConfigNotificaciones?.setOnClickListener {
             navegarAFragment(ConfiguracionNotificacionesFragment())
+        }
+
+        btnOpcionHistorialCompras?.setOnClickListener {
+            navegarAFragment(HistorialComprasFragment())
         }
 
         btnOpcionEmpleados?.setOnClickListener {

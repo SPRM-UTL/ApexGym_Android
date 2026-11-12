@@ -20,6 +20,7 @@ import com.google.android.material.button.MaterialButton
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -164,10 +165,17 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
             val total = precioVenta * cantidadSeleccionada
             Toast.makeText(
                 requireContext(),
-                "Solicitud lista: $cantidadSeleccionada x $nombre (${formatearPrecio(total)} MXN). Pasa a recepción.",
-                Toast.LENGTH_LONG
+                "Agregado al carrito: $cantidadSeleccionada x $nombre (${formatearPrecio(total)} MXN)",
+                Toast.LENGTH_SHORT
             ).show()
             dismiss()
+            val existing = parentFragmentManager.findFragmentByTag(CarritoBottomSheetFragment.TAG)
+            if (existing == null) {
+                CarritoBottomSheetFragment().show(
+                    parentFragmentManager,
+                    CarritoBottomSheetFragment.TAG
+                )
+            }
         }
     }
 
