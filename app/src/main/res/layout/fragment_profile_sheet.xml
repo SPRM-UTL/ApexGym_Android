@@ -133,31 +133,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:background="@drawable/bg_logout_option_card"
+        android:background="@drawable/bg_profile_option_card"
         android:clickable="true"
         android:focusable="true"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="14dp">
-
-        <FrameLayout
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_circle_white_elevated">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_logout" />
-        </FrameLayout>
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="15dp">
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -165,8 +151,8 @@
                 android:id="@+id/tvCerrarSesionTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Cerrar Sesión"
-                android:textColor="#EF4444"
+                android:text="Ajustes"
+                android:textColor="@color/apex_text_primary"
                 android:textSize="15.5sp"
                 android:textStyle="bold" />
 
@@ -174,10 +160,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Salir de tu cuenta en este dispositivo"
+                android:text="Gestiona la configuración de la app"
                 android:textColor="@color/apex_text_secondary"
                 android:textSize="12.5sp" />
         </LinearLayout>
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_chevron_right"
+            app:tint="@color/apex_text_secondary" />
     </LinearLayout>
 
 </LinearLayout>

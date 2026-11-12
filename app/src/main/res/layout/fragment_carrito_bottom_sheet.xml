@@ -172,7 +172,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:layout_marginTop="18dp"
-                android:text="Confirmar Pedido"
+                android:text="Continuar"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 android:textSize="15.5sp"

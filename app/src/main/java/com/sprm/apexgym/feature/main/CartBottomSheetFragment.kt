@@ -79,13 +79,11 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
             val items = CartManager.obtenerItems(context)
             if (items.isEmpty()) return@setOnClickListener
 
-            CartManager.vaciarCarrito(context)
-            Toast.makeText(
-                context,
-                "Solicitud generada",
-                Toast.LENGTH_SHORT
-            ).show()
             dismiss()
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, CheckoutFragment())
+                .addToBackStack("checkout")
+                .commit()
         }
 
         val listener: () -> Unit = {
@@ -137,7 +135,7 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
 
         val total = CartManager.obtenerTotalPrecio(context)
         tvTotal?.text = "${formatearPrecio(total)} MXN"
-        btnProcederPago?.text = "Confirmar Pedido"
+        btnProcederPago?.text = "Continuar"
     }
 
     private fun crearTarjetaItemCarrito(item: CartItem): View {
