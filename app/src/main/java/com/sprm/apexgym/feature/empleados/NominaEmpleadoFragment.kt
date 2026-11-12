@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.empleados
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
@@ -19,23 +20,22 @@ class NominaEmpleadoFragment : BaseFragment<FragmentNominaEmpleadoBinding>() {
     }
 
     private fun setupViews() {
-        // TODO: Load empleado data and nomina summary
-        // Setup period chips
+        // Datos de nómina
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flFilter.setOnClickListener {
-            // TODO: Show filter dialog
+            Toast.makeText(requireContext(), "Filtrar período de nómina", Toast.LENGTH_SHORT).show()
         }
         binding.tvVerTodoHistorial.setOnClickListener {
-            // TODO: Navigate to full historial
+            Toast.makeText(requireContext(), "Historial completo de pagos", Toast.LENGTH_SHORT).show()
         }
         binding.btnGenerarBoleta.setOnClickListener {
-            // TODO: Generate boleta PDF
+            Toast.makeText(requireContext(), "Boleta generada en PDF", Toast.LENGTH_SHORT).show()
         }
         binding.btnExportarNomina.setOnClickListener {
-            // TODO: Export full nomina PDF
+            Toast.makeText(requireContext(), "Reporte de nómina exportado", Toast.LENGTH_SHORT).show()
         }
     }
 

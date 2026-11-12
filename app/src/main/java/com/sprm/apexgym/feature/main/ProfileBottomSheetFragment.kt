@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
@@ -15,6 +17,12 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.feature.auth.LoginFragment
+import com.sprm.apexgym.feature.caja.ResumenAperturaFragment
+import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
+import com.sprm.apexgym.feature.notificaciones.ConfiguracionNotificacionesFragment
+import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
+import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
+import com.sprm.apexgym.feature.visitas.VisitasListFragment
 import kotlinx.coroutines.launch
 
 class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
@@ -51,6 +59,12 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
         val btnCerrarProfileSheet = view.findViewById<View>(R.id.btnCerrarProfileSheet)
         val btnOpcionMiPerfil = view.findViewById<View>(R.id.btnOpcionMiPerfil)
+        val btnOpcionNotificaciones = view.findViewById<View>(R.id.btnOpcionNotificaciones)
+        val btnOpcionConfigNotificaciones = view.findViewById<View>(R.id.btnOpcionConfigNotificaciones)
+        val btnOpcionEmpleados = view.findViewById<View>(R.id.btnOpcionEmpleados)
+        val btnOpcionVisitas = view.findViewById<View>(R.id.btnOpcionVisitas)
+        val btnOpcionRecepcion = view.findViewById<View>(R.id.btnOpcionRecepcion)
+        val btnOpcionCaja = view.findViewById<View>(R.id.btnOpcionCaja)
         val btnOpcionCerrarSesion = view.findViewById<View>(R.id.btnOpcionCerrarSesion)
         val tvCerrarSesionTitulo = view.findViewById<TextView>(R.id.tvCerrarSesionTitulo)
         val tvProfileSheetName = view.findViewById<TextView>(R.id.tvProfileSheetName)
@@ -87,6 +101,49 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                     EditProfileBottomSheetFragment.TAG
                 )
             }
+        }
+
+        fun navegarAFragment(fragmento: Fragment) {
+            if (cerrandoSesion || !isAdded) return
+
+            val hostFm = requireActivity().supportFragmentManager
+
+            dismissAllowingStateLoss()
+
+            hostFm.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_container, fragmento)
+                .addToBackStack(null)
+                .commit()
+        }
+
+        btnOpcionNotificaciones?.setOnClickListener {
+            navegarAFragment(NotificacionesListFragment())
+        }
+
+        btnOpcionConfigNotificaciones?.setOnClickListener {
+            navegarAFragment(ConfiguracionNotificacionesFragment())
+        }
+
+        btnOpcionEmpleados?.setOnClickListener {
+            navegarAFragment(EmpleadosListFragment())
+        }
+
+        btnOpcionVisitas?.setOnClickListener {
+            navegarAFragment(VisitasListFragment())
+        }
+
+        btnOpcionRecepcion?.setOnClickListener {
+            navegarAFragment(RecepcionDashboardFragment())
+        }
+
+        btnOpcionCaja?.setOnClickListener {
+            navegarAFragment(ResumenAperturaFragment())
         }
 
         btnOpcionCerrarSesion?.setOnClickListener {

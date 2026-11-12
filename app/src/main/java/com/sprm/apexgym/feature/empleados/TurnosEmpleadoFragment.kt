@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.empleados
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
@@ -20,17 +21,16 @@ class TurnosEmpleadoFragment : BaseFragment<FragmentTurnosEmpleadoBinding>() {
     }
 
     private fun setupViews() {
-        // TODO: Load empleado data
-        // Setup tab layout with ViewPager2
+        // Vista de turnos
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flAddTurno.setOnClickListener {
-            // TODO: Navigate to create turno
+            Toast.makeText(requireContext(), "Asignar nuevo turno", Toast.LENGTH_SHORT).show()
         }
         binding.tvVerTodosTurnos.setOnClickListener {
-            // TODO: Navigate to full turnos list
+            Toast.makeText(requireContext(), "Historial completo de turnos", Toast.LENGTH_SHORT).show()
         }
     }
 

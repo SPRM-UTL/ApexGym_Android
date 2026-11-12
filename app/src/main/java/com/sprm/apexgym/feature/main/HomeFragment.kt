@@ -251,6 +251,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(goToMembresiaListener)
         view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(goToMembresiaListener)
         view.findViewById<View>(R.id.chipHomeMembresia)?.setOnClickListener(goToMembresiaListener)
+        view.findViewById<View>(R.id.chipHomePagos)?.setOnClickListener {
+            val existing = childFragmentManager.findFragmentByTag(ProfileBottomSheetFragment.TAG)
+            if (existing == null) {
+                ProfileBottomSheetFragment().show(
+                    childFragmentManager,
+                    ProfileBottomSheetFragment.TAG
+                )
+            }
+        }
 
         val goToProductosListener = View.OnClickListener {
             animateBottomNavSelection(

@@ -84,100 +84,501 @@
         android:layout_marginTop="16dp"
         android:background="@color/apex_stroke_light" />
 
-    <LinearLayout
-        android:id="@+id/btnOpcionMiPerfil"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_profile_option_card"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="18dp"
-        android:paddingVertical="15dp">
+        android:overScrollMode="never">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="vertical">
 
+            <!-- Mi Perfil -->
+            <LinearLayout
+                android:id="@+id/btnOpcionMiPerfil"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_profile_option_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_icon_circle_orange_outline">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_user_profile"
+                        app:tint="@color/apex_orange" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mi Perfil"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Ver y editar tu información personal"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/apex_text_secondary" />
+            </LinearLayout>
+
+            <!-- Centro de Notificaciones -->
+            <LinearLayout
+                android:id="@+id/btnOpcionNotificaciones"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_profile_option_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_circle_blue_light">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_bell_outline"
+                        app:tint="#1976D2" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Notificaciones"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Centro de avisos, alertas y recordatorios"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/apex_text_secondary" />
+            </LinearLayout>
+
+            <!-- Configuración de Notificaciones -->
+            <LinearLayout
+                android:id="@+id/btnOpcionConfigNotificaciones"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_profile_option_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_circle_gray_light">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_settings"
+                        app:tint="@color/apex_text_primary" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ajustes de Notificaciones"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Canales, sonidos, vibración y no molestar"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/apex_text_secondary" />
+            </LinearLayout>
+
+            <!-- Separador Sección Staff -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Mi Perfil"
-                android:textColor="@color/apex_text_primary"
-                android:textSize="15.5sp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="4dp"
+                android:text="ADMINISTRACIÓN Y STAFF"
+                android:textColor="@color/apex_orange"
+                android:textSize="11.5sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- Gestión de Empleados -->
+            <LinearLayout
+                android:id="@+id/btnOpcionEmpleados"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Ver y editar tu información personal"
-                android:textColor="@color/apex_text_secondary"
-                android:textSize="12.5sp" />
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_profile_option_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_circle_green_light">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_user_add"
+                        app:tint="#2E7D32" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Gestión de Empleados"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Personal, horarios, turnos, nómina y permisos"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/apex_text_secondary" />
+            </LinearLayout>
+
+            <!-- Visitas / CRM -->
+            <LinearLayout
+                android:id="@+id/btnOpcionVisitas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_profile_option_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_circle_purple_light">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_calendar_event"
+                        app:tint="#6A1B9A" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Visitas y Prospectos (CRM)"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Registro y seguimiento a nuevos socios"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/apex_text_secondary" />
+            </LinearLayout>
+
+            <!-- Recepción / Control de Accesos -->
+		<LinearLayout
+		    android:id="@+id/btnOpcionRecepcion"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_marginTop="10dp"
+		    android:background="@drawable/bg_profile_option_card"
+		    android:clickable="true"
+		    android:focusable="true"
+		    android:gravity="center_vertical"
+		    android:orientation="horizontal"
+		    android:paddingHorizontal="18dp"
+		    android:paddingVertical="14dp">
+
+		    <FrameLayout
+		        android:layout_width="38dp"
+		        android:layout_height="38dp"
+		        android:background="@drawable/bg_circle_orange_light">
+
+		        <ImageView
+		            android:layout_width="18dp"
+		            android:layout_height="18dp"
+		            android:layout_gravity="center"
+		            android:contentDescription="@null"
+		            android:src="@drawable/ic_qr_scanner"
+		            app:tint="@color/apex_orange" />
+		    </FrameLayout>
+
+		    <LinearLayout
+		        android:layout_width="0dp"
+		        android:layout_height="wrap_content"
+		        android:layout_marginStart="14dp"
+		        android:layout_weight="1"
+		        android:orientation="vertical">
+
+		        <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="Control de Accesos"
+		            android:textColor="@color/apex_text_primary"
+		            android:textSize="15.5sp"
+		            android:textStyle="bold" />
+
+		        <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:layout_marginTop="2dp"
+		            android:text="Gestión de entradas de socios"
+		            android:textColor="@color/apex_text_secondary"
+		            android:textSize="12.5sp" />
+		    </LinearLayout>
+
+		    <ImageView
+		        android:layout_width="18dp"
+		        android:layout_height="18dp"
+		        android:contentDescription="@null"
+		        android:src="@drawable/ic_chevron_right"
+		        app:tint="@color/apex_text_secondary" />
+		</LinearLayout>
+
+		<!-- Caja / Finanzas -->
+		<LinearLayout
+		    android:id="@+id/btnOpcionCaja"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_marginTop="10dp"
+		    android:background="@drawable/bg_profile_option_card"
+		    android:clickable="true"
+		    android:focusable="true"
+		    android:gravity="center_vertical"
+		    android:orientation="horizontal"
+		    android:paddingHorizontal="18dp"
+		    android:paddingVertical="14dp">
+
+		    <FrameLayout
+		        android:layout_width="38dp"
+		        android:layout_height="38dp"
+		        android:background="@drawable/bg_circle_gray_light">
+
+		        <ImageView
+		            android:layout_width="18dp"
+		            android:layout_height="18dp"
+		            android:layout_gravity="center"
+		            android:contentDescription="@null"
+		            android:src="@drawable/ic_wallet_card"
+		            app:tint="@color/apex_text_primary" />
+		    </FrameLayout>
+
+		    <LinearLayout
+		        android:layout_width="0dp"
+		        android:layout_height="wrap_content"
+		        android:layout_marginStart="14dp"
+		        android:layout_weight="1"
+		        android:orientation="vertical">
+
+		        <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:text="Control de Caja"
+		            android:textColor="@color/apex_text_primary"
+		            android:textSize="15.5sp"
+		            android:textStyle="bold" />
+
+		        <TextView
+		            android:layout_width="wrap_content"
+		            android:layout_height="wrap_content"
+		            android:layout_marginTop="2dp"
+		            android:text="Apertura, movimientos y cierres"
+		            android:textColor="@color/apex_text_secondary"
+		            android:textSize="12.5sp" />
+		    </LinearLayout>
+
+		    <ImageView
+		        android:layout_width="18dp"
+		        android:layout_height="18dp"
+		        android:contentDescription="@null"
+		        android:src="@drawable/ic_chevron_right"
+		        app:tint="@color/apex_text_secondary" />
+		</LinearLayout>
+
+		<!-- Cerrar Sesión -->
+            <LinearLayout
+                android:id="@+id/btnOpcionCerrarSesion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_logout_option_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="14dp">
+
+                <FrameLayout
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:background="@drawable/bg_circle_white_elevated">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_logout" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvCerrarSesionTitulo"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Cerrar Sesión"
+                        android:textColor="#EF4444"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Salir de tu cuenta en este dispositivo"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+            </LinearLayout>
+
         </LinearLayout>
-
-        <ImageView
-            android:layout_width="18dp"
-            android:layout_height="18dp"
-            android:contentDescription="@null"
-            android:src="@drawable/ic_chevron_right"
-            app:tint="@color/apex_text_secondary" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/btnOpcionCerrarSesion"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_logout_option_card"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="14dp">
-
-        <FrameLayout
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            android:background="@drawable/bg_circle_white_elevated">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_logout" />
-        </FrameLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tvCerrarSesionTitulo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Cerrar Sesión"
-                android:textColor="#EF4444"
-                android:textSize="15.5sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Salir de tu cuenta en este dispositivo"
-                android:textColor="@color/apex_text_secondary"
-                android:textSize="12.5sp" />
-        </LinearLayout>
-    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>
