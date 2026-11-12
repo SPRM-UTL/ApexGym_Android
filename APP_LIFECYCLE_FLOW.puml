@@ -1,0 +1,373 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam monochrome false
+
+' Colores personalizados
+!define APEX_ORANGE #FF6B00
+!define APEX_DARK #1A1A2E
+!define APEX_CARD_DARK #1E1E3A
+!define APEX_TEXT_PRIMARY #FFFFFF
+!define APEX_TEXT_SECONDARY #B0B0C8
+!define APEX_BG_SCREEN #0F0F1A
+!define APEX_GREEN #4CAF50
+!define APEX_RED #F44336
+!define APEX_BLUE #1976D2
+!define APEX_PURPLE #6A1B9A
+
+' Estilos
+skinparam rectangle {
+    BackgroundColor<<start>> APEX_ORANGE
+    BorderColor<<start>> APEX_ORANGE
+    FontColor<<start>> #FFFFFF
+    FontStyle<<start>> bold
+
+    BackgroundColor<<end>> APEX_RED
+    BorderColor<<end>> APEX_RED
+    FontColor<<end>> #FFFFFF
+    FontStyle<<end>> bold
+
+    BackgroundColor<<process>> #E8F5E9
+    BorderColor<<process>> APEX_GREEN
+    FontColor<<process>> #1B5E20
+
+    BackgroundColor<<decision>> #FFF3E0
+    BorderColor<<decision>> APEX_ORANGE
+    FontColor<<decision>> #E65100
+
+    BackgroundColor<<screen>> #E3F2FD
+    BorderColor<<screen>> APEX_BLUE
+    FontColor<<screen>> #0D47A1
+
+    BackgroundColor<<bottomsheet>> #F3E5F5
+    BorderColor<<bottomsheet>> APEX_PURPLE
+    FontColor<<bottomsheet>> #4A148C
+
+    BackgroundColor<<fragment>> #ECEFF1
+    BorderColor<<fragment>> #607D8B
+    FontColor<<fragment>> #263238
+}
+
+skinparam arrow {
+    Color APEX_DARK
+    FontColor APEX_DARK
+    Thickness 1.5
+}
+
+title **ApexGym Android - Ciclo de Vida y Flujo de Navegación**\n<color:#666><size:11>Aplicación de gestión de gimnasio - Cliente & Staff</size></color>
+
+' ============================================================
+' INICIO DE LA APLICACIÓN
+' ============================================================
+start
+:App Launch;
+:MainActivity.onCreate();
+:Inicializar RetrofitClient;
+if (savedInstanceState == null?) then (yes)
+    :Mostrar LoginFragment;
+else (no)
+    :Restaurar estado previo;
+endif
+
+' ============================================================
+' AUTENTICACIÓN
+' ============================================================
+partition "🔐 AUTENTICACIÓN" {
+    :LoginFragment;
+    note right: fragment_login.xml\nPOST /api/clientes/verificarCredenciales
+
+    if (Usuario ingresa credenciales?) then (sí)
+        :Validar email/contraseña;
+        if (Válido?) then (sí)
+            :Llamar API Login;
+            if (responseFlag == 0?) then (éxito)
+                :Guardar sesión/cookies;
+                :Navegar a HomeFragment;
+            else (error)
+                :Mostrar error del servidor;
+                :Permanecer en Login;
+            endif
+        else (no)
+            :Mostrar error validación;
+        endif
+    else (no)
+        :Clic en "Registrarse";
+        :Navegar a RegisterFragment;
+    endif
+
+    :RegisterFragment;
+    note right: Registro de nuevo cliente\n(Datos personales + contacto)
+    if (Registro exitoso?) then (sí)
+        :Volver a LoginFragment;
+    else (no)
+        :Mostrar error;
+    endif
+}
+
+' ============================================================
+' PANTALLA PRINCIPAL (HOME) - Cliente
+' ============================================================
+partition "🏠 HOME FRAGMENT (Cliente)" {
+    :HomeFragment.onViewCreated();
+    note right: fragment_home.xml\nBottom Navigation: 4 tabs\n\n1. Inicio (0)\n2. Membresía (1)\n3. Tienda (2)\n4. Perfil (3)
+
+    :Cargar catálogo productos/servicios;
+    :Cargar membresía activa;
+    :Renderizar UI por tab activo;
+
+    fork
+        :Tab 0 - INICIO;
+        note right: • Saludo personalizado\n• Acceso rápido QR\n• Productos populares\n• Chips: Membresía, Tienda, Servicios
+    fork again
+        :Tab 1 - MEMBRESÍA;
+        note right: • Estado membresía actual\n• Días restantes\n• Historial planes\n• Lista planes disponibles\n• Botón "Solicitar plan"
+    fork again
+        :Tab 2 - TIENDA;
+        note right: • Buscador + Filtros chips\n• Grid productos (2 cols)\n• Categorías dinámicas\n• Stock visible
+    fork again
+        :Tab 3 - PERFIL;
+        note right: (Se accede via avatar click)\n• BottomSheet Profile\n• Editar perfil\n• Notificaciones\n• Configuración
+    endfork
+
+    :Selección de tab (click);
+    if (Tab == 1?) then (Membresía)
+        :cargarMembresiaDesdeBackend();
+    else (Otros)
+        :cargarCatalogoDesdeBackend();
+    endif
+
+    :Animación BottomNav Pill;
+    :TransitionManager (AutoTransition);
+}
+
+' ============================================================
+' ACCESO QR (Modal en Home)
+' ============================================================
+partition "📱 ACCESO QR (Modal Fullscreen)" {
+    :Click FAB QR / Chip "Acceso QR";
+    :Mostrar sección QR (llQrAccessSection);
+    note right: Animación slide-up\nOculta header y tabs\nMuestra código QR grande
+
+    :Generar/Actualizar QR;
+    note right: Llama API generar QR acceso\nMuestra código + timer
+
+    if (Click "Cerrar" o Back?) then (sí)
+        :Volver a tab anterior;
+        :Restaurar UI normal;
+    endif
+}
+
+' ============================================================
+' BOTTOM SHEETS (Modales desde Home)
+' ============================================================
+partition "📋 BOTTOM SHEETS" {
+    fork
+        :Click Campana Notificaciones;
+        :NotificationsBottomSheetFragment;
+        note right: Lista notificaciones\nMarcar leídas\nNavegar a detalle
+    fork again
+        :Click Avatar Perfil;
+        :ProfileBottomSheetFragment;
+        note right: Info usuario\n• Editar perfil\n• Config notificaciones\n• Cerrar sesión
+    fork again
+        :Click Producto/Servicio;
+        :ProductDetailBottomSheetFragment\n/ ServiceDetailBottomSheetFragment;
+        note right: Detalle completo\n• Imagen, descripción\n• Precio, stock\n• Botón "Agregar al carrito"
+    endfork
+}
+
+' ============================================================
+' FLUJO CARRITO / PAGO (Desde Tienda)
+' ============================================================
+partition "🛒 CARRITO Y PAGO" {
+    :Agregar items al carrito;
+    :Nav a CarritoFragment;
+    note right: fragment_carrito.xml\nResumen items + totales
+
+    :Seleccionar método pago;
+    if (Pago mixto?) then (sí)
+        :PagoMixtoFragment;
+        note right: fragment_pago_mixto.xml\nRepartir monto entre\nmúltiples métodos
+    else (no)
+        :PagoUnicoFragment;
+        note right: Pago simple 1 método
+    endif
+
+    :Confirmar pago;
+    :Llamar API procesar pago;
+    if (Éxito?) then (sí)
+        :Mostrar confirmación;
+        :Limpiar carrito;
+        :Volver a Home;
+    else (no)
+        :Mostrar error;
+    endif
+}
+
+' ============================================================
+' ÁREA STAFF / EMPLEADOS (Navegación separada)
+' ============================================================
+partition "👨‍💼 MÓDULO STAFF - EMPLEADOS" {
+    note right: Acceso desde MainActivity\n(o deep link / rol staff)
+
+    :EmpleadosListFragment;
+    note right: Lista empleados\n• Buscar, filtrar\n• Estados: Activo/Inactivo
+
+    fork
+        :Click empleado → EmpleadoDetalleFragment;
+        note right: Info completa\n• Datos personales\n• Contacto, docs\n• Botones acción
+    fork again
+        :Crear/Editar → CrearEditarEmpleadoFragment;
+        note right: Formulario completo\nValidaciones\nFoto perfil
+    fork again
+        :HorarioEmpleadoFragment;
+        note right: Semanal/mensual\nTurnos, descansos\nCopiar semana
+    fork again
+        :AsistenciasEmpleadoFragment;
+        note right: Historial accesos\nFiltros fecha/tipo\nExportar
+    fork again
+        :TurnosEmpleadoFragment;
+        note right: Asignar turnos\nPlantillas\nConflictos
+    fork again
+        :PermisosEmpleadoFragment;
+        note right: Solicitudes permiso\nAprobar/Rechazar\nTipos: Vacaciones, licencia
+    fork again
+        :NominaEmpleadoFragment;
+        note right: Cálculo nómina\nHoras extra, bonos\nComprobantes PDF
+    endfork
+}
+
+' ============================================================
+' MÓDULO VISITAS / PROSPECTOS
+' ============================================================
+partition "👥 MÓDULO VISITAS / CRM" {
+    :VisitasListFragment;
+    note right: Kanban / Lista\nFiltros: Estado, Fecha, Asesor
+
+    fork
+        :Nueva visita → CrearEditarVisitaFragment;
+        note right: Datos prospecto\nOrigen, interés\nPróximo seguimiento
+    fork again
+        :Click visita → VisitaDetalleFragment;
+        note right: Timeline completo\nNotas, adjuntos\nHistórico contactos
+    fork again
+        :Seguimiento → SeguimientoVisitaFragment;
+        note right: fragment_seguimiento_visita.xml\n• Tipo contacto (chips)\n• Fecha/hora\n• Resultado (dropdown)\n• Programar próximo
+    endfork
+}
+
+' ============================================================
+' NOTIFICACIONES Y CONFIGURACIÓN
+' ============================================================
+partition "🔔 NOTIFICACIONES Y AJUSTES" {
+    :NotificacionesListFragment;
+    note right: Lista paginada\nFiltros: Leídas/No leídas\nPull-to-refresh
+
+    :NotificacionDetalleFragment;
+    note right: Contenido completo\nAcciones contextuales\nMarcar leída
+
+    :ConfiguracionNotificacionesFragment;
+    note right: fragment_configuracion_notificaciones.xml\n• Master toggle\n• 5 categorías (switches)\n• Sonido/Vibración/Tono\n• Horario No Molestar
+}
+
+' ============================================================
+' ACCESOS Y CAJA (Staff)
+' ============================================================
+partition "🚪 ACCESOS Y CAJA (Recepción)" {
+    :AccesoManualFragment;
+    note right: fragment_acceso_manual.xml\nBuscar cliente (DNI, nombre, código)\nValidar membresía\nPermitir/Denegar acceso
+
+    :AsistenciaDetalleBottomSheet;
+    note right: fragment_asistencia_detalle_sheet.xml\nDetalle acceso individual\nRegistrar salida\nVer perfil cliente
+
+    :CorteCajaFragment;
+    note right: fragment_corte_caja.xml\n• Resumen financiero\n• Ventas por método\n• Arqueo efectivo\n• Diferencias\n• Finalizar corte
+}
+
+' ============================================================
+' CICLO DE VIDA FRAGMENTS
+' ============================================================
+partition "🔄 CICLO DE VIDA ANDROID (Fragmentos)" {
+    :onAttach(Context);
+    :onCreate(Bundle?);
+    :onCreateView() → Inflate Layout;
+    :onViewCreated(View, Bundle?);
+    note right: **Punto clave**:\n- findViewById\n- Setup listeners\n- Cargar datos API\n- Configurar RecyclerViews
+    :onStart();
+    :onResume();
+    note right: **APP VISIBLE & INTERACTIVA**
+
+    fork
+        :Usuario navega fuera;
+        :onPause();
+        :onStop();
+        :onDestroyView();
+        note right: Limpiar:\n- Animators\n- Listeners\n- Coroutines (lifecycleScope)
+    fork again
+        :Config change (rotación);
+        :onSaveInstanceState();
+        :onDestroyView();
+        :onCreateView() → Re-inflate;
+        :onViewCreated() → Restore state;
+    endfork
+
+    :onDestroy();
+    :onDetach();
+}
+
+' ============================================================
+' MANEJO DE ERRORES Y ESTADOS
+' ============================================================
+partition "⚠️ MANEJO DE ERRORES / ESTADOS" {
+    :Llamada API (Retrofit);
+    if (response.isSuccessful?) then (sí)
+        if (responseFlag == 0?) then (éxito)
+            :Procesar data;
+            :Actualizar UI;
+        else (error negocio)
+            :Extraer mensaje error;
+            :Toast/Snackbar error;
+        endif
+    else (error red/HTTP)
+        if (IOException?) then (sí)
+            :Toast "Sin conexión";
+        else (otro)
+            :Toast "Error: ${message}";
+        endif
+    endif
+
+    :Estados UI:
+    note right: • Loading (ProgressBar)\n• Empty State (ilustración + texto)\n• Error State (reintentar)\n• Content State (datos)
+}
+
+' ============================================================
+' NAVEGACIÓN Y BACK STACK
+' ============================================================
+partition "🧭 NAVEGACIÓN - BACK STACK" {
+    :FragmentTransaction.replace();
+    note right: .replace(R.id.fragment_container, NewFragment())\n.addToBackStack(tag) ← Opcional
+
+    :BottomSheetDialogFragment.show();
+    note right: .show(childFragmentManager, TAG)\nNO va al back stack principal\nSe cierra con back/outside touch
+
+    :onBackPressed();
+    if (BottomSheet visible?) then (sí)
+        :Dismiss BottomSheet;
+    else (no)
+        if (BackStack > 0?) then (sí)
+            :popBackStack();
+        else (no)
+            :Salir app / MainActivity.finish();
+        endif
+    endif
+}
+
+' ============================================================
+' FIN
+' ============================================================
+:App Terminated / Process Killed;
+stop
+
+@enduml

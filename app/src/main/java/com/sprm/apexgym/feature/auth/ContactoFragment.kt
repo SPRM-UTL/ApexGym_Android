@@ -30,7 +30,7 @@ class ContactoFragment : Fragment(R.layout.fragment_contacto) {
 
         txtLogin.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_login, LoginFragment())
+                .replace(R.id.fragment_container, LoginFragment())
                 .addToBackStack(null)
                 .commit()
         }
