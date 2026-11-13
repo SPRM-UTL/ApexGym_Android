@@ -5,35 +5,40 @@
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
     android:clipToPadding="false"
+    android:fillViewport="true"
     android:overScrollMode="never"
-    android:paddingBottom="100dp">
+    android:paddingBottom="40dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="18dp"
-        android:paddingTop="16dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp"
+        android:tag="checkout_root_container">
 
-        <!-- Header with Back -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/flBack"
-                android:layout_width="46dp"
-                android:layout_height="46dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:background="@drawable/bg_circle_white_elevated"
-                android:elevation="2dp">
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:layout_gravity="center"
+                    android:contentDescription="Regresar"
                     android:src="@drawable/ic_arrow_left"
                     app:tint="@color/apex_text_primary" />
             </FrameLayout>
@@ -43,119 +48,62 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:text="Pago"
+                android:text="Finaliza tu compra"
                 android:textColor="@color/apex_text_primary"
-                android:textSize="20sp"
+                android:textSize="19sp"
                 android:textStyle="bold" />
 
             <View
-                android:layout_width="46dp"
-                android:layout_height="46dp" />
+                android:layout_width="44dp"
+                android:layout_height="44dp" />
         </LinearLayout>
 
-        <!-- Step Indicator -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <!-- Step 1: Carrito -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <View
-                    android:id="@+id/vStep1"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/bg_step_active" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Carrito"
-                    android:textColor="@color/apex_text_secondary"
-                    android:textSize="10sp" />
-            </LinearLayout>
+            android:visibility="gone">
 
             <View
-                android:layout_width="40dp"
-                android:layout_height="2dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginHorizontal="8dp"
-                android:background="@color/apex_stroke_light" />
-
-            <!-- Step 2: Pago (Active) -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <View
-                    android:id="@+id/vStep2"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/bg_step_active" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Pago"
-                    android:textColor="@color/apex_orange"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+                android:id="@+id/vStep1"
+                android:layout_width="1dp"
+                android:layout_height="1dp" />
 
             <View
-                android:layout_width="40dp"
-                android:layout_height="2dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginHorizontal="8dp"
-                android:background="@color/apex_stroke_light" />
+                android:id="@+id/vStep2"
+                android:layout_width="1dp"
+                android:layout_height="1dp" />
 
-            <!-- Step 3: Confirmación -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <View
-                    android:id="@+id/vStep3"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:background="@drawable/bg_step_inactive" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Confirmación"
-                    android:textColor="@color/apex_text_secondary"
-                    android:textSize="10sp" />
-            </LinearLayout>
+            <View
+                android:id="@+id/vStep3"
+                android:layout_width="1dp"
+                android:layout_height="1dp" />
         </LinearLayout>
 
-        <!-- Order Summary -->
-        <com.google.android.material.card.MaterialCardView
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="Elige tu forma de pago"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/rvPaymentMethods"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
+            android:orientation="vertical" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
             app:cardBackgroundColor="@color/white"
             app:cardCornerRadius="16dp"
-            app:cardElevation="1dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/apex_stroke_light">
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -166,18 +114,18 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Resumen del Pedido"
+                    android:text="Detalle de tu compra"
                     android:textColor="@color/apex_text_primary"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
-                <androidx.recyclerview.widget.RecyclerView
+                <LinearLayout
                     android:id="@+id/rvOrderSummary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:layout_marginBottom="12dp"
-                    android:nestedScrollingEnabled="false" />
+                    android:orientation="vertical" />
 
                 <View
                     android:layout_width="match_parent"
@@ -188,22 +136,23 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Total a Pagar"
+                        android:text="Total a pagar"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp"
+                        android:textSize="16.5sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvTotalPagar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="S/ 167.14"
+                        android:text="$0 MXN"
                         android:textColor="@color/apex_orange"
                         android:textSize="20sp"
                         android:textStyle="bold" />
@@ -408,12 +357,15 @@
         <Button
             android:id="@+id/btnContinuar"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:backgroundTint="@color/apex_orange"
-            android:text="Continuar"
+            android:layout_height="54dp"
+            android:text="Pagar y finalizar"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:textSize="15.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/apex_orange"
+            app:cornerRadius="27dp"
+            app:elevation="2dp" />
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

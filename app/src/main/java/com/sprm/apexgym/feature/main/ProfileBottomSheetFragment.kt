@@ -28,8 +28,6 @@ import kotlinx.coroutines.launch
 
 class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
-    private var cerrandoSesion = false
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -69,6 +67,7 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         val btnOpcionCaja = view.findViewById<View>(R.id.btnOpcionCaja)
         val btnOpcionCerrarSesion = view.findViewById<View>(R.id.btnOpcionCerrarSesion)
         val tvCerrarSesionTitulo = view.findViewById<TextView>(R.id.tvCerrarSesionTitulo)
+        val btnOpcionAjustes = view.findViewById<View>(R.id.btnOpcionCerrarSesion)
         val tvProfileSheetName = view.findViewById<TextView>(R.id.tvProfileSheetName)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -89,11 +88,10 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnCerrarProfileSheet?.setOnClickListener {
-            if (!cerrandoSesion) dismiss()
+            dismiss()
         }
 
         btnOpcionMiPerfil?.setOnClickListener {
-            if (cerrandoSesion) return@setOnClickListener
             val fm = parentFragmentManager
             dismissAllowingStateLoss()
             val existing = fm.findFragmentByTag(EditProfileBottomSheetFragment.TAG)
@@ -184,6 +182,15 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                     }
                 }
             }
+        }
+        
+        btnOpcionAjustes?.setOnClickListener {
+            val hostFragmentManager = requireActivity().supportFragmentManager
+            dismissAllowingStateLoss()
+            hostFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, SettingsFragment())
+                .addToBackStack("settings")
+                .commit()
         }
     }
 
