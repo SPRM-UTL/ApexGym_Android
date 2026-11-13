@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.empleados
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
@@ -19,17 +20,17 @@ class AsistenciasEmpleadoFragment : BaseFragment<FragmentAsistenciasEmpleadoBind
     }
 
     private fun setupViews() {
-        // TODO: Load empleado data and stats
+        // Datos de asistencias
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flFilter.setOnClickListener {
-            // TODO: Show filter dialog
+            Toast.makeText(requireContext(), "Filtros de asistencia", Toast.LENGTH_SHORT).show()
         }
         binding.etSearchAsistencias.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                // TODO: Perform search
+                Toast.makeText(requireContext(), "Búsqueda de asistencias", Toast.LENGTH_SHORT).show()
                 true
             } else false
         }

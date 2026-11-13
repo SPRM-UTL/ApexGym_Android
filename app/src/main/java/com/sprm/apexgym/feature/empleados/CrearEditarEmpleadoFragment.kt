@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.empleados
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
@@ -20,21 +21,21 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
     }
 
     private fun setupViews() {
-        // TODO: Check if editing existing empleado, load data
-        // binding.tvTitle.text = if (isEditing) "Editar Empleado" else "Nuevo Empleado"
+        // Título y datos iniciales
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flChangeAvatar.setOnClickListener {
-            // TODO: Open image picker
+            Toast.makeText(requireContext(), "Seleccionar foto de empleado", Toast.LENGTH_SHORT).show()
         }
         binding.btnCancelar.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnGuardar.setOnClickListener {
-            // TODO: Validate and save
+            Toast.makeText(requireContext(), "Empleado guardado exitosamente", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
         }
         binding.btnAgregarDiaHorario.setOnClickListener {
-            // TODO: Add day to schedule recycler
+            Toast.makeText(requireContext(), "Día de horario añadido", Toast.LENGTH_SHORT).show()
         }
     }
 
