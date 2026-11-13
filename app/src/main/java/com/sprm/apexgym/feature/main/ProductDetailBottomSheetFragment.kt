@@ -163,6 +163,7 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnConfirmarProducto?.setOnClickListener {
+
             val productoDto = ProductoClienteDto(
                 id = idProducto,
                 nombre = nombre,
@@ -177,18 +178,27 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                     nombre = categoria
                 )
             )
-            val resultado = CartManager.agregarProducto(
+
+            CartManager.agregarProducto(
                 context = requireContext(),
                 producto = productoDto,
                 cantidadAgregar = cantidadSeleccionada
             )
+
+            val total = precioVenta * cantidadSeleccionada
+
             Toast.makeText(
                 requireContext(),
                 "Agregado al carrito: $cantidadSeleccionada x $nombre (${formatearPrecio(total)} MXN)",
                 Toast.LENGTH_SHORT
             ).show()
+
             dismiss()
-            val existing = parentFragmentManager.findFragmentByTag(CarritoBottomSheetFragment.TAG)
+
+            val existing = parentFragmentManager.findFragmentByTag(
+                CarritoBottomSheetFragment.TAG
+            )
+
             if (existing == null) {
                 CarritoBottomSheetFragment().show(
                     parentFragmentManager,
