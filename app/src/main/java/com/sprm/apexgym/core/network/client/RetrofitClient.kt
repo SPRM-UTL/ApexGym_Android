@@ -1,7 +1,9 @@
 package com.sprm.apexgym.core.network.client
 
 import android.content.Context
+import com.sprm.apexgym.BuildConfig
 import com.sprm.apexgym.core.network.api.AuthApiService
+import com.sprm.apexgym.core.network.api.EmpleadoApiService
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -43,11 +45,18 @@ data class RegistroRequest(
     var contactoEmergenciaTelefono: String
 )
 
+data class RolRemoto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val descripcion: String? = null
+)
+
 data class UsuarioRemoto(
     val id: Int = 0,
     val nombre: String? = null,
     val email: String? = null,
-    val fotoUrl: String? = null
+    val fotoUrl: String? = null,
+    val roles: List<RolRemoto>? = null
 )
 
 data class AuthDataResponse(
@@ -186,7 +195,8 @@ data class ActualizarMiPerfilRequest(
 
 object RetrofitClient {
 
-    const val BASE_URL = "http://192.168.100.60:3000/"
+    /** URL configurada en `local.properties` (propiedad `API_BASE_URL`). */
+    val BASE_URL: String = BuildConfig.API_BASE_URL
 
     private lateinit var appContext: Context
 
@@ -228,5 +238,9 @@ object RetrofitClient {
 
     val authService: AuthApiService by lazy {
         retrofit.create(AuthApiService::class.java)
+    }
+
+    val empleadoService: EmpleadoApiService by lazy {
+        retrofit.create(EmpleadoApiService::class.java)
     }
 }

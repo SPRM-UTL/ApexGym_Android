@@ -9,192 +9,114 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.databinding.FragmentNotificacionesListBinding
 
+/**
+ * La API actual no expone notificaciones ni su configuración.
+ * Se muestra un estado explícito en lugar de datos de ejemplo.
+ */
 class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBinding>() {
 
     override fun getLayoutRes(): Int = R.layout.fragment_notificaciones_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupViews()
-        setupClickListeners()
-        setupSampleNotifications()
-    }
 
-    private fun setupViews() {
-        binding.cvUnreadBadge.visibility = View.VISIBLE
-        binding.tvUnreadCount.text = "Tienes 3 notificaciones importantes"
-
-        binding.tabLayoutNotificaciones.addTab(binding.tabLayoutNotificaciones.newTab().setText("Todas"))
-        binding.tabLayoutNotificaciones.addTab(binding.tabLayoutNotificaciones.newTab().setText("No Leídas"))
-        binding.tabLayoutNotificaciones.addTab(binding.tabLayoutNotificaciones.newTab().setText("Sistema"))
-    }
-
-    private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.cvUnreadBadge.visibility = View.GONE
+        binding.tabLayoutNotificaciones.visibility = View.GONE
+        binding.vpNotificacionesTabs.visibility = View.GONE
+        binding.etSearchNotificaciones.isEnabled = false
+        binding.etSearchNotificaciones.hint = "No disponible"
+
         binding.flConfig.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out,
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out
+            AlertDialog.Builder(requireContext())
+                .setTitle("Configuración no disponible")
+                .setMessage(
+                    "La API actual no permite consultar ni guardar preferencias de notificaciones."
                 )
-                .replace(R.id.fragment_container, ConfiguracionNotificacionesFragment())
-                .addToBackStack(null)
-                .commit()
+                .setPositiveButton("Entendido", null)
+                .show()
         }
-        binding.btnMarcarTodasLeidas.setOnClickListener {
-            Toast.makeText(requireContext(), "Todas las notificaciones marcadas como leídas", Toast.LENGTH_SHORT).show()
-            binding.cvUnreadBadge.visibility = View.GONE
-        }
-        binding.cvUnreadBadge.setOnClickListener {
-            abrirDetalleNotificacion()
-        }
-        binding.etSearchNotificaciones.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                Toast.makeText(requireContext(), "Búsqueda de notificaciones realizada", Toast.LENGTH_SHORT).show()
-                true
-            } else false
-        }
-    }
 
-    private fun abrirDetalleNotificacion() {
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                android.R.anim.fade_in,
-                android.R.anim.fade_out,
-                android.R.anim.fade_in,
-                android.R.anim.fade_out
-            )
-            .replace(R.id.fragment_container, NotificacionDetalleFragment())
-            .addToBackStack(null)
-            .commit()
-    }
-
-    private fun setupSampleNotifications() {
         binding.llNotificacionesContainer.removeAllViews()
-
-        val notificaciones = listOf(
-            Triple("¡Tu membresía vence pronto!", "Tu plan Premium vence en 15 días. Renuévalo a tiempo para mantener tus beneficios.", "Hace 2 horas"),
-            Triple("Compra confirmada", "Tu pedido de Proteína Whey 2kg ha sido procesado exitosamente.", "Ayer"),
-            Triple("Mantenimiento programado", "El área de alberca y sauna estará en servicio este domingo.", "Hace 3 días")
-        )
-
-        notificaciones.forEach { (titulo, mensaje, hora) ->
-            val card = crearTarjetaNotificacion(titulo, mensaje, hora)
-            binding.llNotificacionesContainer.addView(card)
-        }
+        binding.llNotificacionesContainer.addView(crearEstadoNoDisponible())
     }
 
-    private fun crearTarjetaNotificacion(titulo: String, mensaje: String, hora: String): View {
+    private fun crearEstadoNoDisponible(): View {
         val context = requireContext()
         val card = MaterialCardView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dpToPx(12)
-            }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-            radius = dpToPx(16).toFloat()
-            cardElevation = dpToPx(2).toFloat()
-            strokeWidth = 0
-            isClickable = true
-            isFocusable = true
+            )
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+            radius = dp(16).toFloat()
+            cardElevation = 0f
+            strokeWidth = dp(1)
+            strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
         }
 
-        val row = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
-        }
-
-        val iconBox = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(42), dpToPx(42))
-            setBackgroundResource(R.drawable.bg_icon_circle_orange_outline)
-
-            val icon = ImageView(context).apply {
-                layoutParams = FrameLayout.LayoutParams(dpToPx(20), dpToPx(20), Gravity.CENTER)
-                setImageResource(R.drawable.ic_notification_bell)
-                setColorFilter(ContextCompat.getColor(context, R.color.apex_orange))
-            }
-            addView(icon)
-        }
-        row.addView(iconBox)
-
-        val textCol = LinearLayout(context).apply {
+        val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = dpToPx(12)
-                marginEnd = dpToPx(8)
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(28), dp(24), dp(28))
+        }
+
+        content.addView(
+            FrameLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(72), dp(72))
+                setBackgroundResource(R.drawable.bg_icon_circle_orange_outline)
+                addView(
+                    ImageView(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER)
+                        setImageResource(R.drawable.ic_bell_outline)
+                        setColorFilter(ContextCompat.getColor(context, R.color.apex_orange))
+                    }
+                )
             }
-        }
+        )
 
-        val tvTitulo = TextView(context).apply {
-            text = titulo
-            setTextColor(ContextCompat.getColor(context, R.color.white))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-        }
-        textCol.addView(tvTitulo)
-
-        val tvMsg = TextView(context).apply {
-            text = mensaje
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            maxLines = 2
-            setLineSpacing(0f, 1.15f)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dpToPx(2)
+        content.addView(
+            TextView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(16) }
+                text = "Notificaciones no disponibles"
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f)
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
             }
-        }
-        textCol.addView(tvMsg)
+        )
 
-        val tvHora = TextView(context).apply {
-            text = hora
-            setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dpToPx(4)
+        content.addView(
+            TextView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(6) }
+                gravity = Gravity.CENTER
+                text = "La API actual no expone un endpoint de notificaciones. " +
+                    "Este módulo se activará cuando el backend lo incorpore."
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                setLineSpacing(0f, 1.15f)
             }
-        }
-        textCol.addView(tvHora)
+        )
 
-        row.addView(textCol)
-
-        val chevron = ImageView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(18), dpToPx(18))
-            setImageResource(R.drawable.ic_chevron_right)
-            setColorFilter(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
-        }
-        row.addView(chevron)
-
-        card.addView(row)
-        card.setOnClickListener {
-            abrirDetalleNotificacion()
-        }
-
+        card.addView(content)
         return card
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            dp.toFloat(),
-            resources.displayMetrics
-        ).toInt()
-    }
+    private fun dp(valor: Int): Int = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP,
+        valor.toFloat(),
+        resources.displayMetrics
+    ).toInt()
 }

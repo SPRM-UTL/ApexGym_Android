@@ -347,12 +347,35 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvCorteArqueo"
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:boxBackgroundMode="outline"
+            app:boxStrokeColor="@color/apex_orange"
+            app:boxStrokeWidth="2dp"
+            app:cornerRadius="16dp"
+            app:hintTextColor="@color/apex_text_secondary">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCorteEfectivoContado"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:hint="Efectivo contado en caja (S/)"
+                android:inputType="numberDecimal"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/tvCorteArqueoInfo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:nestedScrollingEnabled="false" />
+            android:text="El desglose por denominación no está disponible en la API."
+            android:textColor="@color/apex_text_secondary"
+            android:textSize="12sp" />
 
         <!-- Diferencias -->
         <com.google.android.material.card.MaterialCardView
@@ -452,26 +475,9 @@
             android:paddingHorizontal="8dp">
 
             <Button
-                android:id="@+id/btnGuardarBorrador"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="48dp"
-                android:layout_weight="1"
-                android:text="Guardar Borrador"
-                android:textAllCaps="false"
-                android:textColor="@color/apex_orange"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                app:cornerRadius="24dp"
-                app:strokeColor="@color/apex_orange"
-                app:strokeWidth="1.5dp" />
-
-            <Button
                 android:id="@+id/btnFinalizarCorte"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
                 android:backgroundTint="@color/apex_orange"
                 android:text="Finalizar Corte"
                 android:textAllCaps="false"

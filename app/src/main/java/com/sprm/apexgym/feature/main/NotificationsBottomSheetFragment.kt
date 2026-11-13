@@ -6,12 +6,12 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.sprm.apexgym.R
-import com.sprm.apexgym.feature.notificaciones.ConfiguracionNotificacionesFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 
 /**
@@ -85,7 +85,13 @@ class NotificationsBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         view.findViewById<View>(R.id.btnConfigurarNotificacionesSheet)?.setOnClickListener {
-            navegarAFragment(ConfiguracionNotificacionesFragment())
+            AlertDialog.Builder(requireContext())
+                .setTitle("Configuración no disponible")
+                .setMessage(
+                    "La API actual no permite consultar ni guardar preferencias de notificaciones."
+                )
+                .setPositiveButton("Entendido", null)
+                .show()
         }
     }
 

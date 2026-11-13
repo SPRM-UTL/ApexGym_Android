@@ -2,12 +2,14 @@ package com.sprm.apexgym.feature.main
 
 import android.content.Context
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
+import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import org.json.JSONArray
 import org.json.JSONObject
 
 enum class CartItemType {
     PRODUCTO,
+    SERVICIO,
     MEMBRESIA
 }
 
@@ -75,6 +77,11 @@ object CartManager {
     fun obtenerSubtotalProductos(context: Context): Double {
         asegurarInicializado(context)
         return items.filter { it.tipo == CartItemType.PRODUCTO }.sumOf { it.subtotal }
+    }
+
+    fun obtenerSubtotalServicios(context: Context): Double {
+        asegurarInicializado(context)
+        return items.filter { it.tipo == CartItemType.SERVICIO }.sumOf { it.subtotal }
     }
 
     fun obtenerMembresiaActual(context: Context): CartItem? {
@@ -201,6 +208,43 @@ object CartManager {
         return CartActionResult(
             exito = true,
             mensaje = "Membresía \"${plan.nombre}\" agregada al carrito."
+        )
+    }
+
+    fun agregarServicio(
+        context: Context,
+        servicio: ServicioClienteDto
+    ): CartActionResult {
+        asegurarInicializado(context)
+
+        val existente = items.firstOrNull {
+            it.tipo == CartItemType.SERVICIO && it.id == servicio.id
+        }
+        if (existente != null) {
+            return CartActionResult(
+                exito = false,
+                mensaje = "El servicio \"${servicio.nombre}\" ya está en el carrito."
+            )
+        }
+
+        items.add(
+            CartItem(
+                tipo = CartItemType.SERVICIO,
+                id = servicio.id,
+                nombre = servicio.nombre,
+                subtitulo = "Servicio",
+                precioUnitario = servicio.precio,
+                cantidad = 1,
+                stockMaximo = 1,
+                imagenUrl = servicio.imagenUrl
+            )
+        )
+        guardarEnPreferencias(context.applicationContext)
+        notificarCambios()
+
+        return CartActionResult(
+            exito = true,
+            mensaje = "Servicio \"${servicio.nombre}\" agregado al carrito."
         )
     }
 

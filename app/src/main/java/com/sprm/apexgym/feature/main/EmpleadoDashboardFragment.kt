@@ -1,0 +1,103 @@
+package com.sprm.apexgym.feature.main
+
+import android.os.Bundle
+import android.view.View
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.lifecycleScope
+import com.sprm.apexgym.R
+import com.sprm.apexgym.core.base.BaseFragment
+import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.databinding.FragmentEmpleadoDashboardBinding
+import com.sprm.apexgym.feature.auth.LoginFragment
+import com.sprm.apexgym.feature.caja.ResumenAperturaFragment
+import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
+import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
+import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
+import com.sprm.apexgym.feature.tienda.TiendaFragment
+import com.sprm.apexgym.feature.visitas.VisitasListFragment
+import kotlinx.coroutines.launch
+
+/**
+ * Panel principal para usuarios con rol de empleado.
+ * Muestra los módulos operativos del gimnasio; los clientes nunca llegan aquí.
+ */
+class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>() {
+
+    override fun getLayoutRes(): Int = R.layout.fragment_empleado_dashboard
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val nombre = SessionManager.obtenerNombre(requireContext())
+            ?.trim()
+            ?.split(" ")
+            ?.firstOrNull()
+            ?.takeIf { it.isNotBlank() }
+
+        binding.tvEmployeeGreeting.text = if (nombre != null) "Hola, $nombre" else "Hola, Empleado"
+        binding.tvEmployeeRole.text = SessionManager.obtenerRol(requireContext())
+            ?.takeIf { it.isNotBlank() }
+            ?.let { "Rol: $it" }
+            ?: "Panel de empleado"
+
+        binding.flAvatar.setOnClickListener {
+            val existing = childFragmentManager.findFragmentByTag(ProfileBottomSheetFragment.TAG)
+            if (existing == null) {
+                ProfileBottomSheetFragment().show(
+                    childFragmentManager,
+                    ProfileBottomSheetFragment.TAG
+                )
+            }
+        }
+
+        binding.cvRecepcion.setOnClickListener { navegar(RecepcionDashboardFragment()) }
+        binding.cvCaja.setOnClickListener { navegar(ResumenAperturaFragment()) }
+        binding.cvEmpleados.setOnClickListener { navegar(EmpleadosListFragment()) }
+        binding.cvVisitas.setOnClickListener { navegar(VisitasListFragment()) }
+        binding.cvTienda.setOnClickListener { navegar(TiendaFragment()) }
+        binding.cvNotificaciones.setOnClickListener { navegar(NotificacionesListFragment()) }
+
+        binding.btnLogout.setOnClickListener {
+            binding.btnLogout.isEnabled = false
+            binding.btnLogout.text = "Cerrando sesión..."
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    RetrofitClient.authService.logout()
+                } catch (_: Exception) {
+                } finally {
+                    RetrofitClient.cookieJar.clear()
+                    SessionManager.limpiar(requireContext())
+                    CartManager.vaciarCarrito(requireContext())
+
+                    if (isAdded) {
+                        val hostFm = requireActivity().supportFragmentManager
+                        hostFm.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                        hostFm.beginTransaction()
+                            .setCustomAnimations(
+                                android.R.anim.fade_in,
+                                android.R.anim.fade_out
+                            )
+                            .replace(R.id.fragment_container, LoginFragment())
+                            .commit()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun navegar(fragmento: Fragment) {
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .replace(R.id.fragment_container, fragmento)
+            .addToBackStack(null)
+            .commit()
+    }
+}
