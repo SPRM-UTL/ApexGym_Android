@@ -23,9 +23,6 @@ class CarritoBottomSheetFragment : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         view.findViewById<TextView>(R.id.tvCartItemCount)?.text = "2 productos"
-        view.findViewById<TextView>(R.id.tvSubtotal)?.text = "$1,150.00 MXN"
-        view.findViewById<TextView>(R.id.tvIgv)?.text = "$184.00 MXN"
-        view.findViewById<TextView>(R.id.tvDescuento)?.text = "-$0.00 MXN"
         view.findViewById<TextView>(R.id.tvTotal)?.text = "$1,334.00 MXN"
 
         view.findViewById<View>(R.id.btnCloseCart)?.setOnClickListener {
