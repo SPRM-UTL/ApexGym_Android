@@ -53,6 +53,7 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvProfileSheetSubtitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
@@ -336,6 +337,7 @@
 
             <!-- Separador Sección Staff -->
             <TextView
+                android:id="@+id/tvStaffSectionLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"

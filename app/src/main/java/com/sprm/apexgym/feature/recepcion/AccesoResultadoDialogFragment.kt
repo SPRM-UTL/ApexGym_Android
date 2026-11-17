@@ -21,6 +21,10 @@ class AccesoResultadoDialogFragment : DialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         val success = arguments?.getBoolean(ARG_SUCCESS, true) ?: true
 
+        val nombre = arguments?.getString(ARG_NOMBRE).orEmpty()
+        val plan = arguments?.getString(ARG_PLAN).orEmpty()
+        val mensaje = arguments?.getString(ARG_MENSAJE).orEmpty()
+
         if (success) {
             binding.ivSuccess.visibility = View.VISIBLE
             binding.ivError.visibility = View.GONE
@@ -29,15 +33,21 @@ class AccesoResultadoDialogFragment : DialogFragment() {
             binding.tvResultSubtitle.text = "Bienvenido a ApexGym"
             binding.cvMemberInfo.visibility = View.VISIBLE
             binding.llDeniedReason.visibility = View.GONE
+
+            if (nombre.isNotBlank()) binding.tvMemberName.text = nombre
+            binding.tvMemberMembership.text = plan.ifBlank { "Sin membresía activa" }
+            binding.tvMemberStatus.text = "Acceso autorizado"
         } else {
             binding.ivSuccess.visibility = View.GONE
             binding.ivError.visibility = View.VISIBLE
             binding.ivWarning.visibility = View.GONE
             binding.tvResultTitle.text = "Acceso Denegado"
-            binding.tvResultSubtitle.text = "Verifica tu membresía"
+            binding.tvResultSubtitle.text = "Verifica la membresía del cliente"
             binding.cvMemberInfo.visibility = View.GONE
             binding.llDeniedReason.visibility = View.VISIBLE
-            binding.tvDeniedReason.text = "Membresía inactiva o no registrada"
+            binding.tvDeniedReason.text = mensaje.ifBlank {
+                "Membresía inactiva o no registrada"
+            }
         }
 
         binding.btnClose.setOnClickListener { dismiss() }
@@ -52,9 +62,23 @@ class AccesoResultadoDialogFragment : DialogFragment() {
     companion object {
         const val TAG = "AccesoResultadoDialog"
         private const val ARG_SUCCESS = "arg_success"
-        fun newInstance(success: Boolean): AccesoResultadoDialogFragment {
+        private const val ARG_MENSAJE = "arg_mensaje"
+        private const val ARG_NOMBRE = "arg_nombre"
+        private const val ARG_PLAN = "arg_plan"
+
+        fun newInstance(
+            success: Boolean,
+            mensaje: String? = null,
+            nombre: String? = null,
+            plan: String? = null
+        ): AccesoResultadoDialogFragment {
             return AccesoResultadoDialogFragment().apply {
-                arguments = Bundle().apply { putBoolean(ARG_SUCCESS, success) }
+                arguments = Bundle().apply {
+                    putBoolean(ARG_SUCCESS, success)
+                    putString(ARG_MENSAJE, mensaje)
+                    putString(ARG_NOMBRE, nombre)
+                    putString(ARG_PLAN, plan)
+                }
             }
         }
     }

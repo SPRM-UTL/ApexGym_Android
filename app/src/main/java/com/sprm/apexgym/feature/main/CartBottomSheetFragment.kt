@@ -18,6 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.lifecycle.lifecycleScope
@@ -75,15 +76,17 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnProcederPago?.setOnClickListener {
-            val context = requireContext()
-            val items = CartManager.obtenerItems(context)
+            val items = CartManager.obtenerItems(requireContext())
             if (items.isEmpty()) return@setOnClickListener
 
-            dismiss()
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, CheckoutFragment())
-                .addToBackStack("checkout")
-                .commit()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Pago en línea no disponible")
+                .setMessage(
+                    "El cobro dentro de la aplicación está habilitado solo para empleados. " +
+                        "Acércate a recepción para completar tu compra."
+                )
+                .setPositiveButton("Entendido", null)
+                .show()
         }
 
         val listener: () -> Unit = {

@@ -322,7 +322,7 @@
                         android:id="@+id/actvRol"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:hint="Rol"
+                        android:hint="Puesto"
                         android:inputType="none"
                         android:textColor="@color/apex_text_primary"
                         android:textSize="16sp" />
@@ -342,7 +342,27 @@
                         android:id="@+id/actvTipoContrato"
                         android:layout_width="match_parent"
                         android:layout_height="56dp"
-                        android:hint="Tipo de Contrato"
+                        android:hint="Área de Trabajo"
+                        android:inputType="none"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:boxBackgroundMode="outline"
+                    app:boxStrokeColor="@color/apex_orange"
+                    app:boxStrokeWidth="2dp"
+                    app:cornerRadius="12dp"
+                    app:hintTextColor="@color/apex_text_secondary">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvEstadoEmpleado"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:hint="Estado del Empleado"
                         android:inputType="none"
                         android:textColor="@color/apex_text_primary"
                         android:textSize="16sp" />
@@ -477,6 +497,7 @@
                 android:padding="16dp">
 
                 <TextView
+                    android:id="@+id/tvHorarioConfigHint"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"

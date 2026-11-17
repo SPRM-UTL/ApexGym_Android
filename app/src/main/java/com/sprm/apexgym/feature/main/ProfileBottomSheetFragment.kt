@@ -14,12 +14,13 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import androidx.appcompat.app.AlertDialog
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.feature.auth.LoginFragment
 import com.sprm.apexgym.feature.caja.ResumenAperturaFragment
 import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
-import com.sprm.apexgym.feature.notificaciones.ConfiguracionNotificacionesFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
 import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
@@ -68,21 +69,52 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         val btnOpcionCerrarSesion = view.findViewById<View>(R.id.btnOpcionCerrarSesion)
         val tvCerrarSesionTitulo = view.findViewById<TextView>(R.id.tvCerrarSesionTitulo)
         val tvProfileSheetName = view.findViewById<TextView>(R.id.tvProfileSheetName)
+        val tvProfileSheetSubtitle = view.findViewById<TextView>(R.id.tvProfileSheetSubtitle)
+        val tvStaffSectionLabel = view.findViewById<View>(R.id.tvStaffSectionLabel)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = RetrofitClient.authService.obtenerMiPerfil()
-                if (!isAdded) return@launch
-                if (response.isSuccessful && response.body()?.responseFlag == 0) {
-                    val data = response.body()?.data
-                    val soloNombre = data?.cliente?.nombre?.trim()?.takeIf { it.isNotBlank() }
-                        ?: data?.usuario?.nombre?.trim().orEmpty()
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
+        val rolSesion = SessionManager.obtenerRol(requireContext())
 
-                    if (soloNombre.isNotBlank()) {
-                        tvProfileSheetName?.text = soloNombre
+        SessionManager.obtenerNombre(requireContext())
+            ?.trim()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { tvProfileSheetName?.text = it }
+
+        tvProfileSheetSubtitle?.text = if (esEmpleado) {
+            "Empleado • ${rolSesion ?: "ApexGym"}"
+        } else {
+            "Socio ApexGym"
+        }
+
+        // Los clientes solo ven ventas y su perfil.
+        tvStaffSectionLabel?.visibility = if (esEmpleado) View.VISIBLE else View.GONE
+        listOf(
+            btnOpcionNotificaciones,
+            btnOpcionConfigNotificaciones,
+            btnOpcionEmpleados,
+            btnOpcionVisitas,
+            btnOpcionRecepcion,
+            btnOpcionCaja
+        ).forEach { opcion ->
+            opcion?.visibility = if (esEmpleado) View.VISIBLE else View.GONE
+        }
+
+        if (!esEmpleado) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val response = RetrofitClient.authService.obtenerMiPerfil()
+                    if (!isAdded) return@launch
+                    if (response.isSuccessful && response.body()?.responseFlag == 0) {
+                        val data = response.body()?.data
+                        val soloNombre = data?.cliente?.nombre?.trim()?.takeIf { it.isNotBlank() }
+                            ?: data?.usuario?.nombre?.trim().orEmpty()
+
+                        if (soloNombre.isNotBlank()) {
+                            tvProfileSheetName?.text = soloNombre
+                        }
                     }
+                } catch (_: Exception) {
                 }
-            } catch (_: Exception) {
             }
         }
 
@@ -91,14 +123,33 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnOpcionMiPerfil?.setOnClickListener {
-            val fm = parentFragmentManager
-            dismissAllowingStateLoss()
-            val existing = fm.findFragmentByTag(EditProfileBottomSheetFragment.TAG)
-            if (existing == null) {
-                EditProfileBottomSheetFragment().show(
-                    fm,
-                    EditProfileBottomSheetFragment.TAG
-                )
+            if (esEmpleado) {
+                AlertDialog.Builder(requireContext())
+                    .setTitle(SessionManager.obtenerNombre(requireContext()) ?: "Mi cuenta")
+                    .setMessage(
+                        buildString {
+                            append("Correo: ")
+                            append(SessionManager.obtenerEmail(requireContext()) ?: "—")
+                            append("\nRol: ")
+                            append(rolSesion ?: "—")
+                            append(
+                                "\n\nLa edición del perfil de empleado no está disponible " +
+                                    "en la API actual."
+                            )
+                        }
+                    )
+                    .setPositiveButton("Cerrar", null)
+                    .show()
+            } else {
+                val fm = parentFragmentManager
+                dismissAllowingStateLoss()
+                val existing = fm.findFragmentByTag(EditProfileBottomSheetFragment.TAG)
+                if (existing == null) {
+                    EditProfileBottomSheetFragment().show(
+                        fm,
+                        EditProfileBottomSheetFragment.TAG
+                    )
+                }
             }
         }
 
@@ -126,7 +177,13 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnOpcionConfigNotificaciones?.setOnClickListener {
-            navegarAFragment(ConfiguracionNotificacionesFragment())
+            AlertDialog.Builder(requireContext())
+                .setTitle("Configuración no disponible")
+                .setMessage(
+                    "La API actual no permite consultar ni guardar preferencias de notificaciones."
+                )
+                .setPositiveButton("Entendido", null)
+                .show()
         }
 
         btnOpcionHistorialCompras?.setOnClickListener {
@@ -161,6 +218,10 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                 } catch (_: Exception) {
                 } finally {
                     RetrofitClient.cookieJar.clear()
+                    if (isAdded) {
+                        SessionManager.limpiar(requireContext())
+                        CartManager.vaciarCarrito(requireContext())
+                    }
 
                     if (isAdded) {
                         val hostFragmentManager = requireActivity().supportFragmentManager
