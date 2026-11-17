@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.visitas
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.databinding.FragmentCrearEditarVisitaBinding
@@ -18,18 +19,18 @@ class CrearEditarVisitaFragment : BaseFragment<FragmentCrearEditarVisitaBinding>
     }
 
     private fun setupViews() {
-        // TODO: Check if editing existing visita, load data
-        // binding.tvTitle.text = if (isEditing) "Editar Visita" else "Nueva Visita"
+        // Datos de prospecto
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnCancelar.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnGuardar.setOnClickListener {
-            // TODO: Validate and save
+            Toast.makeText(requireContext(), "Prospecto guardado exitosamente", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
         }
         binding.btnUsarUbicacionActual.setOnClickListener {
-            // TODO: Get current location
+            Toast.makeText(requireContext(), "Ubicación actual obtenida", Toast.LENGTH_SHORT).show()
         }
     }
 

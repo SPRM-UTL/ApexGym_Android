@@ -54,7 +54,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var selectedTabIndex = 0
     private var isQrVisible = false
     private var pillAnimator: ValueAnimator? = null
-    private var cartListener: (() -> Unit)? = null
 
     private var listaProductos: List<ProductoClienteDto> = emptyList()
     private var listaServicios: List<ServicioClienteDto> = emptyList()
@@ -99,41 +98,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 NotificationsBottomSheetFragment().show(
                     childFragmentManager,
                     NotificationsBottomSheetFragment.TAG
-                )
-            }
-        }
-
-        val flCartHeader = view.findViewWithTag<View>("cart_header_button")
-        val tvCartHeaderBadge = view.findViewWithTag<TextView>("cart_header_badge")
-
-        fun actualizarBadgeCarrito() {
-            if (!isAdded) return
-            val totalArticulos = CartManager.obtenerCantidadTotalArticulos(requireContext())
-            if (totalArticulos > 0) {
-                tvCartHeaderBadge?.visibility = View.VISIBLE
-                tvCartHeaderBadge?.text = if (totalArticulos > 99) "99+" else totalArticulos.toString()
-            } else {
-                tvCartHeaderBadge?.visibility = View.GONE
-            }
-        }
-
-        actualizarBadgeCarrito()
-
-        val listenerCarrito: () -> Unit = {
-            if (isAdded) {
-                actualizarBadgeCarrito()
-                renderizarSeccionMembresia(view)
-            }
-        }
-        cartListener = listenerCarrito
-        CartManager.addListener(listenerCarrito)
-
-        flCartHeader?.setOnClickListener {
-            val existing = childFragmentManager.findFragmentByTag(CartBottomSheetFragment.TAG)
-            if (existing == null) {
-                CartBottomSheetFragment().show(
-                    childFragmentManager,
-                    CartBottomSheetFragment.TAG
                 )
             }
         }
@@ -721,8 +685,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
             addView(plusIcon)
             setOnClickListener {
-                val res = CartManager.agregarProducto(context, producto, 1)
-                Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
+                abrirDetalleProducto(producto)
             }
         }
         bottomRow.addView(btnAdd)
@@ -857,8 +820,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
             addView(plusIcon)
             setOnClickListener {
-                val res = CartManager.agregarProducto(context, producto, 1)
-                Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
+                abrirDetalleProducto(producto)
             }
         }
         bottomRow.addView(btnAdd)
@@ -1296,9 +1258,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         bottomRow.addView(tvPrecio)
 
-        val membresiaEnCarrito = CartManager.obtenerMembresiaActual(context)
-        val estaEnCarrito = membresiaEnCarrito?.id == plan.id
-
         val btnElegir = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1307,13 +1266,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             gravity = Gravity.CENTER
             setPadding(dpToPx(16), 0, dpToPx(16), 0)
             setBackgroundResource(
-                if (estaEnCarrito || esPlanActual) R.drawable.bg_badge_vip_outline else R.drawable.bg_badge_orange
+                if (esPlanActual) R.drawable.bg_badge_vip_outline else R.drawable.bg_badge_orange
             )
-            text = when {
-                estaEnCarrito -> "En tu carrito"
-                esPlanActual -> "Renovar"
-                else -> "Solicitar plan"
-            }
+            text = if (esPlanActual) "Renovar" else "Solicitar plan"
             setTextColor(ContextCompat.getColor(context, R.color.white))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
@@ -1323,17 +1278,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         container.addView(bottomRow)
         card.addView(container)
 
-        val accionAgregarMembresia = View.OnClickListener {
-            val resultado = CartManager.agregarMembresia(context, plan)
+        card.setOnClickListener {
             Toast.makeText(
                 context,
-                resultado.mensaje,
+                "${plan.nombre} (${plan.duracionDias} días • ${formatearPrecio(plan.precio)} MXN). Solicítalo en recepción.",
                 Toast.LENGTH_LONG
             ).show()
         }
-
-        btnElegir.setOnClickListener(accionAgregarMembresia)
-        card.setOnClickListener(accionAgregarMembresia)
 
         return card
     }
@@ -1598,8 +1549,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     override fun onDestroyView() {
-        cartListener?.let { CartManager.removeListener(it) }
-        cartListener = null
         pillAnimator?.cancel()
         pillAnimator = null
         super.onDestroyView()

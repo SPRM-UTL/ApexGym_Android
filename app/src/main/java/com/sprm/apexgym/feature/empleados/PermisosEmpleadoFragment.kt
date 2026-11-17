@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.empleados
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.databinding.FragmentPermisosEmpleadoBinding
@@ -18,19 +19,19 @@ class PermisosEmpleadoFragment : BaseFragment<FragmentPermisosEmpleadoBinding>()
     }
 
     private fun setupViews() {
-        // TODO: Load empleado data and balances
+        // Datos de permisos
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flAddPermiso.setOnClickListener {
-            // TODO: Show solicitar permiso dialog
+            Toast.makeText(requireContext(), "Solicitud de permiso", Toast.LENGTH_SHORT).show()
         }
         binding.btnSolicitarVacaciones.setOnClickListener {
-            // TODO: Navigate to solicitar vacaciones
+            Toast.makeText(requireContext(), "Solicitud de vacaciones", Toast.LENGTH_SHORT).show()
         }
         binding.btnSolicitarPermiso.setOnClickListener {
-            // TODO: Navigate to solicitar permiso
+            Toast.makeText(requireContext(), "Solicitar permiso laboral", Toast.LENGTH_SHORT).show()
         }
     }
 

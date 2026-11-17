@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.empleados
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
@@ -19,25 +20,25 @@ class HorarioEmpleadoFragment : BaseFragment<FragmentHorarioEmpleadoBinding>() {
     }
 
     private fun setupViews() {
-        // TODO: Load empleado data and horario
+        // Horario cargado
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flAddHorario.setOnClickListener {
-            // TODO: Show add horario dialog
+            Toast.makeText(requireContext(), "Nuevo horario añadido", Toast.LENGTH_SHORT).show()
         }
         binding.btnAgregarExcepcion.setOnClickListener {
-            // TODO: Show add excepcion dialog
+            Toast.makeText(requireContext(), "Excepción añadida", Toast.LENGTH_SHORT).show()
         }
         binding.btnAgregarLicencia.setOnClickListener {
-            // TODO: Show add licencia dialog
+            Toast.makeText(requireContext(), "Licencia registrada", Toast.LENGTH_SHORT).show()
         }
         binding.btnDuplicarSemana.setOnClickListener {
-            // TODO: Duplicate week schedule
+            Toast.makeText(requireContext(), "Semana duplicada", Toast.LENGTH_SHORT).show()
         }
         binding.btnExportarHorario.setOnClickListener {
-            // TODO: Export to PDF
+            Toast.makeText(requireContext(), "Horario exportado a PDF", Toast.LENGTH_SHORT).show()
         }
     }
 

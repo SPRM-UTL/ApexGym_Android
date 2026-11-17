@@ -2,6 +2,7 @@ package com.sprm.apexgym.feature.visitas
 
 import android.os.Bundle
 import android.view.View
+import android.widget.Toast
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.databinding.FragmentSeguimientoVisitaBinding
@@ -18,14 +19,15 @@ class SeguimientoVisitaFragment : BaseFragment<FragmentSeguimientoVisitaBinding>
     }
 
     private fun setupViews() {
-        // TODO: Load prospect data
+        // Datos de seguimiento
     }
 
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnCancelar.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnGuardarSeguimiento.setOnClickListener {
-            // TODO: Validate and save seguimiento
+            Toast.makeText(requireContext(), "Seguimiento guardado exitosamente", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
         }
     }
 

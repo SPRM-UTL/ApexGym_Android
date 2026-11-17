@@ -32,11 +32,15 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <Button
+
+        <FrameLayout
             android:id="@+id/btnCloseMovimiento"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:background="@drawable/bg_circle_white_elevated"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
             android:elevation="1dp">
 
             <ImageView
@@ -45,7 +49,9 @@
                 android:layout_gravity="center"
                 android:src="@drawable/ic_close"
                 app:tint="@color/apex_nav_inactive" />
-        </Button>
+
+        </FrameLayout>
+
     </LinearLayout>
 
     <!-- Type Selector (Entrada/Salida) -->

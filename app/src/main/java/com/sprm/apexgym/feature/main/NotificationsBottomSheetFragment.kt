@@ -6,10 +6,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.sprm.apexgym.R
+import com.sprm.apexgym.feature.notificaciones.ConfiguracionNotificacionesFragment
+import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 
 /**
  * Pantalla de Notificaciones en pantalla completa que se desliza de abajo hacia arriba.
@@ -60,6 +63,29 @@ class NotificationsBottomSheetFragment : BottomSheetDialogFragment() {
 
         view.findViewById<View>(R.id.btnCerrarNotificaciones)?.setOnClickListener {
             dismiss()
+        }
+
+        fun navegarAFragment(fragmento: Fragment) {
+            val hostFm = requireActivity().supportFragmentManager
+            dismissAllowingStateLoss()
+            hostFm.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_container, fragmento)
+                .addToBackStack(null)
+                .commit()
+        }
+
+        view.findViewById<View>(R.id.btnVerTodasNotificaciones)?.setOnClickListener {
+            navegarAFragment(NotificacionesListFragment())
+        }
+
+        view.findViewById<View>(R.id.btnConfigurarNotificacionesSheet)?.setOnClickListener {
+            navegarAFragment(ConfiguracionNotificacionesFragment())
         }
     }
 
