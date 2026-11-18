@@ -19,8 +19,14 @@ class MainActivity : AppCompatActivity() {
         RetrofitClient.initialize(this)
 
         if (savedInstanceState == null) {
+            val destino = when {
+                !com.sprm.apexgym.core.session.SessionManager.haySesion(this) -> LoginFragment()
+                com.sprm.apexgym.core.session.SessionManager.esEmpleado(this) -> EmpleadoDashboardFragment()
+                else -> HomeFragment()
+            }
+
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, LoginFragment())
+                .replace(R.id.fragment_container, destino)
                 .commit()
         }
 

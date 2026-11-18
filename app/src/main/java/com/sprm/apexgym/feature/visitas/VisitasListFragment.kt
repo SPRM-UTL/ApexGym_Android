@@ -11,81 +11,290 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
+import com.sprm.apexgym.core.network.api.VisitaDto
+import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.network.dataExitosa
+import com.sprm.apexgym.core.network.fechaHoyIso
+import com.sprm.apexgym.core.network.formatearFecha
+import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
+import com.sprm.apexgym.core.network.inicioDeMesIso
 import com.sprm.apexgym.databinding.FragmentVisitasListBinding
+import kotlinx.coroutines.launch
 
 class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
 
-    data class VisitaMock(
-        val prospecto: String,
-        val estado: String,
-        val telefono: String,
-        val asesor: String,
-        val interes: String
-    )
-
-    private val listaVisitasMock = listOf(
-        VisitaMock("Ana Martínez", "NUEVO", "4771234567", "Carlos Rodríguez", "Plan Anual VIP"),
-        VisitaMock("Roberto López", "CONTACTADO", "4779876543", "María Gómez", "Plan Mensual"),
-        VisitaMock("Sofía Herrera", "PROPUESTA", "4775551234", "Carlos Rodríguez", "Entrenamiento Personalizado"),
-        VisitaMock("Daniel Morales", "CALIFICADO", "4773339988", "María Gómez", "Pase Diario / Semanal")
-    )
+    private var visitas: List<VisitaDto> = emptyList()
+    private var filtroSeleccionado = "Todos"
+    private var textoBusqueda = ""
+    private val chips = mutableListOf<TextView>()
 
     override fun getLayoutRes(): Int = R.layout.fragment_visitas_list
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupViews()
-        setupClickListeners()
-        setupRecyclerView()
-    }
 
-    private fun setupViews() {
-        binding.tvTotalVisitas.text = "${listaVisitasMock.size}"
-        binding.tvVisitasPendientes.text = "${listaVisitasMock.count { it.estado == "NUEVO" || it.estado == "CONTACTADO" }}"
-        binding.tvVisitasConvertidos.text = "12"
-        binding.tvVisitasPerdidos.text = "2"
-    }
-
-    private fun setupClickListeners() {
+        binding.rvVisitas.layoutManager = LinearLayoutManager(requireContext())
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flAddVisita.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out,
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out
-                )
-                .replace(R.id.fragment_container, CrearEditarVisitaFragment())
-                .addToBackStack(null)
-                .commit()
+            navegar(CrearEditarVisitaFragment.newInstance())
         }
-        binding.ivFilterVisitas.setOnClickListener {
-            Toast.makeText(requireContext(), "Filtrar prospectos", Toast.LENGTH_SHORT).show()
-        }
-        binding.etSearchVisitas.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
-                Toast.makeText(requireContext(), "Búsqueda de prospectos", Toast.LENGTH_SHORT).show()
-                true
-            } else false
+        binding.ivFilterVisitas.setOnClickListener { cargarVisitas() }
+
+        binding.etSearchVisitas.doAfterTextChanged { texto ->
+            textoBusqueda = texto?.toString()?.trim().orEmpty()
+            aplicarFiltros()
         }
 
-        val abrirDetalle = View.OnClickListener {
-            abrirDetalleVisita()
-        }
-        binding.tvTotalVisitas.setOnClickListener(abrirDetalle)
-        binding.tvVisitasPendientes.setOnClickListener(abrirDetalle)
-        binding.tvVisitasConvertidos.setOnClickListener(abrirDetalle)
-        binding.tvVisitasPerdidos.setOnClickListener(abrirDetalle)
-        binding.llEmptyVisitas.setOnClickListener(abrirDetalle)
+        construirChips()
     }
 
-    private fun abrirDetalleVisita() {
+    override fun onResume() {
+        super.onResume()
+        if (view != null) {
+            cargarVisitas()
+        }
+    }
+
+    private fun cargarVisitas() {
+        binding.tvTotalVisitas.text = "…"
+        binding.rvVisitas.visibility = View.GONE
+        binding.llEmptyVisitas.visibility = View.VISIBLE
+        binding.llEmptyVisitas.getChildAt(1)?.let { (it as? TextView)?.text = "Cargando visitas…" }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.empleadoService.obtenerVisitas(
+                    fechaInicio = inicioDeMesIso(),
+                    fechaFin = fechaHoyIso()
+                )
+                visitas = response.dataExitosa().orEmpty()
+                actualizarEstadisticas()
+                aplicarFiltros()
+            } catch (_: Exception) {
+                visitas = emptyList()
+                actualizarEstadisticas()
+                aplicarFiltros()
+                binding.llEmptyVisitas.getChildAt(1)?.let {
+                    (it as? TextView)?.text = "No se pudo conectar con el servidor"
+                }
+            }
+        }
+    }
+
+    private fun actualizarEstadisticas() {
+        binding.tvTotalVisitas.text = visitas.size.toString()
+        binding.tvVisitasPendientes.text = visitas.count {
+            formatearFecha(it.fechaHora, "yyyy-MM-dd") == fechaHoyIso()
+        }.toString()
+        binding.tvVisitasConvertidos.text = visitas.count { it.costo > 0 }.toString()
+        binding.tvVisitasPerdidos.text = visitas.count { it.costo <= 0 }.toString()
+    }
+
+    private fun construirChips() {
+        val container = binding.llFilterChips
+        container.removeAllViews()
+        chips.clear()
+
+        listOf("Todos", "Hoy", "Con costo", "Gratuitas").forEachIndexed { index, nombre ->
+            val chip = TextView(requireContext()).apply {
+                text = nombre
+                gravity = Gravity.CENTER
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(dpToPx(18), 0, dpToPx(18), 0)
+                isClickable = true
+                isFocusable = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    dpToPx(38)
+                ).apply {
+                    if (index > 0) marginStart = dpToPx(8)
+                }
+            }
+            chips.add(chip)
+            container.addView(chip)
+            chip.setOnClickListener {
+                filtroSeleccionado = chip.text.toString()
+                actualizarEstilos()
+                aplicarFiltros()
+            }
+        }
+
+        actualizarEstilos()
+    }
+
+    private fun actualizarEstilos() {
+        val blanco = ContextCompat.getColor(requireContext(), R.color.white)
+        val primario = ContextCompat.getColor(requireContext(), R.color.apex_text_primary)
+        chips.forEach { chip ->
+            if (chip.text.toString() == filtroSeleccionado) {
+                chip.setBackgroundResource(R.drawable.bg_chip_selected)
+                chip.setTextColor(blanco)
+            } else {
+                chip.setBackgroundResource(R.drawable.bg_chip_unselected)
+                chip.setTextColor(primario)
+            }
+        }
+    }
+
+    private fun aplicarFiltros() {
+        val filtradas = visitas.filter { visita ->
+            val cumpleFiltro = when (filtroSeleccionado) {
+                "Hoy" -> formatearFecha(visita.fechaHora, "yyyy-MM-dd") == fechaHoyIso()
+                "Con costo" -> visita.costo > 0
+                "Gratuitas" -> visita.costo <= 0
+                else -> true
+            }
+            if (!cumpleFiltro) return@filter false
+            if (textoBusqueda.isBlank()) return@filter true
+
+            listOf(
+                visita.nombreVisitante.orEmpty(),
+                visita.tipoVisita?.nombre.orEmpty(),
+                visita.observaciones.orEmpty()
+            ).any { it.contains(textoBusqueda, ignoreCase = true) }
+        }.sortedByDescending { it.fechaHora.orEmpty() }
+
+        if (filtradas.isEmpty()) {
+            binding.llEmptyVisitas.visibility = View.VISIBLE
+            binding.rvVisitas.visibility = View.GONE
+            val mensaje = if (visitas.isEmpty()) {
+                "No hay visitas registradas este mes"
+            } else {
+                "No hay visitas que coincidan con el filtro"
+            }
+            binding.llEmptyVisitas.getChildAt(1)?.let { (it as? TextView)?.text = mensaje }
+            return
+        }
+
+        binding.llEmptyVisitas.visibility = View.GONE
+        binding.rvVisitas.visibility = View.VISIBLE
+
+        binding.rvVisitas.adapter = object : RecyclerView.Adapter<VisitaViewHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VisitaViewHolder {
+                return crearTarjeta(parent.context)
+            }
+
+            override fun onBindViewHolder(holder: VisitaViewHolder, position: Int) {
+                val visita = filtradas[position]
+                holder.tvNombre.text = visita.nombreVisitante ?: "Visitante #${visita.id}"
+                holder.tvTipo.text = visita.tipoVisita?.nombre ?: "Tipo #${visita.tipoVisitaId}"
+                holder.tvDetalle.text = buildString {
+                    append(formatearFecha(visita.fechaHora, "dd/MM/yyyy HH:mm"))
+                    visita.observaciones
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let {
+                            append(" • ")
+                            append(if (it.length > 40) it.take(40) + "…" else it)
+                        }
+                }
+                holder.tvCosto.text = if (visita.costo > 0) {
+                    visita.costo.formatearMonedaSinSufijo()
+                } else {
+                    "Gratis"
+                }
+                holder.tvCosto.setBackgroundResource(
+                    if (visita.costo > 0) R.drawable.bg_badge_orange else R.drawable.bg_badge_green
+                )
+                holder.itemView.setOnClickListener {
+                    navegar(VisitaDetalleFragment.newInstance(visita.id))
+                }
+            }
+
+            override fun getItemCount(): Int = filtradas.size
+        }
+    }
+
+    private class VisitaViewHolder(
+        itemView: View,
+        val tvNombre: TextView,
+        val tvTipo: TextView,
+        val tvDetalle: TextView,
+        val tvCosto: TextView
+    ) : RecyclerView.ViewHolder(itemView)
+
+    private fun crearTarjeta(context: android.content.Context): VisitaViewHolder {
+        val card = MaterialCardView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = dpToPx(12)
+            }
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
+            radius = dpToPx(18).toFloat()
+            cardElevation = dpToPx(3).toFloat()
+            strokeWidth = 0
+            isClickable = true
+            isFocusable = true
+        }
+
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
+        }
+
+        val iconBox = FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
+            setBackgroundResource(R.drawable.bg_circle_purple_light)
+            val icon = ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(dpToPx(22), dpToPx(22), Gravity.CENTER)
+                setImageResource(R.drawable.ic_calendar_event)
+                setColorFilter(ContextCompat.getColor(context, R.color.apex_orange))
+            }
+            addView(icon)
+        }
+        row.addView(iconBox)
+
+        val col = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dpToPx(14)
+                marginEnd = dpToPx(8)
+            }
+        }
+
+        val tvNombre = TextView(context).apply {
+            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        col.addView(tvNombre)
+
+        val tvTipo = TextView(context).apply {
+            setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+        }
+        col.addView(tvTipo)
+
+        val tvDetalle = TextView(context).apply {
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+        }
+        col.addView(tvDetalle)
+        row.addView(col)
+
+        val tvCosto = TextView(context).apply {
+            setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        row.addView(tvCosto)
+
+        card.addView(row)
+        return VisitaViewHolder(card, tvNombre, tvTipo, tvDetalle, tvCosto)
+    }
+
+    private fun navegar(fragment: androidx.fragment.app.Fragment) {
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 android.R.anim.fade_in,
@@ -93,114 +302,9 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
                 android.R.anim.fade_in,
                 android.R.anim.fade_out
             )
-            .replace(R.id.fragment_container, VisitaDetalleFragment())
+            .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()
-    }
-
-    private inner class VisitaViewHolder(
-        itemView: View,
-        val tvNombre: TextView,
-        val tvEstado: TextView,
-        val tvInteres: TextView,
-        val tvAsesor: TextView
-    ) : RecyclerView.ViewHolder(itemView) {
-        fun bind(item: VisitaMock) {
-            tvNombre.text = item.prospecto
-            tvEstado.text = item.estado
-            tvInteres.text = "Interés: ${item.interes}"
-            tvAsesor.text = "Asesor: ${item.asesor} • Tel: ${item.telefono}"
-            itemView.setOnClickListener {
-                abrirDetalleVisita()
-            }
-        }
-    }
-
-    private fun setupRecyclerView() {
-        binding.rvVisitas.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvVisitas.adapter = object : RecyclerView.Adapter<VisitaViewHolder>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VisitaViewHolder {
-                val card = MaterialCardView(parent.context).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        bottomMargin = dpToPx(12)
-                    }
-                    setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-                    radius = dpToPx(18).toFloat()
-                    cardElevation = dpToPx(3).toFloat()
-                    strokeWidth = 0
-                    isClickable = true
-                    isFocusable = true
-                }
-
-                val row = LinearLayout(parent.context).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
-                }
-
-                val iconBox = FrameLayout(parent.context).apply {
-                    layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
-                    setBackgroundResource(R.drawable.bg_circle_purple_light)
-                    val icon = ImageView(parent.context).apply {
-                        layoutParams = FrameLayout.LayoutParams(dpToPx(22), dpToPx(22), Gravity.CENTER)
-                        setImageResource(R.drawable.ic_calendar_event)
-                        setColorFilter(ContextCompat.getColor(context, R.color.apex_orange))
-                    }
-                    addView(icon)
-                }
-                row.addView(iconBox)
-
-                val col = LinearLayout(parent.context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                        marginStart = dpToPx(14)
-                    }
-                }
-
-                val tvNombre = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.white))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                }
-                col.addView(tvNombre)
-
-                val tvInteres = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-                }
-                col.addView(tvInteres)
-
-                val tvAsesor = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
-                }
-                col.addView(tvAsesor)
-
-                row.addView(col)
-
-                val tvEstado = TextView(parent.context).apply {
-                    setBackgroundResource(R.drawable.bg_badge_orange)
-                    setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
-                    setTextColor(ContextCompat.getColor(context, R.color.white))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                }
-                row.addView(tvEstado)
-
-                card.addView(row)
-
-                return VisitaViewHolder(card, tvNombre, tvEstado, tvInteres, tvAsesor)
-            }
-
-            override fun onBindViewHolder(holder: VisitaViewHolder, position: Int) {
-                holder.bind(listaVisitasMock[position])
-            }
-
-            override fun getItemCount(): Int = listaVisitasMock.size
-        }
     }
 
     private fun dpToPx(dp: Int): Int {

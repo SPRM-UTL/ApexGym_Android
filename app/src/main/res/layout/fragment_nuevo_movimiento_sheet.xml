@@ -134,47 +134,6 @@
             android:textStyle="bold" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Método de Pago -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="8dp"
-        android:text="Método de Pago"
-        android:textColor="@color/apex_text_secondary"
-        android:textSize="13sp"
-        android:textStyle="bold" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvMetodosPago"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="16dp"
-        android:nestedScrollingEnabled="false" />
-
-    <!-- Referencia/Comprobante -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="16dp"
-        app:boxBackgroundMode="outline"
-        app:boxStrokeColor="@color/apex_orange"
-        app:boxStrokeWidth="2dp"
-        app:cornerRadius="12dp"
-        app:hintTextColor="@color/apex_text_secondary">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etReferencia"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:hint="N° Comprobante / Referencia (opcional)"
-            android:inputType="text"
-            android:textColor="@color/apex_text_primary"
-            android:textSize="14sp" />
-    </com.google.android.material.textfield.TextInputLayout>
-
     <!-- Observaciones -->
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
