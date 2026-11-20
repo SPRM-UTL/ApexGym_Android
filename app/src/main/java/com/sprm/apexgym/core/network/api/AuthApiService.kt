@@ -19,6 +19,17 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 
+data class MiQrResponseDto(
+    val codigoQr: String? = null,
+    val qrPayload: String? = null,
+    val expiraEn: String? = null,
+    val vigente: Boolean = false,
+    val diasRestantes: Int = 0,
+    val mensaje: String? = null,
+    val cliente: ClienteAsistenciaDto? = null,
+    val membresia: ClienteMembresiaAsistenciaDto? = null
+)
+
 interface AuthApiService {
     @POST("api/clientes/verificarCredenciales")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
@@ -56,4 +67,10 @@ interface AuthApiService {
     suspend fun actualizarMiPerfil(
         @Body request: ActualizarMiPerfilRequest
     ): Response<ApiResponse<MiPerfilResponseDto>>
+
+    @GET("api/asistencias/mi-qr")
+    suspend fun obtenerMiQr(): Response<ApiResponse<MiQrResponseDto>>
+
+    @POST("api/asistencias/mi-qr/regenerar")
+    suspend fun regenerarMiQr(): Response<ApiResponse<MiQrResponseDto>>
 }

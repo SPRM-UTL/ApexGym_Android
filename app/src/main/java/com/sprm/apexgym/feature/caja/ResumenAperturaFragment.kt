@@ -233,8 +233,11 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
                 } else {
                     "Sin movimientos pendientes"
                 }
-                holder.tvDetalle.text =
-                    "Las alertas de membresías no tienen endpoint disponible."
+                holder.tvDetalle.text = if (pendientes > 0) {
+                    "Valida los movimientos pendientes antes de realizar el corte"
+                } else {
+                    "Todos los movimientos de la apertura están validados"
+                }
                 holder.tvMonto.text = ""
             }
 

@@ -271,6 +271,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val flQrCodeBox = view.findViewById<View>(R.id.flQrCodeBox)
         val btnGenerarNuevoQr = view.findViewById<View>(R.id.btnGenerarNuevoQr)
+        val btnReportarProblemaQr = view.findViewById<View>(R.id.btnReportarProblemaQr)
+        btnReportarProblemaQr?.visibility = View.GONE
 
         val openQrAccessListener = View.OnClickListener {
             val transition = AutoTransition().apply {
@@ -288,6 +290,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             llQrAccessSection.visibility = View.VISIBLE
 
             scrollHome.smoothScrollTo(0, 0)
+            cargarMiQrDesdeBackend(view, regenerar = false)
         }
 
         view.findViewById<View>(R.id.fabQrMockup)?.setOnClickListener(openQrAccessListener)
@@ -313,6 +316,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         .start()
                 }
                 ?.start()
+            cargarMiQrDesdeBackend(view, regenerar = true)
         }
 
         cargarCatalogoDesdeBackend(
@@ -1552,6 +1556,109 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 item.label.setTextColor(colorInactive)
                 item.label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8.5f)
             }
+        }
+    }
+
+    private fun cargarMiQrDesdeBackend(rootView: View, regenerar: Boolean) {
+        val ivQr = rootView.findViewById<ImageView>(R.id.ivQrCodeMatrix)
+        val tvBadge = rootView.findViewWithTag<TextView>("tv_qr_badge")
+        val tvNombre = rootView.findViewWithTag<TextView>("tv_qr_member_name")
+        val tvCodigo = rootView.findViewWithTag<TextView>("tv_qr_member_code")
+        val btnRegenerar = rootView.findViewById<View>(R.id.btnGenerarNuevoQr)
+
+        tvBadge?.text = if (regenerar) "REGENERANDO QR…" else "CARGANDO PASE QR…"
+        btnRegenerar?.isEnabled = false
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = if (regenerar) {
+                    RetrofitClient.authService.regenerarMiQr()
+                } else {
+                    RetrofitClient.authService.obtenerMiQr()
+                }
+                val body = response.body()
+                val data = if (response.isSuccessful && body?.responseFlag == 0) body.data else null
+                if (!isAdded) return@launch
+
+                if (data == null || data.qrPayload.isNullOrBlank()) {
+                    tvBadge?.text = "NO DISPONIBLE"
+                    tvCodigo?.text = body?.message ?: "No se pudo obtener tu código QR"
+                    return@launch
+                }
+
+                val nombreCompleto = data.cliente?.nombreCompleto
+                    ?.takeIf { it.isNotBlank() }
+                    ?: com.sprm.apexgym.core.session.SessionManager.obtenerNombre(requireContext())
+                    ?: "Socio ApexGym"
+
+                val planNombre = data.membresia?.tipoMembresia?.nombre?.uppercase(Locale.getDefault())
+                tvBadge?.text = if (data.vigente) {
+                    if (!planNombre.isNullOrBlank()) "MEMBRESÍA VIGENTE • $planNombre" else "MEMBRESÍA VIGENTE"
+                } else {
+                    "SIN MEMBRESÍA VIGENTE"
+                }
+                tvNombre?.text = nombreCompleto
+                tvCodigo?.text = if (data.vigente) {
+                    "Código: ${data.codigoQr ?: "—"} • ${data.diasRestantes} días restantes"
+                } else {
+                    data.mensaje ?: "Membresía inactiva"
+                }
+
+                val bitmap = withContext(Dispatchers.Default) {
+                    generarBitmapQr(data.qrPayload, 600)
+                }
+                if (isAdded && bitmap != null) {
+                    ivQr?.setImageBitmap(bitmap)
+                    if (regenerar) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Código QR actualizado correctamente",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            } catch (_: Exception) {
+                if (isAdded) {
+                    tvBadge?.text = "SIN CONEXIÓN"
+                    tvCodigo?.text = "No se pudo cargar tu pase QR"
+                }
+            } finally {
+                if (isAdded) {
+                    btnRegenerar?.isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun generarBitmapQr(contenido: String, tamano: Int): Bitmap? {
+        return try {
+            val hints = mapOf(
+                com.google.zxing.EncodeHintType.MARGIN to 1,
+                com.google.zxing.EncodeHintType.CHARACTER_SET to "UTF-8"
+            )
+            val matrix = com.google.zxing.qrcode.QRCodeWriter().encode(
+                contenido,
+                com.google.zxing.BarcodeFormat.QR_CODE,
+                tamano,
+                tamano,
+                hints
+            )
+            val width = matrix.width
+            val height = matrix.height
+            val pixels = IntArray(width * height)
+            val negro = android.graphics.Color.parseColor("#121214")
+            val blanco = android.graphics.Color.WHITE
+            for (y in 0 until height) {
+                val offset = y * width
+                for (x in 0 until width) {
+                    pixels[offset + x] = if (matrix.get(x, y)) negro else blanco
+                }
+            }
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
+                setPixels(pixels, 0, width, 0, 0, width, height)
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 

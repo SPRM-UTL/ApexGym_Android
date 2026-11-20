@@ -200,6 +200,10 @@ data class ValidarAccesoRequest(
     val observaciones: String? = null
 )
 
+data class ValidarQrRequest(
+    val qr: String
+)
+
 data class ValidarAccesoDto(
     val acceso: Boolean = false,
     val codigo: String? = null,
@@ -447,6 +451,11 @@ interface EmpleadoApiService {
         @Body request: ValidarAccesoRequest
     ): Response<ApiResponse<ValidarAccesoDto>>
 
+    @POST("api/asistencias/validar-qr")
+    suspend fun validarQr(
+        @Body request: ValidarQrRequest
+    ): Response<ApiResponse<ValidarAccesoDto>>
+
     @GET("api/clientes-membresias/cliente/{clienteId}/activa")
     suspend fun obtenerMembresiaActiva(
         @Path("clienteId") clienteId: Int,
@@ -496,7 +505,7 @@ interface EmpleadoApiService {
         @Body request: CrearMovimientoRequest
     ): Response<ApiResponse<MovimientoCajaDto>>
 
-    @POST("api/movimientos-caja/{id}/validar")
+    @PUT("api/movimientos-caja/{id}/validar")
     suspend fun validarMovimiento(
         @Path("id") id: Int
     ): Response<ApiResponse<MovimientoCajaDto>>

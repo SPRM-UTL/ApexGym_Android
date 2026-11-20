@@ -19,6 +19,7 @@ import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.AsistenciaDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
+import com.sprm.apexgym.core.network.fechaHoyIso
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.databinding.FragmentHistorialAsistenciasBinding
@@ -26,10 +27,12 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.ceil
 
 class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBinding>() {
 
     private var asistencias: List<AsistenciaDto> = emptyList()
+    private var paginaActual: Int = 1
 
     override fun getLayoutRes(): Int = R.layout.fragment_historial_asistencias
 
@@ -38,23 +41,42 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.rvHistorialAsistencias.layoutManager = LinearLayoutManager(requireContext())
+
+        binding.btnPaginaAnterior.setOnClickListener {
+            if (paginaActual > 1) {
+                paginaActual--
+                renderizarPagina()
+            }
+        }
+        binding.btnPaginaSiguiente.setOnClickListener {
+            val totalPaginas = calcularTotalPaginas()
+            if (paginaActual < totalPaginas) {
+                paginaActual++
+                renderizarPagina()
+            }
+        }
+
         cargarHistorial()
     }
 
     private fun cargarHistorial() {
-        binding.tvTotalAccesos.text = "…"
+        binding.tvRachaActual.text = "…"
         binding.tvEsteMes.text = "…"
-        binding.tvRachaActual.text = "—"
+        binding.tvTotalAccesos.text = "…"
+        binding.llPaginacion.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitClient.empleadoService.obtenerAsistencias()
                 val data = response.dataExitosa()
+                if (!isAdded) return@launch
 
                 if (data == null) {
-                    binding.tvTotalAccesos.text = "—"
-                    binding.tvEsteMes.text = "—"
+                    binding.tvRachaActual.text = "0"
+                    binding.tvEsteMes.text = "0"
+                    binding.tvTotalAccesos.text = "0"
                     binding.llEmptyHistorial.visibility = View.VISIBLE
+                    binding.rvHistorialAsistencias.visibility = View.GONE
                     mostrarMensajeVacio(
                         response.mensajeDeError() ?: "No se pudo cargar el historial"
                     )
@@ -62,22 +84,39 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                 }
 
                 asistencias = data.sortedByDescending { it.fechaHora.orEmpty() }
+                paginaActual = 1
+
+                val hoyIso = fechaHoyIso()
                 val mesActual = SimpleDateFormat("yyyy-MM", Locale.US).format(Date())
 
-                binding.tvTotalAccesos.text = asistencias.size.toString()
-                binding.tvEsteMes.text = asistencias.count {
-                    it.fechaHora?.startsWith(mesActual) == true
-                }.toString()
-                binding.tvRachaActual.text = "—"
+                val accesosHoy = asistencias.count {
+                    formatearFecha(it.fechaHora, "yyyy-MM-dd") == hoyIso
+                }
+                val accesosMes = asistencias.count {
+                    formatearFecha(it.fechaHora, "yyyy-MM") == mesActual
+                }
 
-                renderizar()
+                binding.tvRachaActual.text = accesosHoy.toString()
+                binding.tvEsteMes.text = accesosMes.toString()
+                binding.tvTotalAccesos.text = asistencias.size.toString()
+
+                renderizarPagina()
             } catch (_: Exception) {
-                binding.tvTotalAccesos.text = "—"
-                binding.tvEsteMes.text = "—"
-                binding.llEmptyHistorial.visibility = View.VISIBLE
-                mostrarMensajeVacio("No se pudo conectar con el servidor")
+                if (isAdded) {
+                    binding.tvRachaActual.text = "0"
+                    binding.tvEsteMes.text = "0"
+                    binding.tvTotalAccesos.text = "0"
+                    binding.llEmptyHistorial.visibility = View.VISIBLE
+                    binding.rvHistorialAsistencias.visibility = View.GONE
+                    mostrarMensajeVacio("No se pudo conectar con el servidor")
+                }
             }
         }
+    }
+
+    private fun calcularTotalPaginas(): Int {
+        if (asistencias.isEmpty()) return 1
+        return ceil(asistencias.size.toDouble() / POR_PAGINA).toInt().coerceAtLeast(1)
     }
 
     private fun mostrarMensajeVacio(mensaje: String) {
@@ -91,16 +130,34 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
         }
     }
 
-    private fun renderizar() {
+    private fun renderizarPagina() {
         if (asistencias.isEmpty()) {
             binding.llEmptyHistorial.visibility = View.VISIBLE
             binding.rvHistorialAsistencias.visibility = View.GONE
+            binding.llPaginacion.visibility = View.GONE
             mostrarMensajeVacio("Todavía no hay asistencias registradas")
             return
         }
 
+        val totalPaginas = calcularTotalPaginas()
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas
+        val inicio = (paginaActual - 1) * POR_PAGINA
+        val fin = (inicio + POR_PAGINA).coerceAtMost(asistencias.size)
+        val visibles = asistencias.subList(inicio, fin)
+
         binding.llEmptyHistorial.visibility = View.GONE
         binding.rvHistorialAsistencias.visibility = View.VISIBLE
+
+        if (totalPaginas > 1) {
+            binding.llPaginacion.visibility = View.VISIBLE
+            binding.tvPaginaActual.text = "Página $paginaActual de $totalPaginas"
+            binding.btnPaginaAnterior.isEnabled = paginaActual > 1
+            binding.btnPaginaAnterior.alpha = if (paginaActual > 1) 1f else 0.45f
+            binding.btnPaginaSiguiente.isEnabled = paginaActual < totalPaginas
+            binding.btnPaginaSiguiente.alpha = if (paginaActual < totalPaginas) 1f else 0.45f
+        } else {
+            binding.llPaginacion.visibility = View.GONE
+        }
 
         binding.rvHistorialAsistencias.adapter = object :
             RecyclerView.Adapter<AsistenciaViewHolder>() {
@@ -169,9 +226,7 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                 val chevron = ImageView(parent.context).apply {
                     layoutParams = LinearLayout.LayoutParams(dpToPx(20), dpToPx(20))
                     setImageResource(R.drawable.ic_chevron_right)
-                    setColorFilter(
-                        ContextCompat.getColor(context, R.color.apex_nav_inactive)
-                    )
+                    setColorFilter(ContextCompat.getColor(context, R.color.apex_nav_inactive))
                 }
                 row.addView(chevron)
                 card.addView(row)
@@ -180,10 +235,10 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
             }
 
             override fun onBindViewHolder(holder: AsistenciaViewHolder, position: Int) {
-                holder.bind(asistencias[position])
+                holder.bind(visibles[position])
             }
 
-            override fun getItemCount(): Int = asistencias.size
+            override fun getItemCount(): Int = visibles.size
         }
     }
 
@@ -196,7 +251,7 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
         fun bind(asistencia: AsistenciaDto) {
             tvNombre.text = asistencia.cliente?.nombreCompleto
                 ?.takeIf { it.isNotBlank() }
-                ?: "Cliente #${asistencia.clienteId}"
+                ?: "Socio"
             tvFecha.text = formatearFecha(asistencia.fechaHora)
             tvPlan.text = asistencia.clienteMembresia?.tipoMembresia?.nombre
                 ?.let { "Plan: $it" }
@@ -214,4 +269,8 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
         dp.toFloat(),
         resources.displayMetrics
     ).toInt()
+
+    companion object {
+        private const val POR_PAGINA = 10
+    }
 }

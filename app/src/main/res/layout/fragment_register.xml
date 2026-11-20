@@ -45,7 +45,8 @@
                         android:layout_height="18dp"
                         android:layout_gravity="center"
                         android:contentDescription="@string/register_back_to_login"
-                        android:src="@drawable/ic_arrow_left" />
+                        android:src="@drawable/ic_arrow_left"
+                        app:tint="@color/apex_text_primary" />
                 </FrameLayout>
 
                 <TextView
@@ -125,7 +126,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="18dp"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <FrameLayout
                     android:layout_width="82dp"
