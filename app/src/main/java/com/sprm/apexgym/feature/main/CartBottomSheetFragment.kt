@@ -80,7 +80,7 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
             if (items.isEmpty()) return@setOnClickListener
 
             dismiss()
-            parentFragmentManager.beginTransaction()
+            requireActivity().supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     android.R.anim.fade_in,
                     android.R.anim.fade_out,

@@ -63,6 +63,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var miMembresiaData: MiMembresiaResponseDto? = null
     private var categoriaSeleccionada: String = "Todos"
     private var textoBusqueda: String = ""
+    private var cartListener: (() -> Unit)? = null
     private val bitmapCache = LruCache<String, Bitmap>(40)
 
     private data class NavTabItem(
@@ -104,6 +105,41 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
         cargarContadorNotificaciones(view)
+
+        val flCartHeader = view.findViewById<View>(R.id.flCartHeader)
+        val tvCartHeaderBadge = view.findViewById<TextView>(R.id.tvCartHeaderBadge)
+
+        fun actualizarBadgeCarrito() {
+            if (!isAdded) return
+            val totalArticulos = CartManager.obtenerCantidadTotalArticulos(requireContext())
+            if (totalArticulos > 0) {
+                tvCartHeaderBadge?.visibility = View.VISIBLE
+                tvCartHeaderBadge?.text = totalArticulos.toString()
+            } else {
+                tvCartHeaderBadge?.visibility = View.GONE
+            }
+        }
+
+        actualizarBadgeCarrito()
+
+        flCartHeader?.setOnClickListener {
+            val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
+            val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+            if (existing == null) {
+                CartBottomSheetFragment().show(
+                    fm,
+                    CartBottomSheetFragment.TAG
+                )
+            }
+        }
+
+        val listenerCarrito: () -> Unit = {
+            if (isAdded && view != null) {
+                actualizarBadgeCarrito()
+            }
+        }
+        cartListener = listenerCarrito
+        CartManager.addListener(listenerCarrito)
 
         val flAvatar = view.findViewById<View>(R.id.flAvatar)
         flAvatar?.setOnClickListener {
@@ -1294,11 +1330,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         card.addView(container)
 
         card.setOnClickListener {
-            Toast.makeText(
-                context,
-                "${plan.nombre} (${plan.duracionDias} días • ${formatearPrecio(plan.precio)} MXN). Solicítalo en recepción.",
-                Toast.LENGTH_LONG
-            ).show()
+            val resultado = CartManager.agregarMembresia(context, plan)
+            Toast.makeText(context, resultado.mensaje, Toast.LENGTH_SHORT).show()
+            if (resultado.exito) {
+                val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
+                val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+                if (existing == null) {
+                    CartBottomSheetFragment().show(
+                        fm,
+                        CartBottomSheetFragment.TAG
+                    )
+                }
+            }
         }
 
         return card
@@ -1566,6 +1609,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     override fun onDestroyView() {
         pillAnimator?.cancel()
         pillAnimator = null
+        cartListener?.let { CartManager.removeListener(it) }
+        cartListener = null
         super.onDestroyView()
     }
 }

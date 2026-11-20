@@ -82,19 +82,13 @@ class CarritoBottomSheetFragment : BottomSheetDialogFragment() {
             val items = CartManager.obtenerItems(requireContext())
             if (items.isEmpty()) return@setOnClickListener
 
-            if (!SessionManager.esEmpleado(requireContext())) {
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Pago no disponible")
-                    .setMessage(
-                        "El cobro dentro de la aplicación está habilitado solo para empleados. " +
-                            "Acércate a recepción para completar tu compra."
-                    )
-                    .setPositiveButton("Entendido", null)
-                    .show()
-                return@setOnClickListener
+            dismiss()
+            val fragmentDestino: androidx.fragment.app.Fragment = if (SessionManager.esEmpleado(requireContext())) {
+                CheckoutFragment()
+            } else {
+                com.sprm.apexgym.feature.main.CheckoutFragment()
             }
 
-            dismiss()
             requireActivity().supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     android.R.anim.fade_in,
@@ -102,7 +96,7 @@ class CarritoBottomSheetFragment : BottomSheetDialogFragment() {
                     android.R.anim.fade_in,
                     android.R.anim.fade_out
                 )
-                .replace(R.id.fragment_container, CheckoutFragment())
+                .replace(R.id.fragment_container, fragmentDestino)
                 .addToBackStack(null)
                 .commit()
         }
@@ -156,11 +150,7 @@ class CarritoBottomSheetFragment : BottomSheetDialogFragment() {
 
         val total = CartManager.obtenerTotalPrecio(context)
         tvTotal?.text = "${total.formatearMonedaSinSufijo()} MXN"
-        btnProcederPago?.text = if (SessionManager.esEmpleado(context)) {
-            "Continuar al cobro"
-        } else {
-            "Pago disponible en recepción"
-        }
+        btnProcederPago?.text = "Continuar al cobro"
     }
 
     private fun crearTarjetaItemCarrito(item: CartItem): View {

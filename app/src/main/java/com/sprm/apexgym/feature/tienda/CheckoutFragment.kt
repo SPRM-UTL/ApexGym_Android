@@ -222,7 +222,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         binding.llTerminalFields.visibility = if (esEfectivo) View.GONE else View.VISIBLE
         if (!esEfectivo) {
             val nombre = metodoSeleccionado?.nombre ?: "pago"
-            binding.etFolioVoucher.hint = "Folio / referencia de $nombre"
+            binding.etFolioVoucher.hint = "Folio de $nombre (opcional: AUT-xxx)"
         }
         binding.tvCheckoutError.visibility = View.GONE
     }
@@ -340,20 +340,22 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         val esEfectivo = esMetodoEfectivo(metodo)
 
         if (esEfectivo) {
-            efectivoRecibido = leerMonto(binding.etEfectivoRecibido.text?.toString())
-            if (efectivoRecibido == null) {
-                mostrarError("Ingresa el efectivo recibido.")
-                return
+            val textoEfectivo = binding.etEfectivoRecibido.text?.toString()?.trim()
+            efectivoRecibido = if (textoEfectivo.isNullOrBlank()) {
+                total
+            } else {
+                leerMonto(textoEfectivo)
             }
-            if (efectivoRecibido < total) {
-                mostrarError("El efectivo recibido no cubre el total a cobrar.")
+            if (efectivoRecibido == null || efectivoRecibido < total) {
+                mostrarError("El efectivo recibido no cubre el total a cobrar ($${total.formatearMonedaSinSufijo()} MXN).")
                 return
             }
         } else {
-            folioVoucher = binding.etFolioVoucher.text?.toString()?.trim()
-            if (folioVoucher.isNullOrBlank()) {
-                mostrarError("Ingresa el folio o referencia de ${metodo.nombre ?: "pago"}.")
-                return
+            val typedFolio = binding.etFolioVoucher.text?.toString()?.trim()
+            folioVoucher = if (!typedFolio.isNullOrBlank()) {
+                typedFolio
+            } else {
+                "AUT-${System.currentTimeMillis() % 1000000}"
             }
         }
 
