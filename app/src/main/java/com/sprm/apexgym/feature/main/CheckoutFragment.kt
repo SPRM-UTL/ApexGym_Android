@@ -769,39 +769,61 @@ class CheckoutFragment : Fragment() {
             return
         }
 
+        val bancoLimpio = bancoEmisorSpei.trim()
+        val referenciaLimpia = referenciaSpei.trim()
+        val numTarjetaLimpio = numeroTarjetaRaw.filter { it.isDigit() }
+        val titularLimpio = nombreTitular.trim()
+        val vencLimpio = fechaVencimiento.trim()
+        val cvvLimpio = cvvTarjeta.filter { it.isDigit() }
+        val correoLimpio = correoPaypal.trim()
+
         when (metodoSeleccionado) {
             PaymentMethodType.TRANSFERENCIA -> {
-                if (bancoEmisorSpei.isBlank()) {
+                if (bancoLimpio.isBlank()) {
                     Toast.makeText(context, "Indica el banco desde el que realizas la transferencia", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (referenciaSpei.isBlank()) {
+                if (bancoLimpio.length !in 3..50 || !Regex("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\\s\\.\\-]+$").matches(bancoLimpio)) {
+                    Toast.makeText(context, "El nombre del banco contiene caracteres no permitidos", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (referenciaLimpia.isBlank()) {
                     Toast.makeText(context, "Ingresa la clave de rastreo o referencia de transferencia", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (referenciaLimpia.length !in 4..40 || !Regex("^[a-zA-Z0-9\\-\\s]+$").matches(referenciaLimpia)) {
+                    Toast.makeText(context, "La clave de rastreo solo permite números, letras y guiones", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
             PaymentMethodType.TARJETA_DEBITO -> {
-                if (numeroTarjetaRaw.length < 16) {
+                if (numTarjetaLimpio.length != 16) {
                     Toast.makeText(context, "Ingresa los 16 dígitos de tu tarjeta de débito", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (nombreTitular.length < 3) {
+                if (titularLimpio.isBlank()) {
                     Toast.makeText(context, "Ingresa el nombre del titular de la tarjeta", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (fechaVencimiento.length < 5) {
-                    Toast.makeText(context, "Ingresa la fecha de vencimiento (MM/AA)", Toast.LENGTH_SHORT).show()
+                if (titularLimpio.length !in 3..60 || !Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s\\.]+$").matches(titularLimpio)) {
+                    Toast.makeText(context, "El nombre del titular solo puede contener letras y espacios", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (cvvTarjeta.length < 3) {
-                    Toast.makeText(context, "Ingresa el código de seguridad (CVV)", Toast.LENGTH_SHORT).show()
+                if (!Regex("^(0[1-9]|1[0-2])\\/([0-9]{2})$").matches(vencLimpio)) {
+                    Toast.makeText(context, "Ingresa una fecha de vencimiento válida (MM/AA)", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (!Regex("^[0-9]{3,4}$").matches(cvvLimpio)) {
+                    Toast.makeText(context, "Ingresa el código de seguridad (CVV) de 3 o 4 dígitos", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
             PaymentMethodType.MERCADO_PAGO -> {
-                if (correoPaypal.isNotBlank() && !Patterns.EMAIL_ADDRESS.matcher(correoPaypal).matches()) {
-                    Toast.makeText(context, "Ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show()
-                    return
+                if (correoLimpio.isNotBlank()) {
+                    if (correoLimpio.contains(" ") || correoLimpio.length > 100 || !Patterns.EMAIL_ADDRESS.matcher(correoLimpio).matches() || correoLimpio.any { it in "<>'\"/\\;`" }) {
+                        Toast.makeText(context, "Ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show()
+                        return
+                    }
                 }
             }
             PaymentMethodType.EFECTIVO -> {
@@ -843,16 +865,21 @@ class CheckoutFragment : Fragment() {
                 val uuidIdempotencia = UUID.randomUUID().toString()
                 val pagoReq = when (metodoSeleccionado) {
                     PaymentMethodType.MERCADO_PAGO -> PagoVentaRequest(
-                        correoCliente = correoPaypal.takeIf { it.isNotBlank() } ?: SessionManager.obtenerEmail(context)
+                        correoCliente = correoLimpio.takeIf { it.isNotBlank() } ?: SessionManager.obtenerEmail(context)
                     )
                     PaymentMethodType.TARJETA_DEBITO -> PagoVentaRequest(
                         tipoTarjeta = "DEBITO",
-                        ultimosDigitos = numeroTarjetaRaw.takeLast(4),
-                        folioVoucher = "CARD-${numeroTarjetaRaw.takeLast(4)}"
+                        marcaTarjeta = when {
+                            numTarjetaLimpio.startsWith("4") -> "VISA"
+                            numTarjetaLimpio.startsWith("5") -> "MASTERCARD"
+                            else -> "OTRA"
+                        },
+                        ultimosDigitos = numTarjetaLimpio.takeLast(4),
+                        folioVoucher = "CARD-${numTarjetaLimpio.takeLast(4)}"
                     )
                     PaymentMethodType.TRANSFERENCIA -> PagoVentaRequest(
-                        referencia = "$bancoEmisorSpei - $referenciaSpei",
-                        folioVoucher = referenciaSpei
+                        referencia = "$bancoLimpio - $referenciaLimpia",
+                        folioVoucher = referenciaLimpia
                     )
                     PaymentMethodType.EFECTIVO -> null
                 }
