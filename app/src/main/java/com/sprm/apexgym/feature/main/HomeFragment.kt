@@ -39,6 +39,8 @@ import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
+import com.sprm.apexgym.core.network.repository.NotificacionRepository
+import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,6 +103,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 )
             }
         }
+        cargarContadorNotificaciones(view)
 
         val flAvatar = view.findViewById<View>(R.id.flAvatar)
         flAvatar?.setOnClickListener {
@@ -373,6 +376,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
             if (!isAdded) return@launch
             renderizarListaServicios(llServiciosListContainer, tvServiciosEmptyState)
+        }
+    }
+
+    private fun cargarContadorNotificaciones(rootView: View) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resultado = NotificacionRepository().contarNoLeidas()
+            if (!isAdded || resultado !is ResultadoNotificaciones.Exito) return@launch
+
+            val badge = rootView.findViewById<TextView>(R.id.tvNotificationsBadge)
+            val noLeidas = resultado.datos
+            badge?.text = if (noLeidas > 99) "99+" else noLeidas.toString()
+            badge?.visibility = if (noLeidas > 0) View.VISIBLE else View.GONE
         }
     }
 
