@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.ClienteAsistenciaDto
@@ -33,29 +34,27 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
         binding.cvClientNotFound.visibility = View.GONE
         binding.llLoading.visibility = View.GONE
 
-        binding.btnBuscar.setOnClickListener {
+        val dispararBusqueda = {
             val query = binding.etManualSearch.text?.toString()?.trim().orEmpty()
-            if (query.isEmpty()) {
-                Toast.makeText(requireContext(), "Ingresa nombre, correo o teléfono", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+            if (query.length < 2) {
+                Toast.makeText(
+                    requireContext(),
+                    "Ingresa al menos 2 caracteres (nombre, correo o teléfono)",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                buscarCliente(query)
             }
-            buscarCliente(query)
         }
 
-        binding.btnGrantAccess.setOnClickListener { registrarAcceso() }
-
-        binding.btnDenyAccess.setOnClickListener {
-            AccesoResultadoDialogFragment.newInstance(false)
-                .show(parentFragmentManager, AccesoResultadoDialogFragment.TAG)
+        binding.btnBuscar.setOnClickListener { dispararBusqueda() }
+        binding.etManualSearch.setOnEditorActionListener { _, _, _ ->
+            dispararBusqueda()
+            true
         }
 
-        binding.btnNuevoCliente.setOnClickListener {
-            Toast.makeText(
-                requireContext(),
-                "El alta de clientes desde recepción aún no está disponible en la app.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        binding.btnGrantAccess.setOnClickListener { confirmarPermitirAcceso() }
+        binding.btnDenyAccess.setOnClickListener { confirmarDenegarAcceso() }
 
         val clienteId = arguments?.getInt(ARG_CLIENTE_ID, 0) ?: 0
         if (clienteId > 0) {
@@ -69,17 +68,16 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
             try {
                 val response = RetrofitClient.empleadoService.buscarCliente(termino)
                 val encontrados = response.dataExitosa()
+                if (!isAdded) return@launch
 
                 if (encontrados.isNullOrEmpty()) {
-                    mostrarNoEncontrado(
-                        response.mensajeDeError() ?: "No se encontró ningún cliente"
-                    )
+                    mostrarNoEncontrado()
                     return@launch
                 }
 
                 mostrarCliente(encontrados.first())
             } catch (_: Exception) {
-                mostrarNoEncontrado("No se pudo conectar con el servidor")
+                if (isAdded) mostrarNoEncontrado()
             }
         }
     }
@@ -90,13 +88,14 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
             try {
                 val response = RetrofitClient.empleadoService.obtenerClientes()
                 val cliente = response.dataExitosa()?.firstOrNull { it.id == clienteId }
+                if (!isAdded) return@launch
                 if (cliente == null) {
-                    mostrarNoEncontrado("No se encontró el cliente seleccionado")
+                    mostrarNoEncontrado()
                 } else {
                     mostrarCliente(cliente)
                 }
             } catch (_: Exception) {
-                mostrarNoEncontrado("No se pudo conectar con el servidor")
+                if (isAdded) mostrarNoEncontrado()
             }
         }
     }
@@ -117,33 +116,86 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
             if (!isAdded) return@launch
 
             val membresia = membresiaActual
+            val vigente = membresia != null &&
+                membresia.estadoMembresia?.nombre.equals("Vigente", ignoreCase = true)
+
             binding.cvClientFound.visibility = View.VISIBLE
             binding.cvClientNotFound.visibility = View.GONE
             binding.llLoading.visibility = View.GONE
 
-            binding.tvClientName.text = cliente.nombreCompleto.ifBlank { "Cliente #${cliente.id}" }
-            binding.tvClientCode.text = "Cliente #${cliente.id} • ${cliente.correo ?: "sin correo"}"
-            binding.tvClientStatus.text = cliente.estadoCliente?.nombre ?: "Estado no disponible"
-            binding.tvClientPlan.text = membresia?.tipoMembresia?.nombre
-                ?.let { "Plan: $it" }
-                ?: "Sin membresía activa"
+            binding.tvClientName.text = cliente.nombreCompleto.ifBlank { "Socio" }
+            val contacto = listOfNotNull(
+                cliente.correo?.takeIf { it.isNotBlank() },
+                cliente.telefono?.takeIf { it.isNotBlank() }
+            ).joinToString(" • ")
+            binding.tvClientCode.text = contacto.ifBlank { "Sin datos de contacto" }
+
+            binding.tvClientStatus.text = if (vigente) "VIGENTE" else "SIN PLAN"
+            binding.tvClientStatus.setBackgroundResource(
+                if (vigente) R.drawable.bg_badge_orange else R.drawable.bg_chip_unselected
+            )
+            binding.tvClientStatus.setTextColor(
+                requireContext().getColor(
+                    if (vigente) R.color.white else R.color.apex_text_secondary
+                )
+            )
+
+            binding.tvClientPlan.text = membresia?.tipoMembresia?.nombre ?: "Sin membresía"
             binding.tvClientExpiry.text = membresia?.fechaFin
-                ?.let { "Vence: ${formatearFecha(it, "dd/MM/yyyy")}" }
-                ?: "Sin fecha de vencimiento"
+                ?.let { formatearFecha(it, "dd/MM/yyyy") }
+                ?: "—"
             binding.tvClientDaysLeft.text = calcularDiasRestantes(membresia?.fechaFin)
 
-            binding.btnGrantAccess.isEnabled = true
+            binding.btnGrantAccess.isEnabled = vigente
+            binding.btnGrantAccess.alpha = if (vigente) 1f else 0.45f
             binding.btnDenyAccess.isEnabled = true
         }
     }
 
-    private fun mostrarNoEncontrado(mensaje: String) {
+    private fun confirmarPermitirAcceso() {
+        val cliente = clienteActual ?: return
+        val plan = membresiaActual?.tipoMembresia?.nombre ?: "Membresía vigente"
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Confirmar entrada")
+            .setMessage("¿Registrar asistencia para ${cliente.nombreCompleto}?\nPlan: $plan")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Confirmar") { _, _ ->
+                registrarAcceso()
+            }
+            .show()
+    }
+
+    private fun confirmarDenegarAcceso() {
+        val cliente = clienteActual ?: return
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Denegar entrada")
+            .setMessage("¿Deseas cancelar el acceso para ${cliente.nombreCompleto}?")
+            .setNegativeButton("Volver", null)
+            .setPositiveButton("Denegar") { _, _ ->
+                limpiarResultado()
+                Toast.makeText(
+                    requireContext(),
+                    "Acceso denegado para ${cliente.nombreCompleto}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            .show()
+    }
+
+    private fun limpiarResultado() {
+        clienteActual = null
+        membresiaActual = null
+        binding.cvClientFound.visibility = View.GONE
+        binding.cvClientNotFound.visibility = View.GONE
+        binding.etManualSearch.setText("")
+    }
+
+    private fun mostrarNoEncontrado() {
         clienteActual = null
         membresiaActual = null
         binding.cvClientFound.visibility = View.GONE
         binding.cvClientNotFound.visibility = View.VISIBLE
         binding.llLoading.visibility = View.GONE
-        binding.tvClientName.text = mensaje
     }
 
     private fun mostrarCargando(cargando: Boolean) {
@@ -157,6 +209,7 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
     private fun registrarAcceso() {
         val cliente = clienteActual ?: return
         binding.btnGrantAccess.isEnabled = false
+        binding.btnGrantAccess.text = "Registrando…"
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -164,42 +217,55 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
                     ValidarAccesoRequest(clienteId = cliente.id)
                 )
                 val resultado = response.dataExitosa()
-
-                if (resultado == null) {
-                    Toast.makeText(
-                        requireContext(),
-                        response.mensajeDeError() ?: "No se pudo registrar el acceso",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    binding.btnGrantAccess.isEnabled = true
-                    return@launch
-                }
+                if (!isAdded) return@launch
 
                 val nombre = cliente.nombreCompleto
                 val plan = membresiaActual?.tipoMembresia?.nombre.orEmpty()
 
-                if (resultado.acceso) {
+                if (resultado == null) {
+                    val errorMsg = response.mensajeDeError() ?: "No se pudo registrar el acceso"
                     AccesoResultadoDialogFragment.newInstance(
-                        success = true,
+                        success = false,
+                        mensaje = errorMsg,
                         nombre = nombre,
-                        plan = plan
+                        plan = plan,
+                        botonPrimario = "Entendido"
                     ).show(parentFragmentManager, AccesoResultadoDialogFragment.TAG)
+                    return@launch
+                }
+
+                if (resultado.acceso) {
+                    val dialog = AccesoResultadoDialogFragment.newInstance(
+                        success = true,
+                        mensaje = "Entrada registrada correctamente",
+                        nombre = nombre,
+                        plan = plan,
+                        botonPrimario = "Listo"
+                    )
+                    dialog.onDismissAction = { limpiarResultado() }
+                    dialog.show(parentFragmentManager, AccesoResultadoDialogFragment.TAG)
                 } else {
                     AccesoResultadoDialogFragment.newInstance(
                         success = false,
                         mensaje = resultado.mensaje,
                         nombre = nombre,
-                        plan = plan
+                        plan = plan,
+                        botonPrimario = "Entendido"
                     ).show(parentFragmentManager, AccesoResultadoDialogFragment.TAG)
                 }
-                binding.btnGrantAccess.isEnabled = true
-            } catch (e: Exception) {
-                Toast.makeText(
-                    requireContext(),
-                    "Error al registrar acceso: ${e.localizedMessage ?: "desconocido"}",
-                    Toast.LENGTH_LONG
-                ).show()
-                binding.btnGrantAccess.isEnabled = true
+            } catch (_: Exception) {
+                if (isAdded) {
+                    Toast.makeText(
+                        requireContext(),
+                        "No se pudo conectar con el servidor",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            } finally {
+                if (isAdded) {
+                    binding.btnGrantAccess.isEnabled = true
+                    binding.btnGrantAccess.text = "Permitir Acceso"
+                }
             }
         }
     }
@@ -211,10 +277,10 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
                 ?: return "—"
             val dias = ((fecha.time - System.currentTimeMillis()) / 86_400_000L).toInt()
             when {
-                dias < 0 -> "Membresía vencida"
+                dias < 0 -> "Vencida"
                 dias == 0 -> "Vence hoy"
-                dias == 1 -> "1 día restante"
-                else -> "$dias días restantes"
+                dias == 1 -> "1 día"
+                else -> "$dias días"
             }
         } catch (_: Exception) {
             "—"

@@ -5,31 +5,32 @@
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen">
 
-    <!-- Top Bar -->
     <LinearLayout
         android:id="@+id/llTopBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@color/apex_bg_screen"
-        android:elevation="2dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
+        android:paddingHorizontal="18dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <FrameLayout
             android:id="@+id/flBack"
-            android:layout_width="46dp"
-            android:layout_height="46dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="@drawable/bg_circle_white_elevated"
-            android:elevation="2dp">
+            android:clickable="true"
+            android:elevation="2dp"
+            android:focusable="true">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center"
+                android:contentDescription="Regresar"
                 android:src="@drawable/ic_arrow_left"
                 app:tint="@color/apex_text_primary" />
         </FrameLayout>
@@ -39,157 +40,166 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Control de Acceso"
+            android:text="Escanear QR"
             android:textColor="@color/apex_text_primary"
-            android:textSize="18sp"
+            android:textSize="19sp"
             android:textStyle="bold" />
 
         <FrameLayout
-            android:layout_width="46dp"
-            android:layout_height="46dp"
+            android:id="@+id/flFlashlight"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="@drawable/bg_circle_white_elevated"
+            android:clickable="true"
             android:elevation="2dp"
-            android:visibility="invisible" />
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/ivFlashlight"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="Linterna"
+                android:src="@drawable/ic_flashlight_off"
+                app:tint="@color/apex_text_primary" />
+        </FrameLayout>
     </LinearLayout>
 
-    <!-- Scanner Area -->
-    <FrameLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/flScannerContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="18dp"
+        android:layout_marginTop="12dp"
         android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/apex_card_dark"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp"
         app:layout_constraintBottom_toTopOf="@id/llBottomInfo"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/llTopBar">
+        app:layout_constraintTop_toBottomOf="@id/llTopBar"
+        app:strokeWidth="0dp">
 
-        <!-- Camera Preview will be added programmatically -->
         <FrameLayout
-            android:id="@+id/previewView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent">
 
-        <!-- Scanner Overlay -->
-        <View
-            android:id="@+id/vScannerOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/apex_orange_translucent" />
+            <androidx.camera.view.PreviewView
+                android:id="@+id/previewView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-        <!-- QR Frame -->
-        <FrameLayout
-            android:id="@+id/flQrFrame"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            android:layout_gravity="center">
-
-            <!-- Corner brackets -->
-            <ImageView
-                android:layout_width="240dp"
-                android:layout_height="240dp"
-                android:src="@drawable/ic_qr_scanner_brackets"
-                app:tint="@color/apex_orange" />
-
-            <!-- Scanning line animation -->
             <View
-                android:id="@+id/vScanningLine"
-                android:layout_width="200dp"
-                android:layout_height="2dp"
-                android:layout_gravity="top|center_horizontal"
-                android:layout_marginTop="20dp"
-                android:background="@color/apex_orange" />
+                android:id="@+id/vScannerOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#40000000" />
+
+            <FrameLayout
+                android:id="@+id/flQrFrame"
+                android:layout_width="230dp"
+                android:layout_height="230dp"
+                android:layout_gravity="center">
+
+                <ImageView
+                    android:layout_width="230dp"
+                    android:layout_height="230dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_qr_scanner_brackets"
+                    app:tint="@color/apex_orange" />
+
+                <View
+                    android:id="@+id/vScanningLine"
+                    android:layout_width="190dp"
+                    android:layout_height="2dp"
+                    android:layout_gravity="center"
+                    android:background="@color/apex_orange" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/tvScannerInstruction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="24dp"
+                android:background="@drawable/bg_badge_orange"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="7dp"
+                android:text="Apunta al código QR del socio"
+                android:textColor="@color/white"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
         </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-        <!-- Instruction Text -->
-        <TextView
-            android:id="@+id/tvScannerInstruction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|center_horizontal"
-            android:layout_marginBottom="40dp"
-            android:text="Coloca el código QR dentro del marco"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-    </FrameLayout>
-
-    <!-- Bottom Info -->
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/llBottomInfo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="24dp"
-        android:orientation="vertical"
-        android:padding="20dp"
-        android:background="@drawable/bg_bottom_sheet_surface"
+        android:layout_marginBottom="20dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:strokeColor="@color/apex_stroke_light"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:padding="18dp">
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_qr_code_matrix"
-                app:tint="@color/apex_orange" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_qr_code_matrix"
+                    app:tint="@color/apex_orange" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Validación de Pase QR"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Escanea el QR de la membresía"
-                android:textColor="@color/apex_text_primary"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:text="El socio puede mostrar su pase desde el botón QR en su app"
+                android:textColor="@color/apex_text_secondary"
+                android:textSize="12.5sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAccesoManual"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="14dp"
+                android:text="Acceso Manual (Buscar Socio)"
+                android:textAllCaps="false"
+                android:textColor="@color/apex_orange"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:cornerRadius="23dp"
+                app:strokeColor="@color/apex_orange"
+                app:strokeWidth="1.5dp" />
         </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:text="El cliente debe mostrar su código QR desde la app"
-            android:textColor="@color/apex_text_secondary"
-            android:textSize="12sp" />
-
-        <Button
-            android:id="@+id/btnAccesoManual"
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_marginTop="16dp"
-            android:backgroundTint="@color/transparent"
-            android:text="Acceso Manual (Buscar Cliente)"
-            android:textAllCaps="false"
-            android:textColor="@color/apex_orange"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <!-- Flashlight Button -->
-    <FrameLayout
-        android:id="@+id/flFlashlight"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="120dp"
-        android:background="@drawable/bg_circle_white_elevated"
-        android:elevation="4dp"
-        app:layout_constraintBottom_toBottomOf="@id/flScannerContainer"
-        app:layout_constraintEnd_toEndOf="@id/flScannerContainer">
-
-        <ImageView
-            android:id="@+id/ivFlashlight"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_flashlight_off"
-            app:tint="@color/apex_text_primary" />
-    </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

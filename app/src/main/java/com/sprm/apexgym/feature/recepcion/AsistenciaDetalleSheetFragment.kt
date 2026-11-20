@@ -52,23 +52,17 @@ class AsistenciaDetalleSheetFragment : BottomSheetDialogFragment() {
         val fechaFin = arguments?.getString(ARG_FECHA_FIN).orEmpty()
 
         binding.tvStatusTitle.text = "Acceso registrado"
-        binding.tvStatusSubtitle.text = nombres.ifBlank { "Cliente" }
-        binding.tvTipoAcceso.text = "Entrada registrada en recepción"
+        binding.tvStatusSubtitle.text = nombres.ifBlank { "Socio" }
+        binding.tvTipoAcceso.text = "Entrada en recepción"
         binding.tvFechaHora.text = asistencia?.fechaHora?.let { formatearFecha(it) }
             ?: SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("es", "MX")).format(Date())
-        binding.tvMetodo.text = "No disponible en la API"
-        binding.tvRecepcionista.text = "No disponible en la API"
-        binding.tvPlan.text = plan.ifBlank { "Sin membresía activa" }
+        binding.tvPlan.text = plan.ifBlank { "Sin membresía registrada" }
         binding.tvDiasRestantes.text = calcularDiasRestantes(fechaFin)
         binding.tvEstadoMembresia.text = estado.ifBlank { "Sin estado" }
         binding.tvObservaciones.text = asistencia?.observaciones?.takeIf { it.isNotBlank() }
             ?: "Sin observaciones"
 
         binding.btnCloseDetalle.setOnClickListener { dismiss() }
-
-        // El backend no expone repetición de acceso ni perfil de cliente para recepción.
-        binding.btnRepetirAcceso.visibility = View.GONE
-        binding.btnVerPerfilCliente.visibility = View.GONE
     }
 
     private fun calcularDiasRestantes(fechaFin: String): String {
@@ -77,7 +71,12 @@ class AsistenciaDetalleSheetFragment : BottomSheetDialogFragment() {
             val formato = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val fin = formato.parse(fechaFin.take(10)) ?: return fechaFin
             val dias = ((fin.time - System.currentTimeMillis()) / 86_400_000L).toInt()
-            if (dias < 0) "Vencida" else "$dias días"
+            when {
+                dias < 0 -> "Vencida"
+                dias == 0 -> "Vence hoy"
+                dias == 1 -> "1 día"
+                else -> "$dias días"
+            }
         } catch (_: Exception) {
             fechaFin
         }

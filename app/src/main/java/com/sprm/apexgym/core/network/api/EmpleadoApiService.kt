@@ -85,7 +85,14 @@ data class EmpleadoDto(
     val apellidoMaterno: String? = null,
     val telefono: String? = null,
     val correo: String? = null,
-    val direccion: String? = null,
+    val calle: String? = null,
+    val numeroExterior: String? = null,
+    val numeroInterior: String? = null,
+    val colonia: String? = null,
+    val codigoPostal: String? = null,
+    val municipio: String? = null,
+    val estado: String? = null,
+    val entreCalles: String? = null,
     val fechaNacimiento: String? = null,
     val fechaIngreso: String? = null,
     val imagenUrl: String? = null,
@@ -111,7 +118,14 @@ data class EmpleadoRequest(
     val apellidoMaterno: String? = null,
     val telefono: String,
     val correo: String? = null,
-    val direccion: String? = null,
+    val calle: String? = null,
+    val numeroExterior: String? = null,
+    val numeroInterior: String? = null,
+    val colonia: String? = null,
+    val codigoPostal: String? = null,
+    val municipio: String? = null,
+    val estado: String? = null,
+    val entreCalles: String? = null,
     val fechaNacimiento: String,
     val fechaIngreso: String,
     val imagenUrl: String? = null,
@@ -184,6 +198,10 @@ data class AsistenciasHoyDto(
 data class ValidarAccesoRequest(
     val clienteId: Int,
     val observaciones: String? = null
+)
+
+data class ValidarQrRequest(
+    val qr: String
 )
 
 data class ValidarAccesoDto(
@@ -433,6 +451,11 @@ interface EmpleadoApiService {
         @Body request: ValidarAccesoRequest
     ): Response<ApiResponse<ValidarAccesoDto>>
 
+    @POST("api/asistencias/validar-qr")
+    suspend fun validarQr(
+        @Body request: ValidarQrRequest
+    ): Response<ApiResponse<ValidarAccesoDto>>
+
     @GET("api/clientes-membresias/cliente/{clienteId}/activa")
     suspend fun obtenerMembresiaActiva(
         @Path("clienteId") clienteId: Int,
@@ -482,7 +505,7 @@ interface EmpleadoApiService {
         @Body request: CrearMovimientoRequest
     ): Response<ApiResponse<MovimientoCajaDto>>
 
-    @POST("api/movimientos-caja/{id}/validar")
+    @PUT("api/movimientos-caja/{id}/validar")
     suspend fun validarMovimiento(
         @Path("id") id: Int
     ): Response<ApiResponse<MovimientoCajaDto>>

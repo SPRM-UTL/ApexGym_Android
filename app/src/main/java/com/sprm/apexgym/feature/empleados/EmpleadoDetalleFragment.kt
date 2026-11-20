@@ -100,7 +100,7 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
                 binding.tvEmpleadoTelefono.text = empleado.telefono ?: "—"
                 binding.tvEmpleadoEmail.text =
                     empleado.correo ?: empleado.usuario?.email ?: "—"
-                binding.tvEmpleadoDireccion.text = formatearDireccion(empleado.direccion)
+                binding.tvEmpleadoDireccion.text = formatearDireccion(empleado)
                 binding.tvEmpleadoDni.text = "EMP-${empleado.id.toString().padStart(4, '0')}"
                 binding.tvEmpleadoFechaIngreso.text = formatearFecha(
                     empleado.fechaIngreso,
@@ -179,50 +179,42 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
         }
     }
 
-    private fun formatearDireccion(raw: String?): String {
-        if (raw.isNullOrBlank()) return "—"
-        val texto = raw.trim()
-        if (!texto.startsWith("{")) return texto
-        return try {
-            val json = org.json.JSONObject(texto)
-            val calle = json.optString("calle").trim()
-            val numExt = json.optString("numeroExterior").trim()
-            val numInt = json.optString("numeroInterior").trim()
-            val colonia = json.optString("colonia").trim()
-            val cp = json.optString("codigoPostal").trim()
-            val municipio = json.optString("municipio").trim()
-            val estado = json.optString("estado").trim()
-            val entreCalles = json.optString("entreCalles").trim()
+    private fun formatearDireccion(empleado: com.sprm.apexgym.core.network.api.EmpleadoDto): String {
+        val calle = empleado.calle?.trim().orEmpty()
+        val numExt = empleado.numeroExterior?.trim().orEmpty()
+        val numInt = empleado.numeroInterior?.trim().orEmpty()
+        val colonia = empleado.colonia?.trim().orEmpty()
+        val cp = empleado.codigoPostal?.trim().orEmpty()
+        val municipio = empleado.municipio?.trim().orEmpty()
+        val estado = empleado.estado?.trim().orEmpty()
+        val entreCalles = empleado.entreCalles?.trim().orEmpty()
 
-            val lineaCalle = buildString {
-                if (calle.isNotEmpty()) append(calle)
-                if (numExt.isNotEmpty()) {
-                    if (isNotEmpty()) append(" ")
-                    append("#$numExt")
-                }
-                if (numInt.isNotEmpty()) {
-                    if (isNotEmpty()) append(" ")
-                    append("Int. $numInt")
-                }
+        val lineaCalle = buildString {
+            if (calle.isNotEmpty()) append(calle)
+            if (numExt.isNotEmpty()) {
+                if (isNotEmpty()) append(" ")
+                append("#$numExt")
             }
-
-            val partes = buildList {
-                if (lineaCalle.isNotEmpty()) add(lineaCalle)
-                if (colonia.isNotEmpty()) add("Col. $colonia")
-                if (cp.isNotEmpty()) add("C.P. $cp")
-                if (municipio.isNotEmpty()) add(municipio)
-                if (estado.isNotEmpty()) add(estado)
-            }.joinToString(", ")
-
-            val completo = if (entreCalles.isNotEmpty()) {
-                if (partes.isNotEmpty()) "$partes ($entreCalles)" else entreCalles
-            } else {
-                partes
+            if (numInt.isNotEmpty()) {
+                if (isNotEmpty()) append(" ")
+                append("Int. $numInt")
             }
-            completo.ifBlank { "—" }
-        } catch (_: Exception) {
-            texto
         }
+
+        val partes = buildList {
+            if (lineaCalle.isNotEmpty()) add(lineaCalle)
+            if (colonia.isNotEmpty()) add("Col. $colonia")
+            if (cp.isNotEmpty()) add("C.P. $cp")
+            if (municipio.isNotEmpty()) add(municipio)
+            if (estado.isNotEmpty()) add(estado)
+        }.joinToString(", ")
+
+        val completo = if (entreCalles.isNotEmpty()) {
+            if (partes.isNotEmpty()) "$partes ($entreCalles)" else entreCalles
+        } else {
+            partes
+        }
+        return completo.ifBlank { "—" }
     }
 
     private fun navegar(fragment: Fragment) {
