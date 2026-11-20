@@ -627,7 +627,13 @@ class CheckoutFragment : Fragment() {
             )
         }
 
-        infoBox.addView(crearFilaDatoCopiable("Folio de orden", folioGenerado, folioGenerado))
+        val tvInfo = TextView(context).apply {
+            text = "Al presionar 'Pagar y finalizar' se registrará tu orden oficial con su folio para liquidar y recoger en el mostrador."
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setPadding(0, 0, 0, dpToPx(10))
+        }
+        infoBox.addView(tvInfo)
         infoBox.addView(crearFilaDatoCopiable("Punto de cobro", "Recepción Sucursal ApexGym", null))
         infoBox.addView(crearFilaDatoCopiable("Vigencia del pedido", "24 horas para liquidar en caja", null))
         infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
