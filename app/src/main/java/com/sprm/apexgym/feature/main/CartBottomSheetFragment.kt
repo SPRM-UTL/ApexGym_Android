@@ -79,14 +79,17 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
             val items = CartManager.obtenerItems(requireContext())
             if (items.isEmpty()) return@setOnClickListener
 
-            AlertDialog.Builder(requireContext())
-                .setTitle("Pago en línea no disponible")
-                .setMessage(
-                    "El cobro dentro de la aplicación está habilitado solo para empleados. " +
-                        "Acércate a recepción para completar tu compra."
+            dismiss()
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
                 )
-                .setPositiveButton("Entendido", null)
-                .show()
+                .replace(R.id.fragment_container, CheckoutFragment())
+                .addToBackStack(null)
+                .commit()
         }
 
         val listener: () -> Unit = {

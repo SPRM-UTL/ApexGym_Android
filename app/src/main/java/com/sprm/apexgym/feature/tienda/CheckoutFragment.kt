@@ -28,6 +28,7 @@ import com.sprm.apexgym.core.network.mensajeUsuario
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentCheckoutPosBinding
 import com.sprm.apexgym.feature.main.CartItem
+import com.sprm.apexgym.feature.main.CartItemType
 import com.sprm.apexgym.feature.main.CartManager
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -380,41 +381,35 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             "Venta POS (${items.sumOf { it.cantidad }} artículos)"
         }.take(240)
 
-        val metadatos = mutableMapOf<String, Any>(
-            "origen" to "POS_ANDROID",
-            "empleadoId" to empleadoId,
-            "metodoPagoId" to metodo.id,
-            "metodoPagoNombre" to nombreMetodo,
-            "sucursalId" to SessionManager.obtenerSucursalId(requireContext()),
-            "items" to items.map { item ->
-                mapOf(
-                    "tipo" to item.tipo.name,
-                    "id" to item.id,
-                    "nombre" to item.nombre,
-                    "cantidad" to item.cantidad,
-                    "precioUnitario" to item.precioUnitario,
-                    "subtotal" to item.subtotal
-                )
-            }
-        )
-        aperturaCajaId?.let { metadatos["aperturaCajaId"] = it }
-        efectivoRecibido?.let {
-            metadatos["efectivoRecibido"] = it
-            metadatos["cambio"] = it - total
+        val detalleVenta = items.map { item ->
+            com.sprm.apexgym.core.network.api.DetalleVentaRequest(
+                tipoItem = item.tipo.name,
+                cantidad = item.cantidad,
+                productoId = if (item.tipo == CartItemType.PRODUCTO) item.id else null,
+                servicioId = if (item.tipo == CartItemType.SERVICIO) item.id else null,
+                tipoMembresiaId = if (item.tipo == CartItemType.MEMBRESIA) item.id else null,
+                descripcion = item.nombre
+            )
         }
 
-        val request = CrearCobroRequest(
-            concepto = concepto,
-            monto = total,
-            proveedor = proveedorApi,
-            folioVoucher = folioVoucher,
+        val request = com.sprm.apexgym.core.network.api.CrearVentaRequest(
+            empleadoId = empleadoId,
+            aperturaCajaId = aperturaCajaId,
+            metodoPagoId = metodo.id,
+            subtotal = total,
+            total = total,
+            montoRecibido = efectivoRecibido,
+            detalleVenta = detalleVenta,
             uuidIdempotencia = idempotenciaKey,
-            metadatos = metadatos
+            pago = com.sprm.apexgym.core.network.api.PagoVentaRequest(
+                folioVoucher = folioVoucher,
+                referencia = folioVoucher
+            )
         )
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.empleadoService.crearCobro(request)
+                val response = RetrofitClient.empleadoService.crearVenta(request, idempotencyKey = idempotenciaKey)
                 val resultado = response.dataExitosa()
 
                 if (!isAdded) return@launch
@@ -423,31 +418,27 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                     mostrarError(
                         response.mensajeDeError()
                             ?: response.body()?.message
-                            ?: "No se pudo registrar el cobro."
+                            ?: "No se pudo registrar la venta."
                     )
                     return@launch
                 }
 
-                val transaccion = resultado.transaccion
-                if (transaccion == null) {
-                    mostrarError("El servidor no devolvió la transacción del cobro.")
-                    return@launch
-                }
-
-                if (!transaccion.estado.equals("APROBADO", ignoreCase = true)) {
-                    mostrarError(
-                        "El cobro quedó en estado ${transaccion.estado ?: "desconocido"}. " +
-                            "El carrito no se vació."
-                    )
-                    return@launch
-                }
+                val transaccion = com.sprm.apexgym.core.network.api.TransaccionPagoDto(
+                    id = resultado.id,
+                    uuidIdempotencia = idempotenciaKey,
+                    monto = resultado.total,
+                    estado = resultado.estado?.uppercase() ?: "APROBADO",
+                    concepto = concepto,
+                    folioVoucher = folioVoucher ?: resultado.folioVenta?.id?.let { "F-$it" },
+                    createdAt = resultado.createdAt
+                )
 
                 val itemsJson = construirItemsJson(items)
                 CartManager.vaciarCarrito(requireContext())
 
                 Toast.makeText(
                     requireContext(),
-                    resultado.mensaje ?: "Cobro registrado correctamente.",
+                    "Venta registrada correctamente.",
                     Toast.LENGTH_SHORT
                 ).show()
 
