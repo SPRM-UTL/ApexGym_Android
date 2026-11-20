@@ -19,8 +19,13 @@ class MainActivity : AppCompatActivity() {
         RetrofitClient.initialize(this)
 
         if (savedInstanceState == null) {
+            val sesionValida = com.sprm.apexgym.core.session.SessionManager.haySesion(this) &&
+                RetrofitClient.cookieJar.tieneToken()
+            if (!sesionValida) {
+                com.sprm.apexgym.core.session.SessionManager.limpiar(this)
+            }
             val destino = when {
-                !com.sprm.apexgym.core.session.SessionManager.haySesion(this) -> LoginFragment()
+                !sesionValida -> LoginFragment()
                 com.sprm.apexgym.core.session.SessionManager.esEmpleado(this) -> EmpleadoDashboardFragment()
                 else -> HomeFragment()
             }

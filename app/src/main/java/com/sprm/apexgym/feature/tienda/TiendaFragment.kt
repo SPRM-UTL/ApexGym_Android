@@ -68,6 +68,10 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         binding.rvServices.adapter = servicioAdapter
         binding.rvServices.isNestedScrollingEnabled = false
 
+        view.findViewWithTag<View>("fl_back_tienda")?.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
+
         binding.flCartButton.setOnClickListener { abrirCarrito() }
         binding.flHistoryButton.setOnClickListener {
             parentFragmentManager.beginTransaction()
@@ -102,16 +106,40 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         viewLifecycleOwner.lifecycleScope.launch {
             val productosDeferred = async {
                 try {
-                    RetrofitClient.authService.obtenerProductosCliente().dataExitosa().orEmpty()
+                    val listaAdmin = RetrofitClient.empleadoService.obtenerProductos()
+                        .dataExitosa()
+                        .orEmpty()
+                        .filter { it.estado.isNullOrBlank() || it.estado.equals("activo", ignoreCase = true) }
+                    if (listaAdmin.isNotEmpty()) {
+                        listaAdmin
+                    } else {
+                        RetrofitClient.authService.obtenerProductosCliente().dataExitosa().orEmpty()
+                    }
                 } catch (_: Exception) {
-                    emptyList()
+                    try {
+                        RetrofitClient.authService.obtenerProductosCliente().dataExitosa().orEmpty()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
                 }
             }
             val serviciosDeferred = async {
                 try {
-                    RetrofitClient.authService.obtenerServiciosCliente().dataExitosa().orEmpty()
+                    val listaAdmin = RetrofitClient.empleadoService.obtenerServicios()
+                        .dataExitosa()
+                        .orEmpty()
+                        .filter { it.estado.isNullOrBlank() || it.estado.equals("activo", ignoreCase = true) }
+                    if (listaAdmin.isNotEmpty()) {
+                        listaAdmin
+                    } else {
+                        RetrofitClient.authService.obtenerServiciosCliente().dataExitosa().orEmpty()
+                    }
                 } catch (_: Exception) {
-                    emptyList()
+                    try {
+                        RetrofitClient.authService.obtenerServiciosCliente().dataExitosa().orEmpty()
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
                 }
             }
 
@@ -276,10 +304,11 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 ).apply {
                     setMargins(dp(5), dp(5), dp(5), dp(5))
                 }
-                setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-                radius = dp(20).toFloat()
-                cardElevation = dp(3).toFloat()
-                strokeWidth = 0
+                setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                radius = dp(18).toFloat()
+                cardElevation = 0f
+                strokeWidth = dp(1)
+                strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
             }
 
             val inner = LinearLayout(context).apply {
@@ -292,7 +321,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     dp(98)
                 )
-                setBackgroundResource(R.drawable.bg_product_image_container)
+                setBackgroundResource(R.drawable.bg_chip_unselected)
                 clipToOutline = true
                 addView(
                     ImageView(context).apply {
@@ -308,7 +337,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = dp(9) }
-                setTextColor(ContextCompat.getColor(context, R.color.white))
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 setTypeface(typeface, Typeface.BOLD)
                 maxLines = 2
@@ -322,7 +351,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = dp(2) }
                 setTextColor(
-                    ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary)
+                    ContextCompat.getColor(context, R.color.apex_text_secondary)
                 )
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 maxLines = 1
@@ -421,10 +450,11 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             val card = MaterialCardView(context).apply {
                 layoutParams = RecyclerView.LayoutParams(dp(238), ViewGroup.LayoutParams.WRAP_CONTENT)
                     .apply { marginEnd = dp(10) }
-                setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-                radius = dp(20).toFloat()
-                cardElevation = dp(3).toFloat()
-                strokeWidth = 0
+                setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                radius = dp(18).toFloat()
+                cardElevation = 0f
+                strokeWidth = dp(1)
+                strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
             }
 
             val inner = LinearLayout(context).apply {
@@ -439,7 +469,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
 
             val iconBox = FrameLayout(context).apply {
                 layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
-                setBackgroundResource(R.drawable.bg_product_image_container)
+                setBackgroundResource(R.drawable.bg_chip_unselected)
                 clipToOutline = true
                 addView(
                     ImageView(context).apply {
@@ -456,7 +486,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     1f
                 ).apply { marginStart = dp(10) }
-                setTextColor(ContextCompat.getColor(context, R.color.white))
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 setTypeface(typeface, Typeface.BOLD)
                 maxLines = 2

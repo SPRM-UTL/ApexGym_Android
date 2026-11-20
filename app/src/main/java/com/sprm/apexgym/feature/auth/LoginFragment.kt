@@ -78,11 +78,15 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     val usuarioId = usuario.id
                     val esCliente = resultado.rol.equals(SessionManager.ROL_CLIENTE, ignoreCase = true)
 
-                    val empleadoId = if (esCliente) {
+                    val empleadoAsociado = if (esCliente) {
                         null
                     } else {
-                        resolverEmpleadoId(usuarioId, correo)
+                        resolverEmpleado(usuarioId, correo)
                     }
+                    val empleadoId = empleadoAsociado?.id
+                    val sucursalInicialId = empleadoAsociado?.sucursalId
+                        ?.takeIf { it > 0 }
+                        ?: SessionManager.DEFAULT_SUCURSAL_ID
 
                     SessionManager.guardar(
                         context = requireContext(),
@@ -90,8 +94,12 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                         nombre = usuario.nombre,
                         email = usuario.email ?: correo,
                         rol = resultado.rol,
-                        empleadoId = empleadoId
+                        empleadoId = empleadoId,
+                        sucursalId = sucursalInicialId
                     )
+                    if (!esCliente) {
+                        cargarInfoSucursalInicial(sucursalInicialId)
+                    }
                     CartManager.vaciarCarrito(requireContext())
 
                     val destino: Fragment = if (esCliente) {
@@ -175,7 +183,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
      * catálogo `usuario.roles` que devuelve el backend.
      */
     private suspend fun autenticar(correo: String, contrasena: String): ResultadoAutenticacion {
-        val solicitud = LoginRequest(email = correo, contrasenia = contrasena)
+        val solicitud = LoginRequest(email = correo, contrasenia = contrasena, checkbox = true)
 
         val respuestaCliente = try {
             RetrofitClient.authService.login(solicitud)
@@ -211,10 +219,13 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         val usuarioEmpleado = respuestaEmpleado?.takeIf { it.isSuccessful && it.body()?.responseFlag == 0 }
             ?.body()?.data?.usuario
         if (usuarioEmpleado != null) {
-            val rol = usuarioEmpleado.roles
+            val rolesNombres = usuarioEmpleado.roles
                 ?.mapNotNull { it.nombre?.trim() }
                 ?.filter { it.isNotEmpty() }
-                ?.firstOrNull { !it.equals(SessionManager.ROL_CLIENTE, ignoreCase = true) }
+                .orEmpty()
+            val rol = rolesNombres
+                .firstOrNull { !it.equals(SessionManager.ROL_CLIENTE, ignoreCase = true) }
+                ?: rolesNombres.firstOrNull { it.equals(SessionManager.ROL_CLIENTE, ignoreCase = true) }
                 ?: "Empleado"
             return ResultadoAutenticacion(usuarioEmpleado, rol)
         }
@@ -229,16 +240,37 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
     }
 
     /** Busca el empleado asociado al usuario autenticado (por id o correo). */
-    private suspend fun resolverEmpleadoId(usuarioId: Int, correo: String): Int? {
+    private suspend fun resolverEmpleado(
+        usuarioId: Int,
+        correo: String
+    ): com.sprm.apexgym.core.network.api.EmpleadoDto? {
         return try {
             val empleados = RetrofitClient.empleadoService.obtenerEmpleados().dataExitosa().orEmpty()
-            empleados.firstOrNull { it.usuario?.id == usuarioId && usuarioId > 0 }?.id
+            empleados.firstOrNull { it.usuario?.id == usuarioId && usuarioId > 0 }
                 ?: empleados.firstOrNull {
                     it.usuario?.email.equals(correo, ignoreCase = true) ||
                         it.correo.equals(correo, ignoreCase = true)
-                }?.id
+                }
         } catch (_: Exception) {
             null
+        }
+    }
+
+    /** Sincroniza el nombre/código/ciudad de la sucursal asignada al empleado. */
+    private suspend fun cargarInfoSucursalInicial(sucursalId: Int) {
+        try {
+            val sucursal = RetrofitClient.empleadoService.obtenerSucursalActual().dataExitosa()
+            if (sucursal != null && isAdded) {
+                SessionManager.guardarSucursal(
+                    context = requireContext(),
+                    sucursalId = sucursal.id.takeIf { it > 0 } ?: sucursalId,
+                    nombre = sucursal.nombre,
+                    codigo = sucursal.codigo,
+                    ciudad = sucursal.ciudad,
+                    puedeCambiar = sucursal.puedeCambiarSucursal ?: false
+                )
+            }
+        } catch (_: Exception) {
         }
     }
 }

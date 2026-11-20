@@ -212,16 +212,17 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dpToPx(12) }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-            radius = dpToPx(18).toFloat()
-            cardElevation = dpToPx(3).toFloat()
-            strokeWidth = 0
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+            radius = dpToPx(16).toFloat()
+            cardElevation = 0f
+            strokeWidth = dpToPx(1)
+            strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
         }
 
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
+            setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14))
         }
 
         val col = LinearLayout(context).apply {
@@ -229,13 +230,13 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val tvTitulo = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         col.addView(tvTitulo)
         val tvDetalle = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
         }
         col.addView(tvDetalle)

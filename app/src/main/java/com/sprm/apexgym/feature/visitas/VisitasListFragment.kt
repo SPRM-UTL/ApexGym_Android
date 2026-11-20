@@ -201,7 +201,13 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
                     "Gratis"
                 }
                 holder.tvCosto.setBackgroundResource(
-                    if (visita.costo > 0) R.drawable.bg_badge_orange else R.drawable.bg_badge_green
+                    if (visita.costo > 0) R.drawable.bg_badge_orange else R.drawable.bg_chip_unselected
+                )
+                holder.tvCosto.setTextColor(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        if (visita.costo > 0) R.color.white else R.color.apex_text_secondary
+                    )
                 )
                 holder.itemView.setOnClickListener {
                     navegar(VisitaDetalleFragment.newInstance(visita.id))
@@ -226,12 +232,13 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply {
-                bottomMargin = dpToPx(12)
+                bottomMargin = dpToPx(10)
             }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-            radius = dpToPx(18).toFloat()
-            cardElevation = dpToPx(3).toFloat()
-            strokeWidth = 0
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+            radius = dpToPx(16).toFloat()
+            cardElevation = 0f
+            strokeWidth = dpToPx(1)
+            strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
             isClickable = true
             isFocusable = true
         }
@@ -239,14 +246,14 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
+            setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
         }
 
         val iconBox = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
-            setBackgroundResource(R.drawable.bg_circle_purple_light)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(42), dpToPx(42))
+            setBackgroundResource(R.drawable.bg_chip_unselected)
             val icon = ImageView(context).apply {
-                layoutParams = FrameLayout.LayoutParams(dpToPx(22), dpToPx(22), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(20), dpToPx(20), Gravity.CENTER)
                 setImageResource(R.drawable.ic_calendar_event)
                 setColorFilter(ContextCompat.getColor(context, R.color.apex_orange))
             }
@@ -257,14 +264,14 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
         val col = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = dpToPx(14)
+                marginStart = dpToPx(13)
                 marginEnd = dpToPx(8)
             }
         }
 
         val tvNombre = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.white))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         col.addView(tvNombre)
@@ -276,16 +283,16 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
         col.addView(tvTipo)
 
         val tvDetalle = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
         }
         col.addView(tvDetalle)
         row.addView(col)
 
         val tvCosto = TextView(context).apply {
-            setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+            setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4))
             setTextColor(ContextCompat.getColor(context, R.color.white))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         row.addView(tvCosto)

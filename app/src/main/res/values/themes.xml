@@ -1,11 +1,50 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Base.Theme.ApexGym" parent="Theme.Material3.Light.NoActionBar">
         <item name="colorPrimary">@color/apex_orange</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/apex_orange_translucent</item>
+        <item name="colorOnPrimaryContainer">@color/apex_orange</item>
+
+        <item name="colorSecondary">@color/apex_text_primary</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/apex_bg_screen</item>
+        <item name="colorOnSecondaryContainer">@color/apex_text_primary</item>
+
+        <item name="colorTertiary">@color/apex_orange</item>
+        <item name="colorOnTertiary">@color/white</item>
+        <item name="colorTertiaryContainer">@color/apex_orange_translucent</item>
+        <item name="colorOnTertiaryContainer">@color/apex_orange</item>
+
+        <item name="colorAccent">@color/apex_orange</item>
+        <item name="android:colorBackground">@color/apex_bg_screen</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/apex_text_primary</item>
+        <item name="colorSurfaceVariant">@color/apex_bg_screen</item>
+        <item name="colorOnSurfaceVariant">@color/apex_text_secondary</item>
+        <item name="colorSurfaceContainerLowest">@color/white</item>
+        <item name="colorSurfaceContainerLow">@color/white</item>
+        <item name="colorSurfaceContainer">@color/white</item>
+        <item name="colorSurfaceContainerHigh">@color/white</item>
+        <item name="colorSurfaceContainerHighest">@color/apex_bg_screen</item>
+        <item name="colorOutline">@color/apex_stroke_light</item>
+        <item name="colorOutlineVariant">@color/apex_stroke_light</item>
+
+        <item name="alertDialogTheme">@style/ThemeOverlay.Apex.AlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Apex.AlertDialog</item>
+
         <item name="android:statusBarColor">@color/apex_bg_screen</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="Theme.ApexGym" parent="Base.Theme.ApexGym" />
+
+    <style name="ThemeOverlay.Apex.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/white</item>
+        <item name="colorSurfaceContainerHigh">@color/white</item>
+        <item name="colorPrimary">@color/apex_orange</item>
+        <item name="colorOnSurface">@color/apex_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/apex_text_secondary</item>
+    </style>
 
     <style name="ShapeAppearanceOverlay.Apex.Circle" parent="">
         <item name="cornerSize">50%</item>
@@ -19,6 +58,33 @@
     <style name="TextAppearance.Apex.TabSmall" parent="TextAppearance.Material3.LabelMedium">
         <item name="android:textSize">12sp</item>
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.Apex.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/apex_bg_screen</item>
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+        <item name="boxStrokeColor">@color/selector_apex_input_stroke</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1.5dp</item>
+        <item name="hintTextColor">@color/apex_orange</item>
+        <item name="android:textColorHint">@color/apex_text_secondary</item>
+    </style>
+
+    <style name="Widget.Apex.TextInputLayout.Dropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxBackgroundColor">@color/apex_bg_screen</item>
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+        <item name="boxStrokeColor">@color/selector_apex_input_stroke</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">1.5dp</item>
+        <item name="endIconTint">@color/apex_text_secondary</item>
+        <item name="hintTextColor">@color/apex_orange</item>
+        <item name="android:textColorHint">@color/apex_text_secondary</item>
     </style>
 
     <style name="Widget.Material3.Chip.Choice" parent="Widget.Material3.Chip.Filter" />

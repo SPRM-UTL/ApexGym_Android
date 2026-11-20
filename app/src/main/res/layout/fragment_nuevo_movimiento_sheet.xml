@@ -6,7 +6,6 @@
     android:background="@drawable/bg_bottom_sheet_rounded"
     android:orientation="vertical">
 
-    <!-- Drag Handle -->
     <View
         android:layout_width="40dp"
         android:layout_height="4dp"
@@ -15,10 +14,9 @@
         android:layout_marginBottom="8dp"
         android:background="@drawable/bg_drag_handle" />
 
-    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="52dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="18dp">
@@ -29,136 +27,122 @@
             android:layout_weight="1"
             android:text="Nuevo Movimiento"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="19sp"
             android:textStyle="bold" />
-
 
         <FrameLayout
             android:id="@+id/btnCloseMovimiento"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="@drawable/bg_circle_white_elevated"
             android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            android:elevation="1dp">
+            android:elevation="1dp"
+            android:focusable="true">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
                 android:layout_gravity="center"
+                android:contentDescription="Cerrar"
                 android:src="@drawable/ic_close"
-                app:tint="@color/apex_nav_inactive" />
-
+                app:tint="@color/apex_text_primary" />
         </FrameLayout>
-
     </LinearLayout>
 
-    <!-- Type Selector (Entrada/Salida) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="18dp"
+        android:layout_marginTop="6dp"
         android:layout_marginBottom="16dp"
         android:orientation="horizontal"
         android:weightSum="2">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnTipoEntrada"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="46dp"
             android:layout_weight="1"
-            android:backgroundTint="#FF4CAF50"
             android:text="ENTRADA (+)"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/apex_orange"
+            app:cornerRadius="23dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnTipoSalida"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="46dp"
             android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/apex_card_dark"
             android:text="SALIDA (-)"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textSize="13.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/apex_card_dark"
+            app:cornerRadius="23dp" />
     </LinearLayout>
 
-    <!-- Concepto -->
     <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Apex.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="16dp"
-        app:boxBackgroundMode="outline"
-        app:boxStrokeColor="@color/apex_orange"
-        app:boxStrokeWidth="2dp"
-        app:cornerRadius="12dp"
-        app:hintTextColor="@color/apex_text_secondary">
+        android:layout_marginBottom="12dp"
+        android:hint="Concepto / Motivo">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etConcepto"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:hint="Concepto / Motivo"
-            android:inputType="text"
+            android:layout_height="wrap_content"
+            android:inputType="textCapSentences"
+            android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="16sp" />
+            android:textSize="14.5sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Monto -->
     <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Apex.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="16dp"
-        app:boxBackgroundMode="outline"
-        app:boxStrokeColor="@color/apex_orange"
-        app:boxStrokeWidth="2dp"
-        app:cornerRadius="12dp"
-        app:hintTextColor="@color/apex_text_secondary">
+        android:layout_marginBottom="12dp"
+        android:hint="Monto ($ MXN)">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etMonto"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:hint="0.00"
+            android:layout_height="wrap_content"
             android:inputType="numberDecimal"
+            android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="24sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Observaciones -->
     <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Apex.TextInputLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="18dp"
-        android:layout_marginBottom="24dp"
-        app:boxBackgroundMode="outline"
-        app:boxStrokeColor="@color/apex_orange"
-        app:boxStrokeWidth="2dp"
-        app:cornerRadius="16dp"
-        app:hintTextColor="@color/apex_text_secondary">
+        android:layout_marginBottom="20dp"
+        android:hint="Observaciones (opcional)">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etObservaciones"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
+            android:layout_height="wrap_content"
             android:gravity="top"
-            android:hint="Observaciones (opcional)"
-            android:inputType="textMultiLine"
+            android:inputType="textMultiLine|textCapSentences"
+            android:minLines="2"
             android:maxLines="3"
             android:textColor="@color/apex_text_primary"
             android:textSize="14sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Action Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -166,32 +150,33 @@
         android:paddingHorizontal="18dp"
         android:paddingBottom="24dp">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelarMovimiento"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="50dp"
             android:layout_weight="1"
             android:text="Cancelar"
             android:textAllCaps="false"
-            android:textColor="@color/apex_orange"
+            android:textColor="@color/apex_text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="24dp"
-            app:strokeColor="@color/apex_orange"
+            app:cornerRadius="25dp"
+            app:strokeColor="@color/apex_stroke_light"
             app:strokeWidth="1.5dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuardarMovimiento"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="50dp"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/apex_orange"
-            android:text="Guardar Movimiento"
+            android:text="Guardar"
             android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="14sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:backgroundTint="@color/apex_orange"
+            app:cornerRadius="25dp" />
     </LinearLayout>
 </LinearLayout>

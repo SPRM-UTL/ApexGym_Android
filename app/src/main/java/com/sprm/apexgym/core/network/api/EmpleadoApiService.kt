@@ -5,6 +5,7 @@ import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.LoginResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -17,7 +18,8 @@ data class CatalogoDto(
     val id: Int = 0,
     val nombre: String? = null,
     val descripcion: String? = null,
-    val estado: String? = null
+    val estado: String? = null,
+    val salarioBase: Double? = null
 )
 
 data class CajaDto(
@@ -35,6 +37,13 @@ data class TipoVisitaDto(
     val estado: String? = null
 )
 
+data class MetodoPagoDto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val descripcion: String? = null,
+    val estado: String? = null
+)
+
 data class CrearCajaRequest(
     val nombre: String,
     val ubicacion: String? = null,
@@ -49,8 +58,24 @@ data class UsuarioEmpleadoDto(
     val email: String? = null
 )
 
+data class SucursalDto(
+    val id: Int = 1,
+    val empresaId: Int = 1,
+    val nombre: String? = null,
+    val codigo: String? = null,
+    val direccion: String? = null,
+    val ciudad: String? = null,
+    val estado: String? = null,
+    val codigoPostal: String? = null,
+    val telefono: String? = null,
+    val email: String? = null,
+    val activo: Boolean = true,
+    val puedeCambiarSucursal: Boolean? = null
+)
+
 data class EmpleadoDto(
     val id: Int = 0,
+    val sucursalId: Int? = null,
     val puestoId: Int = 0,
     val areaTrabajoId: Int = 0,
     val estadoEmpleadoId: Int = 0,
@@ -357,6 +382,11 @@ interface EmpleadoApiService {
         @Body request: EmpleadoRequest
     ): Response<ApiResponse<EmpleadoDto>>
 
+    @DELETE("api/empleados/{id}")
+    suspend fun eliminarEmpleado(
+        @Path("id") id: Int
+    ): Response<ApiResponse<Any>>
+
     @GET("api/puestos")
     suspend fun obtenerPuestos(
         @Query("sucursalId") sucursalId: Int? = null
@@ -371,6 +401,9 @@ interface EmpleadoApiService {
     suspend fun obtenerEstadosEmpleado(
         @Query("sucursalId") sucursalId: Int? = null
     ): Response<ApiResponse<List<CatalogoDto>>>
+
+    @GET("api/usuarios")
+    suspend fun obtenerUsuarios(): Response<ApiResponse<List<UsuarioEmpleadoDto>>>
 
     // Clientes (para recepción y POS)
     @GET("api/clientes")
@@ -499,6 +532,27 @@ interface EmpleadoApiService {
     suspend fun obtenerTiposVisita(
         @Query("sucursalId") sucursalId: Int? = null
     ): Response<ApiResponse<List<TipoVisitaDto>>>
+
+    // Sucursales
+    @GET("api/sucursales")
+    suspend fun obtenerSucursales(): Response<ApiResponse<List<SucursalDto>>>
+
+    @GET("api/sucursales/disponibles")
+    suspend fun obtenerSucursalesDisponibles(): Response<ApiResponse<List<SucursalDto>>>
+
+    @GET("api/sucursales/actual")
+    suspend fun obtenerSucursalActual(): Response<ApiResponse<SucursalDto>>
+
+    // Métodos de pago
+    @GET("api/metodos-pago")
+    suspend fun obtenerMetodosPago(): Response<ApiResponse<List<MetodoPagoDto>>>
+
+    // Catálogo POS (productos y servicios por sucursal)
+    @GET("api/productos")
+    suspend fun obtenerProductos(): Response<ApiResponse<List<com.sprm.apexgym.core.network.client.ProductoClienteDto>>>
+
+    @GET("api/servicios")
+    suspend fun obtenerServicios(): Response<ApiResponse<List<com.sprm.apexgym.core.network.client.ServicioClienteDto>>>
 
     // Pagos / POS
     @POST("api/pagos/crear-cobro")

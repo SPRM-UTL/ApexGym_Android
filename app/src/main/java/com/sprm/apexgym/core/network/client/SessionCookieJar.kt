@@ -53,6 +53,13 @@ class SessionCookieJar(context: Context): CookieJar {
         }
     }
 
+    fun tieneToken(): Boolean {
+        synchronized(lock) {
+            val ahora = System.currentTimeMillis()
+            return cookieStore.any { it.name == "token" && it.expiresAt > ahora }
+        }
+    }
+
     fun clear() {
         synchronized(lock) {
             cookieStore.clear()
@@ -62,15 +69,17 @@ class SessionCookieJar(context: Context): CookieJar {
 
     private fun guardarCookiesPersistentes() {
         val array = JSONArray()
+        val fallbackExpiracion = System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000
 
-        cookieStore.filter { it.persistent }.forEach { cookie ->
+        cookieStore.filter { it.persistent || it.name == "token" }.forEach { cookie ->
+            val expiresAt = if (cookie.persistent) cookie.expiresAt else fallbackExpiracion
             array.put(
                 JSONObject().apply {
                     put("name", cookie.name)
                     put("value", cookie.value)
                     put("domain", cookie.domain)
                     put("path", cookie.path)
-                    put("expiresAt", cookie.expiresAt)
+                    put("expiresAt", expiresAt)
                     put("hostOnly", cookie.hostOnly)
                     put("secure", cookie.secure)
                     put("httpOnly", cookie.httpOnly)

@@ -38,6 +38,10 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        view.findViewWithTag<View>("fl_back_recepcion")?.setOnClickListener {
+            parentFragmentManager.popBackStack()
+        }
+
         binding.tvTodayDate.text = SimpleDateFormat(
             "EEEE, dd MMMM yyyy",
             Locale("es", "MX")
@@ -56,42 +60,14 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
                 .commit()
         }
 
-        binding.cvScanQR.setOnClickListener { mostrarQrNoDisponible() }
-        binding.ivScanQR.setOnClickListener { mostrarQrNoDisponible() }
+        binding.cvScanQR.setOnClickListener { abrirAccesoManual() }
+        binding.ivScanQR.setOnClickListener { abrirAccesoManual() }
 
-        binding.cvManualAccess.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out,
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out
-                )
-                .replace(R.id.fragment_container, AccesoManualFragment())
-                .addToBackStack(null)
-                .commit()
-        }
+        binding.cvManualAccess.setOnClickListener { abrirAccesoManual() }
 
-        binding.tvVerTodosAccesos.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out,
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out
-                )
-                .replace(R.id.fragment_container, HistorialAsistenciasFragment())
-                .addToBackStack(null)
-                .commit()
-        }
+        binding.tvVerTodosAccesos.setOnClickListener { abrirHistorialAsistencias() }
 
-        binding.cvAlerts.setOnClickListener {
-            Toast.makeText(
-                requireContext(),
-                "Las alertas de membresías por vencer no tienen endpoint disponible.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        binding.cvAlerts.setOnClickListener { abrirHistorialAsistencias() }
 
         binding.etSearchClient.setOnEditorActionListener { _, _, _ ->
             abrirBusquedaCliente(binding.etSearchClient.text?.toString()?.trim().orEmpty())
@@ -107,21 +83,39 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
         sheet.show(parentFragmentManager, ClienteBusquedaSheetFragment.TAG)
     }
 
-    private fun mostrarQrNoDisponible() {
-        Toast.makeText(
-            requireContext(),
-            "El escaneo QR no está disponible: la API no expone el payload ni el endpoint de lectura.",
-            Toast.LENGTH_LONG
-        ).show()
+    private fun abrirAccesoManual() {
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .replace(R.id.fragment_container, AccesoManualFragment())
+            .addToBackStack(null)
+            .commit()
+    }
+
+    private fun abrirHistorialAsistencias() {
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .replace(R.id.fragment_container, HistorialAsistenciasFragment())
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun cargarAsistencias() {
         binding.tvEntradasHoy.text = "…"
-        binding.tvEnGimnasio.text = "—"
-        binding.tvCapacidad.text = "Dato no disponible"
-        binding.tvAlertas.text = "—"
-        binding.tvAlertasLabel.text = "Sin endpoint de alertas"
-        binding.tvEntradasDiff.text = "Asistencias registradas hoy"
+        binding.tvEnGimnasio.text = "0"
+        binding.tvCapacidad.text = "Socios únicos"
+        binding.tvAlertas.text = "0"
+        binding.tvAlertasLabel.text = "Sin plan activo"
+        binding.tvEntradasDiff.text = "Cargando…"
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -129,24 +123,28 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
                 val data = response.dataExitosa()
 
                 if (data == null) {
-                    binding.tvEntradasHoy.text = "—"
+                    binding.tvEntradasHoy.text = "0"
                     binding.tvEntradasDiff.text =
-                        response.mensajeDeError() ?: "No se pudieron cargar las asistencias"
+                        response.mensajeDeError() ?: "Sin accesos"
                     renderizarAsistencias(emptyList())
                     return@launch
                 }
 
                 asistencias = data.asistencias
+                val sociosUnicos = asistencias.map { it.clienteId }.distinct().size
+                val sinPlanActivo = asistencias.count { it.clienteMembresia == null }
+
                 binding.tvEntradasHoy.text = data.total.toString()
-                binding.tvEntradasDiff.text = if (data.total == 1) {
-                    "1 acceso registrado hoy"
-                } else {
-                    "${data.total} accesos registrados hoy"
-                }
-                renderizarAsistencias(asistencias.take(6))
+                binding.tvEntradasDiff.text = if (data.total == 1) "1 acceso hoy" else "${data.total} accesos hoy"
+                binding.tvEnGimnasio.text = sociosUnicos.toString()
+                binding.tvCapacidad.text = "Socios únicos"
+                binding.tvAlertas.text = sinPlanActivo.toString()
+                binding.tvAlertasLabel.text = "Sin plan activo"
+
+                renderizarAsistencias(asistencias.take(8))
             } catch (e: Exception) {
-                binding.tvEntradasHoy.text = "—"
-                binding.tvEntradasDiff.text = "Sin conexión con el servidor"
+                binding.tvEntradasHoy.text = "0"
+                binding.tvEntradasDiff.text = "Sin conexión"
                 renderizarAsistencias(emptyList())
             }
         }
@@ -160,10 +158,11 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
                     ).apply { bottomMargin = dpToPx(10) }
-                    setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-                    radius = dpToPx(18).toFloat()
-                    cardElevation = dpToPx(2).toFloat()
-                    strokeWidth = 0
+                    setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                    radius = dpToPx(16).toFloat()
+                    cardElevation = 0f
+                    strokeWidth = dpToPx(1)
+                    strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
                     isClickable = true
                     isFocusable = true
                 }
@@ -176,11 +175,11 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
 
                 val iconBox = FrameLayout(parent.context).apply {
                     layoutParams = LinearLayout.LayoutParams(dpToPx(42), dpToPx(42))
-                    setBackgroundResource(R.drawable.bg_circle_blue_light)
+                    setBackgroundResource(R.drawable.bg_chip_unselected)
                     addView(ImageView(parent.context).apply {
                         layoutParams = FrameLayout.LayoutParams(
-                            dpToPx(22),
-                            dpToPx(22),
+                            dpToPx(20),
+                            dpToPx(20),
                             Gravity.CENTER
                         )
                         setImageResource(R.drawable.ic_user_profile)
@@ -199,7 +198,7 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
                 }
 
                 val tvNombre = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.white))
+                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                 }
@@ -212,7 +211,7 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
                 col.addView(tvPlan)
 
                 val tvHora = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 }
                 col.addView(tvHora)

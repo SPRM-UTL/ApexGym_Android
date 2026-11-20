@@ -289,10 +289,11 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dpToPx(8) }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
             radius = dpToPx(14).toFloat()
             cardElevation = 0f
-            strokeWidth = 0
+            strokeWidth = dpToPx(1)
+            strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
             isClickable = true
             isFocusable = true
         }
@@ -308,13 +309,13 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val tvTitulo = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         col.addView(tvTitulo)
         val tvDetalle = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
         }
         col.addView(tvDetalle)
@@ -331,7 +332,7 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
         }
         rightCol.addView(tvMonto)
         val tvAccion = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }

@@ -109,11 +109,12 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                     layoutParams = LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply { bottomMargin = dpToPx(12) }
-                    setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-                    radius = dpToPx(18).toFloat()
-                    cardElevation = dpToPx(3).toFloat()
-                    strokeWidth = 0
+                    ).apply { bottomMargin = dpToPx(10) }
+                    setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                    radius = dpToPx(16).toFloat()
+                    cardElevation = 0f
+                    strokeWidth = dpToPx(1)
+                    strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
                     isClickable = true
                     isFocusable = true
                 }
@@ -121,16 +122,16 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                 val row = LinearLayout(parent.context).apply {
                     orientation = LinearLayout.HORIZONTAL
                     gravity = Gravity.CENTER_VERTICAL
-                    setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
+                    setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14))
                 }
 
                 val iconBox = FrameLayout(parent.context).apply {
-                    layoutParams = LinearLayout.LayoutParams(dpToPx(44), dpToPx(44))
-                    setBackgroundResource(R.drawable.bg_circle_blue_light)
+                    layoutParams = LinearLayout.LayoutParams(dpToPx(42), dpToPx(42))
+                    setBackgroundResource(R.drawable.bg_chip_unselected)
                     addView(ImageView(parent.context).apply {
                         layoutParams = FrameLayout.LayoutParams(
-                            dpToPx(22),
-                            dpToPx(22),
+                            dpToPx(20),
+                            dpToPx(20),
                             Gravity.CENTER
                         )
                         setImageResource(R.drawable.ic_calendar_clock)
@@ -145,11 +146,11 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                         0,
                         ViewGroup.LayoutParams.WRAP_CONTENT,
                         1f
-                    ).apply { marginStart = dpToPx(14) }
+                    ).apply { marginStart = dpToPx(13) }
                 }
                 val tvNombre = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.white))
-                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15.5f)
+                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                 }
                 col.addView(tvNombre)
@@ -159,7 +160,7 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                 }
                 col.addView(tvFecha)
                 val tvPlan = TextView(parent.context).apply {
-                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 }
                 col.addView(tvPlan)
@@ -169,7 +170,7 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                     layoutParams = LinearLayout.LayoutParams(dpToPx(20), dpToPx(20))
                     setImageResource(R.drawable.ic_chevron_right)
                     setColorFilter(
-                        ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary)
+                        ContextCompat.getColor(context, R.color.apex_nav_inactive)
                     )
                 }
                 row.addView(chevron)

@@ -4,6 +4,8 @@ import android.content.Context
 import com.sprm.apexgym.BuildConfig
 import com.sprm.apexgym.core.network.api.AuthApiService
 import com.sprm.apexgym.core.network.api.EmpleadoApiService
+import com.sprm.apexgym.core.session.SessionManager
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -222,7 +224,21 @@ object RetrofitClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+        val sucursalInterceptor = Interceptor { chain ->
+            val original = chain.request()
+            val sucursalId = if (::appContext.isInitialized) {
+                SessionManager.obtenerSucursalId(appContext)
+            } else {
+                SessionManager.DEFAULT_SUCURSAL_ID
+            }
+            val requestConSucursal = original.newBuilder()
+                .header("x-empresa-id", "1")
+                .header("x-sucursal-id", sucursalId.toString())
+                .build()
+            chain.proceed(requestConSucursal)
+        }
         OkHttpClient.Builder()
+            .addInterceptor(sucursalInterceptor)
             .addInterceptor(logging)
             .cookieJar(cookieJar)
             .build()

@@ -1,23 +1,32 @@
 package com.sprm.apexgym.feature.empleados
 
+import android.content.Intent
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearFecha
+import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.databinding.FragmentEmpleadoDetalleBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
 
 class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
 
     private var empleadoId: Int = 0
+    private var telefonoActual: String? = null
+    private var nombreActual: String = "este empleado"
 
     override fun getLayoutRes(): Int = R.layout.fragment_empleado_detalle
 
@@ -26,12 +35,6 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
 
         empleadoId = arguments?.getInt(ARG_EMPLEADO_ID, 0) ?: 0
 
-        binding.rvHorarioTrabajo.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvCertificaciones.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvHorarioTrabajo.visibility = View.GONE
-        binding.rvCertificaciones.visibility = View.GONE
-        binding.btnAgregarCertificacion.visibility = View.GONE
-
         setupClickListeners()
         cargarEmpleado()
     }
@@ -39,25 +42,26 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
     private fun setupClickListeners() {
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
 
-        binding.flEdit.setOnClickListener {
+        val irAEditar = View.OnClickListener {
             if (empleadoId > 0) {
                 navegar(CrearEditarEmpleadoFragment.newInstance(empleadoId))
             }
         }
+        binding.flEdit.setOnClickListener(irAEditar)
+        binding.btnVerTurnos.setOnClickListener(irAEditar)
 
-        val noDisponible = View.OnClickListener {
-            Toast.makeText(
-                requireContext(),
-                "Este módulo no tiene endpoint disponible en la API actual.",
-                Toast.LENGTH_LONG
-            ).show()
+        binding.btnVerAsistencias.setOnClickListener {
+            val tel = telefonoActual?.trim()
+            if (tel.isNullOrBlank()) {
+                Toast.makeText(requireContext(), "Este empleado no tiene teléfono registrado", Toast.LENGTH_SHORT).show()
+            } else {
+                startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$tel")))
+            }
         }
 
-        binding.btnVerAsistencias.setOnClickListener(noDisponible)
-        binding.btnVerTurnos.setOnClickListener(noDisponible)
-        binding.btnGestionarPermisos.setOnClickListener(noDisponible)
-        binding.tvEmpleadoSueldo.setOnClickListener(noDisponible)
-        binding.rvHorarioTrabajo.setOnClickListener(noDisponible)
+        binding.btnGestionarPermisos.setOnClickListener {
+            confirmarEliminacion()
+        }
     }
 
     private fun cargarEmpleado() {
@@ -71,6 +75,8 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
                 val response = RetrofitClient.empleadoService.obtenerEmpleado(empleadoId)
                 val empleado = response.dataExitosa()
 
+                if (!isAdded) return@launch
+
                 if (empleado == null) {
                     Toast.makeText(
                         requireContext(),
@@ -80,35 +86,142 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
                     return@launch
                 }
 
-                binding.tvEmpleadoNombre.text = empleado.nombreCompleto.ifBlank {
-                    "Empleado #${empleado.id}"
-                }
-                binding.tvEmpleadoRol.text = empleado.puesto?.nombre ?: "Puesto no asignado"
-                binding.tvEmpleadoEstado.text =
-                    empleado.estadoEmpleado?.nombre ?: "Estado no disponible"
+                nombreActual = empleado.nombreCompleto.ifBlank { "Empleado #${empleado.id}" }
+                telefonoActual = empleado.telefono
 
-                binding.tvTurnosMes.text = "—"
-                binding.tvVentasTotales.text = "—"
-                binding.tvComisiones.text = "—"
+                binding.tvEmpleadoNombre.text = nombreActual
+                binding.tvEmpleadoRol.text = listOfNotNull(
+                    empleado.puesto?.nombre,
+                    empleado.areaTrabajo?.nombre
+                ).joinToString(" • ").ifBlank { "Puesto no asignado" }
+                binding.tvEmpleadoEstado.text =
+                    empleado.estadoEmpleado?.nombre ?: "Activo"
 
                 binding.tvEmpleadoTelefono.text = empleado.telefono ?: "—"
                 binding.tvEmpleadoEmail.text =
                     empleado.correo ?: empleado.usuario?.email ?: "—"
-                binding.tvEmpleadoDireccion.text = empleado.direccion ?: "—"
-                binding.tvEmpleadoDni.text = "No capturado en la API"
+                binding.tvEmpleadoDireccion.text = formatearDireccion(empleado.direccion)
+                binding.tvEmpleadoDni.text = "EMP-${empleado.id.toString().padStart(4, '0')}"
                 binding.tvEmpleadoFechaIngreso.text = formatearFecha(
                     empleado.fechaIngreso,
                     "dd/MM/yyyy"
                 )
-                binding.tvEmpleadoTipoContrato.text = "No disponible en la API"
-                binding.tvEmpleadoSueldo.text = "No disponible en la API"
+                binding.tvEmpleadoTipoContrato.text =
+                    empleado.areaTrabajo?.nombre ?: "Sin área asignada"
+
+                val salario = empleado.puesto?.salarioBase
+                binding.tvEmpleadoSueldo.text = if (salario != null && salario > 0) {
+                    "${salario.formatearMonedaSinSufijo()} MXN"
+                } else {
+                    "—"
+                }
+
+                val urlFoto = RetrofitClient.resolverUrlImagen(empleado.imagenUrl)
+                if (urlFoto != null) {
+                    val bitmap = withContext(Dispatchers.IO) {
+                        try {
+                            URL(urlFoto).openStream().use { BitmapFactory.decodeStream(it) }
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                    if (isAdded && bitmap != null) {
+                        binding.ivEmpleadoAvatar.setImageBitmap(bitmap)
+                    }
+                }
             } catch (_: Exception) {
-                Toast.makeText(
-                    requireContext(),
-                    "No se pudo conectar con el servidor",
-                    Toast.LENGTH_LONG
-                ).show()
+                if (isAdded) {
+                    Toast.makeText(
+                        requireContext(),
+                        "No se pudo conectar con el servidor",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
+        }
+    }
+
+    private fun confirmarEliminacion() {
+        if (empleadoId <= 0) return
+        AlertDialog.Builder(requireContext())
+            .setTitle("Eliminar empleado")
+            .setMessage("¿Deseas eliminar a $nombreActual? Esta acción lo dará de baja del listado activo.")
+            .setNegativeButton("Cancelar", null)
+            .setPositiveButton("Eliminar") { _, _ ->
+                ejecutarEliminacion()
+            }
+            .show()
+    }
+
+    private fun ejecutarEliminacion() {
+        binding.btnGestionarPermisos.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val res = RetrofitClient.empleadoService.eliminarEmpleado(empleadoId)
+                if (!isAdded) return@launch
+                if (res.isSuccessful && res.body()?.responseFlag == 0) {
+                    Toast.makeText(requireContext(), "Empleado eliminado correctamente", Toast.LENGTH_SHORT).show()
+                    parentFragmentManager.popBackStack()
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        res.mensajeDeError() ?: "No se pudo eliminar el empleado",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    binding.btnGestionarPermisos.isEnabled = true
+                }
+            } catch (_: Exception) {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Error de conexión al eliminar", Toast.LENGTH_LONG).show()
+                    binding.btnGestionarPermisos.isEnabled = true
+                }
+            }
+        }
+    }
+
+    private fun formatearDireccion(raw: String?): String {
+        if (raw.isNullOrBlank()) return "—"
+        val texto = raw.trim()
+        if (!texto.startsWith("{")) return texto
+        return try {
+            val json = org.json.JSONObject(texto)
+            val calle = json.optString("calle").trim()
+            val numExt = json.optString("numeroExterior").trim()
+            val numInt = json.optString("numeroInterior").trim()
+            val colonia = json.optString("colonia").trim()
+            val cp = json.optString("codigoPostal").trim()
+            val municipio = json.optString("municipio").trim()
+            val estado = json.optString("estado").trim()
+            val entreCalles = json.optString("entreCalles").trim()
+
+            val lineaCalle = buildString {
+                if (calle.isNotEmpty()) append(calle)
+                if (numExt.isNotEmpty()) {
+                    if (isNotEmpty()) append(" ")
+                    append("#$numExt")
+                }
+                if (numInt.isNotEmpty()) {
+                    if (isNotEmpty()) append(" ")
+                    append("Int. $numInt")
+                }
+            }
+
+            val partes = buildList {
+                if (lineaCalle.isNotEmpty()) add(lineaCalle)
+                if (colonia.isNotEmpty()) add("Col. $colonia")
+                if (cp.isNotEmpty()) add("C.P. $cp")
+                if (municipio.isNotEmpty()) add(municipio)
+                if (estado.isNotEmpty()) add(estado)
+            }.joinToString(", ")
+
+            val completo = if (entreCalles.isNotEmpty()) {
+                if (partes.isNotEmpty()) "$partes ($entreCalles)" else entreCalles
+            } else {
+                partes
+            }
+            completo.ifBlank { "—" }
+        } catch (_: Exception) {
+            texto
         }
     }
 

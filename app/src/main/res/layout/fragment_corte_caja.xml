@@ -6,35 +6,38 @@
     android:background="@color/apex_bg_screen"
     android:clipToPadding="false"
     android:overScrollMode="never"
-    android:paddingBottom="100dp">
+    android:paddingBottom="40dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="18dp"
-        android:paddingTop="16dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
 
-        <!-- Header with Back/Close -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:layout_marginBottom="16dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/flClose"
-                android:layout_width="46dp"
-                android:layout_height="46dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/bg_circle_white_elevated"
-                android:elevation="2dp">
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_close"
+                    android:contentDescription="Regresar"
+                    android:src="@drawable/ic_arrow_left"
                     app:tint="@color/apex_text_primary" />
             </FrameLayout>
 
@@ -45,15 +48,14 @@
                 android:gravity="center"
                 android:text="Corte de Caja"
                 android:textColor="@color/apex_text_primary"
-                android:textSize="20sp"
+                android:textSize="19sp"
                 android:textStyle="bold" />
 
             <View
-                android:layout_width="46dp"
-                android:layout_height="46dp" />
+                android:layout_width="42dp"
+                android:layout_height="42dp" />
         </LinearLayout>
 
-        <!-- Corte Info Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cvCorteInfo"
             android:layout_width="match_parent"
@@ -61,7 +63,7 @@
             android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/apex_card_dark"
             app:cardCornerRadius="18dp"
-            app:cardElevation="3dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp">
 
             <LinearLayout
@@ -73,7 +75,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="14dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -96,21 +98,21 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="Caja Principal - Turno Mañana"
+                            android:text="Caja Principal"
                             android:textColor="@color/white"
-                            android:textSize="18sp"
+                            android:textSize="17sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvCorteEstado"
                         android:layout_width="wrap_content"
-                        android:layout_height="28dp"
+                        android:layout_height="26dp"
                         android:background="@drawable/bg_badge_vip_outline"
                         android:gravity="center"
                         android:paddingHorizontal="12dp"
                         android:text="PENDIENTE"
-                        android:textColor="#FFFF9800"
+                        android:textColor="@color/apex_orange"
                         android:textSize="10sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -139,17 +141,17 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="05/11/2024"
+                            android:text="—"
                             android:textColor="@color/white"
-                            android:textSize="14sp" />
+                            android:textSize="13.5sp" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="1dp"
-                        android:layout_height="40dp"
+                        android:layout_height="34dp"
                         android:layout_gravity="center_vertical"
-                        android:layout_marginHorizontal="16dp"
-                        android:background="@color/apex_stroke_light" />
+                        android:layout_marginHorizontal="12dp"
+                        android:background="#33FFFFFF" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -170,17 +172,17 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="14:30"
+                            android:text="—"
                             android:textColor="@color/white"
-                            android:textSize="14sp" />
+                            android:textSize="13.5sp" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="1dp"
-                        android:layout_height="40dp"
+                        android:layout_height="34dp"
                         android:layout_gravity="center_vertical"
-                        android:layout_marginHorizontal="16dp"
-                        android:background="@color/apex_stroke_light" />
+                        android:layout_marginHorizontal="12dp"
+                        android:background="#33FFFFFF" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -201,22 +203,23 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="María González"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:text="—"
                             android:textColor="@color/white"
-                            android:textSize="14sp" />
+                            android:textSize="13.5sp" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Resumen Financiero -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             android:text="Resumen Financiero"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -228,14 +231,14 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
-                android:layout_height="110dp"
+                android:layout_height="104dp"
                 android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="1dp"
-                app:strokeWidth="1dp"
-                app:strokeColor="@color/apex_stroke_light">
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -247,7 +250,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="VENTAS TOTALS"
+                        android:text="VENTAS TOTALES"
                         android:textColor="@color/apex_text_secondary"
                         android:textSize="10sp"
                         android:textStyle="bold" />
@@ -257,9 +260,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="S/ 2,450.00"
+                        android:text="$0.00 MXN"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="22sp"
+                        android:textSize="19sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -267,7 +270,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="47 transacciones"
+                        android:text="0 movimientos"
                         android:textColor="@color/apex_text_secondary"
                         android:textSize="11sp" />
                 </LinearLayout>
@@ -275,12 +278,12 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="0dp"
-                android:layout_height="110dp"
+                android:layout_height="104dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 app:cardBackgroundColor="@color/apex_card_dark"
                 app:cardCornerRadius="16dp"
-                app:cardElevation="3dp"
+                app:cardElevation="0dp"
                 app:strokeWidth="0dp">
 
                 <LinearLayout
@@ -303,9 +306,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="S/ 2,950.00"
+                        android:text="$0.00 MXN"
                         android:textColor="@color/apex_orange"
-                        android:textSize="22sp"
+                        android:textSize="19sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -313,21 +316,20 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Diferencia: S/ 0.00"
-                        android:textColor="#FF4CAF50"
+                        android:text="Diferencia: $0.00 MXN"
+                        android:textColor="@color/apex_text_on_dark_secondary"
                         android:textSize="11sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Ventas por Método de Pago -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             android:text="Ventas por Método de Pago"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
@@ -337,58 +339,70 @@
             android:layout_marginBottom="16dp"
             android:nestedScrollingEnabled="false" />
 
-        <!-- Arqueo de Efectivo -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             android:text="Arqueo de Efectivo"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:boxBackgroundMode="outline"
-            app:boxStrokeColor="@color/apex_orange"
-            app:boxStrokeWidth="2dp"
-            app:cornerRadius="16dp"
-            app:hintTextColor="@color/apex_text_secondary">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etCorteEfectivoContado"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:hint="Efectivo contado en caja (S/)"
-                android:inputType="numberDecimal"
-                android:textColor="@color/apex_text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:id="@+id/tvCorteArqueoInfo"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="El desglose por denominación no está disponible en la API."
-            android:textColor="@color/apex_text_secondary"
-            android:textSize="12sp" />
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
 
-        <!-- Diferencias -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:hint="Efectivo contado en caja ($ MXN)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCorteEfectivoContado"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/tvCorteArqueoInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Ingresa el efectivo físico contado al cerrar turno"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cvCorteDiferencias"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="16dp"
             android:visibility="gone"
-            app:cardBackgroundColor="#FFFFF3E0"
+            app:cardBackgroundColor="@color/apex_orange_translucent"
             app:cardCornerRadius="16dp"
-            app:cardElevation="2dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#FFFFB74D">
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_orange"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -399,23 +413,24 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginBottom="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:contentDescription="@null"
                         android:src="@drawable/ic_warning_circle_filled"
-                        app:tint="#FFFF9800" />
+                        app:tint="@color/apex_orange" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="10dp"
                         android:text="Diferencias en Arqueo"
-                        android:textColor="#FFE65100"
-                        android:textSize="16sp"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="15sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -436,54 +451,61 @@
                         android:id="@+id/tvCorteSobranteFaltante"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="S/ -5.00 (Faltante)"
-                        android:textColor="#FFF44336"
+                        android:text="$0.00 MXN"
+                        android:textColor="@color/apex_orange"
                         android:textSize="16sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Observaciones -->
-        <com.google.android.material.textfield.TextInputLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:boxBackgroundMode="outline"
-            app:boxStrokeColor="@color/apex_orange"
-            app:boxStrokeWidth="2dp"
-            app:cornerRadius="16dp"
-            app:hintTextColor="@color/apex_text_secondary">
+            android:layout_marginBottom="20dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etCorteObservaciones"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
-                android:gravity="top"
-                android:hint="Observaciones del corte (opcional)"
-                android:inputType="textMultiLine"
-                android:maxLines="4"
-                android:textColor="@color/apex_text_primary"
-                android:textSize="14sp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <!-- Action Buttons -->
-        <LinearLayout
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Observaciones del corte (opcional)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCorteObservaciones"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="top"
+                        android:inputType="textMultiLine|textCapSentences"
+                        android:minLines="3"
+                        android:maxLines="4"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFinalizarCorte"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
-
-            <Button
-                android:id="@+id/btnFinalizarCorte"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:backgroundTint="@color/apex_orange"
-                android:text="Finalizar Corte"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+            android:layout_height="54dp"
+            android:text="Finalizar Corte"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="15.5sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/apex_orange"
+            app:cornerRadius="27dp"
+            app:elevation="2dp" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

@@ -326,12 +326,13 @@
                         android:layout_height="48dp"
                         android:layout_marginStart="12dp"
                         android:layout_weight="1"
-                        android:backgroundTint="#FF4CAF50"
+                        android:backgroundTint="@color/apex_orange"
                         android:text="Permitir Acceso"
                         android:textAllCaps="false"
                         android:textColor="@color/white"
                         android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        app:cornerRadius="24dp" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

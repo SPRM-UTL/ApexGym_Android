@@ -255,10 +255,11 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             ).apply { bottomMargin = dpToPx(8) }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
+            setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
             radius = dpToPx(14).toFloat()
             cardElevation = 0f
-            strokeWidth = 0
+            strokeWidth = dpToPx(1)
+            strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
         }
 
         val row = LinearLayout(context).apply {
@@ -276,13 +277,13 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
             )
         }
         val tvTitulo = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.white))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         col.addView(tvTitulo)
         val tvDetalle = TextView(context).apply {
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
         }
         col.addView(tvDetalle)

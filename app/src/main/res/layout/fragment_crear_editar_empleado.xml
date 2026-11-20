@@ -6,89 +6,94 @@
     android:background="@color/apex_bg_screen"
     android:clipToPadding="false"
     android:overScrollMode="never"
-    android:paddingBottom="100dp">
+    android:paddingBottom="40dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="18dp"
-        android:paddingTop="16dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
 
-        <!-- Header with Back/Close -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:layout_marginBottom="16dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/flClose"
-                android:layout_width="46dp"
-                android:layout_height="46dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/bg_circle_white_elevated"
-                android:elevation="2dp">
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true">
 
                 <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
                     android:layout_gravity="center"
+                    android:contentDescription="Regresar"
                     android:src="@drawable/ic_arrow_left"
                     app:tint="@color/apex_text_primary" />
             </FrameLayout>
 
             <TextView
+                android:id="@+id/tvTitle"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
-                android:id="@+id/tvTitle"
                 android:text="Nuevo Empleado"
                 android:textColor="@color/apex_text_primary"
-                android:textSize="20sp"
+                android:textSize="19sp"
                 android:textStyle="bold" />
 
             <View
-                android:layout_width="46dp"
-                android:layout_height="46dp" />
+                android:layout_width="42dp"
+                android:layout_height="42dp" />
         </LinearLayout>
 
-        <!-- Avatar Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="20dp"
             android:gravity="center"
             android:orientation="vertical">
 
             <FrameLayout
-                android:layout_width="110dp"
-                android:layout_height="110dp">
+                android:layout_width="104dp"
+                android:layout_height="104dp">
 
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivEmpleadoAvatar"
-                    android:layout_width="110dp"
-                    android:layout_height="110dp"
+                    android:layout_width="104dp"
+                    android:layout_height="104dp"
                     android:background="@drawable/bg_circle_white_elevated"
                     android:scaleType="centerCrop"
                     android:src="@drawable/ic_user_profile"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                     app:strokeColor="@color/apex_orange"
-                    app:strokeWidth="3dp" />
+                    app:strokeWidth="2.5dp" />
 
                 <FrameLayout
                     android:id="@+id/flChangeAvatar"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="34dp"
+                    android:layout_height="34dp"
                     android:layout_gravity="bottom|end"
                     android:background="@drawable/bg_circle_orange"
-                    android:elevation="4dp">
+                    android:clickable="true"
+                    android:elevation="3dp"
+                    android:focusable="true">
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:layout_gravity="center"
+                        android:contentDescription="Seleccionar foto"
                         android:src="@drawable/ic_camera"
                         app:tint="@color/white" />
                 </FrameLayout>
@@ -99,30 +104,29 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Tocar para cambiar foto"
-                android:textColor="@color/apex_nav_inactive"
-                android:textSize="12sp" />
+                android:text="Toca para seleccionar una foto"
+                android:textColor="@color/apex_text_secondary"
+                android:textSize="12.5sp" />
         </LinearLayout>
 
-        <!-- Basic Info Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="10dp"
             android:text="Información Personal"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="18dp"
             app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="1dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/apex_stroke_light">
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -131,176 +135,140 @@
                 android:padding="16dp">
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
+                    android:hint="Nombre(s)">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etNombres"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Nombres"
-                        android:inputType="textPersonName"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
+                        android:textSize="14.5sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
+                    android:hint="Apellidos">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etApellidos"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Apellidos"
-                        android:inputType="textPersonName"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
+                        android:textSize="14.5sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
+                    android:hint="Identificación"
+                    android:visibility="gone">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etDni"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="DNI"
+                        android:layout_height="wrap_content"
                         android:inputType="number"
                         android:maxLength="8"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
+                        android:textSize="14.5sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
                     android:orientation="horizontal"
                     android:weightSum="2">
 
                     <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        app:boxBackgroundMode="outline"
-                        app:boxStrokeColor="@color/apex_orange"
-                        app:boxStrokeWidth="2dp"
-                        app:cornerRadius="12dp"
-                        app:hintTextColor="@color/apex_text_secondary">
+                        android:hint="Nacimiento">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etFechaNacimiento"
                             android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:hint="Fecha Nacimiento"
-                            android:inputType="date"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="false"
+                            android:inputType="none"
+                            android:maxLines="1"
                             android:textColor="@color/apex_text_primary"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        app:boxBackgroundMode="outline"
-                        app:boxStrokeColor="@color/apex_orange"
-                        app:boxStrokeWidth="2dp"
-                        app:cornerRadius="12dp"
-                        app:hintTextColor="@color/apex_text_secondary">
+                        android:hint="Teléfono (10 dígitos)">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etTelefono"
                             android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:hint="Teléfono"
+                            android:layout_height="wrap_content"
                             android:inputType="phone"
+                            android:maxLength="10"
+                            android:maxLines="1"
                             android:textColor="@color/apex_text_primary"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
+                    android:hint="Correo electrónico">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etEmail"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Email"
+                        android:layout_height="wrap_content"
                         android:inputType="textEmailAddress"
+                        android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etDireccion"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Dirección"
-                        android:inputType="textPostalAddress"
-                        android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
+                        android:textSize="14.5sp" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Work Info Section -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="Información Laboral"
+            android:layout_marginBottom="10dp"
+            android:text="Dirección y Residencia"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="18dp"
             app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="1dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/apex_stroke_light">
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -309,260 +277,394 @@
                 android:padding="16dp">
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
-
-                    <AutoCompleteTextView
-                        android:id="@+id/actvRol"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Puesto"
-                        android:inputType="none"
-                        android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
-
-                    <AutoCompleteTextView
-                        android:id="@+id/actvTipoContrato"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Área de Trabajo"
-                        android:inputType="none"
-                        android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
-
-                    <AutoCompleteTextView
-                        android:id="@+id/actvEstadoEmpleado"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Estado del Empleado"
-                        android:inputType="none"
-                        android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
+                    android:hint="Calle">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etFechaIngreso"
+                        android:id="@+id/etDireccion"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Fecha de Ingreso"
-                        android:inputType="date"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPostalAddress|textCapWords"
+                        android:maxLength="150"
+                        android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    app:boxBackgroundMode="outline"
-                    app:boxStrokeColor="@color/apex_orange"
-                    app:boxStrokeWidth="2dp"
-                    app:cornerRadius="12dp"
-                    app:hintTextColor="@color/apex_text_secondary">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etSueldoBase"
-                        android:layout_width="match_parent"
-                        android:layout_height="56dp"
-                        android:hint="Sueldo Base (S/)"
-                        android:inputType="numberDecimal"
-                        android:textColor="@color/apex_text_primary"
-                        android:textSize="16sp" />
+                        android:textSize="14.5sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
                     android:orientation="horizontal"
                     android:weightSum="2">
 
                     <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        app:boxBackgroundMode="outline"
-                        app:boxStrokeColor="@color/apex_orange"
-                        app:boxStrokeWidth="2dp"
-                        app:cornerRadius="12dp"
-                        app:hintTextColor="@color/apex_text_secondary">
+                        android:hint="Núm. ext.">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etComisionPorcentaje"
+                            android:id="@+id/etNumeroExterior"
                             android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:hint="Comisión (%)"
-                            android:inputType="numberDecimal"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapCharacters"
+                            android:maxLength="20"
+                            android:maxLines="1"
                             android:textColor="@color/apex_text_primary"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        app:boxBackgroundMode="outline"
-                        app:boxStrokeColor="@color/apex_orange"
-                        app:boxStrokeWidth="2dp"
-                        app:cornerRadius="12dp"
-                        app:hintTextColor="@color/apex_text_secondary">
+                        android:hint="Núm. int.">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCuentaBancaria"
+                            android:id="@+id/etNumeroInterior"
                             android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:hint="Cuenta Bancaria"
-                            android:inputType="text"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapCharacters"
+                            android:maxLength="20"
+                            android:maxLines="1"
                             android:textColor="@color/apex_text_primary"
-                            android:textSize="16sp" />
+                            android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal"
+                    android:weightSum="12">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="7"
+                        android:hint="Colonia">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etColonia"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapWords"
+                            android:maxLength="100"
+                            android:maxLines="1"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="5"
+                        android:hint="C.P.">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etCodigoPostal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:maxLength="5"
+                            android:maxLines="1"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:hint="Municipio / Ciudad">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etMunicipio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapWords"
+                            android:maxLength="100"
+                            android:maxLines="1"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Apex.TextInputLayout"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:hint="Estado">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etEstado"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapWords"
+                            android:maxLength="100"
+                            android:maxLines="1"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Entre calles">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etEntreCalles"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLength="200"
+                        android:maxLines="2"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="Información Laboral"
+            android:textColor="@color/apex_text_primary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="22dp"
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Puesto">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvRol"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Área de Trabajo">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvTipoContrato"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Estado del Empleado">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvEstadoEmpleado"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Fecha de Ingreso">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etFechaIngreso"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Usuario del sistema (opcional)">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvUsuarioSistema"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etSueldoBase"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etComisionPorcentaje"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Apex.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etCuentaBancaria"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <androidx.appcompat.widget.AppCompatCheckBox
                     android:id="@+id/cbActivo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:buttonTint="@color/apex_orange"
                     android:checked="true"
                     android:text="Empleado Activo"
-                    android:textColor="@color/apex_text_primary"
-                    android:textSize="14sp" />
+                    android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Schedule Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="Horario de Trabajo"
-            android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="1dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/apex_stroke_light">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tvHorarioConfigHint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:text="Configurar días y horas de trabajo"
-                    android:textColor="@color/apex_text_secondary"
-                    android:textSize="13sp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvHorarioConfig"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false" />
-
-                <Button
-                    android:id="@+id/btnAgregarDiaHorario"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="12dp"
-                    android:layout_gravity="start"
-                    android:text="+ Agregar Día"
-                    android:textAllCaps="false"
-                    android:textColor="@color/apex_orange"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    app:cornerRadius="20dp"
-                    app:strokeColor="@color/apex_orange"
-                    app:strokeWidth="1.5dp" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Action Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="8dp">
+            android:orientation="vertical"
+            android:visibility="gone">
 
-            <Button
+            <TextView
+                android:id="@+id/tvHorarioConfigHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvHorarioConfig"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAgregarDiaHorario"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="+ Agregar Día" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCancelar"
                 style="@style/Widget.Material3.Button.OutlinedButton"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="52dp"
                 android:layout_weight="1"
                 android:text="Cancelar"
                 android:textAllCaps="false"
-                android:textColor="@color/apex_orange"
-                android:textSize="16sp"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="15sp"
                 android:textStyle="bold"
-                app:cornerRadius="28dp"
-                app:strokeColor="@color/apex_orange"
-                app:strokeWidth="2dp" />
+                app:cornerRadius="26dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1.5dp" />
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnGuardar"
                 android:layout_width="0dp"
-                android:layout_height="56dp"
+                android:layout_height="52dp"
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
-                android:backgroundTint="@color/apex_orange"
                 android:text="Guardar"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="15sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/apex_orange"
+                app:cornerRadius="26dp"
+                app:elevation="2dp" />
         </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
