@@ -6,13 +6,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.sprm.apexgym.R
+import com.sprm.apexgym.core.network.repository.NotificacionRepository
+import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
+import kotlinx.coroutines.launch
 
 /**
  * Pantalla de Notificaciones en pantalla completa que se desliza de abajo hacia arriba.
@@ -84,14 +87,38 @@ class NotificationsBottomSheetFragment : BottomSheetDialogFragment() {
             navegarAFragment(NotificacionesListFragment())
         }
 
-        view.findViewById<View>(R.id.btnConfigurarNotificacionesSheet)?.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("Configuración no disponible")
-                .setMessage(
-                    "La API actual no permite consultar ni guardar preferencias de notificaciones."
-                )
-                .setPositiveButton("Entendido", null)
-                .show()
+        // La API no expone preferencias de notificaciones: no se muestra un acceso sin función.
+        view.findViewById<View>(R.id.btnConfigurarNotificacionesSheet)?.visibility = View.GONE
+
+        cargarResumenNotificaciones(view)
+    }
+
+    private fun cargarResumenNotificaciones(rootView: View) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resultado = NotificacionRepository().listar()
+            if (!isAdded || resultado !is ResultadoNotificaciones.Exito) return@launch
+
+            val notificaciones = resultado.datos
+            val pendientes = notificaciones.count { it.estaPendiente }
+            val titulo = rootView.findViewById<android.widget.TextView>(R.id.tvNotificationsEmptyTitle)
+            val subtitulo =
+                rootView.findViewById<android.widget.TextView>(R.id.tvNotificationsEmptySubtitle)
+
+            when {
+                pendientes > 0 -> {
+                    titulo?.text = if (pendientes == 1) {
+                        "Tienes 1 notificación sin leer"
+                    } else {
+                        "Tienes $pendientes notificaciones sin leer"
+                    }
+                    subtitulo?.text = "Abre el centro de notificaciones para verlas y marcar su estado."
+                }
+
+                notificaciones.isNotEmpty() -> {
+                    titulo?.text = "No tienes notificaciones sin leer"
+                    subtitulo?.text = "Tienes ${notificaciones.size} notificaciones en tu historial."
+                }
+            }
         }
     }
 

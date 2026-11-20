@@ -3,7 +3,9 @@ package com.sprm.apexgym.core.network.client
 import android.content.Context
 import com.sprm.apexgym.BuildConfig
 import com.sprm.apexgym.core.network.api.AuthApiService
+import com.sprm.apexgym.core.network.api.DispositivoApiService
 import com.sprm.apexgym.core.network.api.EmpleadoApiService
+import com.sprm.apexgym.core.network.api.NotificacionApiService
 import com.sprm.apexgym.core.session.SessionManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -258,5 +260,13 @@ object RetrofitClient {
 
     val empleadoService: EmpleadoApiService by lazy {
         retrofit.create(EmpleadoApiService::class.java)
+    }
+
+    val notificacionService: NotificacionApiService by lazy {
+        retrofit.create(NotificacionApiService::class.java)
+    }
+
+    val dispositivoService: DispositivoApiService by lazy {
+        retrofit.create(DispositivoApiService::class.java)
     }
 }

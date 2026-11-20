@@ -10,6 +10,8 @@ import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
+import com.sprm.apexgym.core.network.repository.NotificacionRepository
+import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentEmpleadoDashboardBinding
 import com.sprm.apexgym.feature.auth.LoginFragment
@@ -76,6 +78,11 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
                 )
             }
         }
+
+        binding.flEmpleadoNotificaciones.setOnClickListener {
+            navegar(NotificacionesListFragment())
+        }
+        cargarContadorNotificaciones()
 
         binding.cvRecepcion.setOnClickListener { navegar(RecepcionDashboardFragment()) }
         binding.cvCaja.setOnClickListener { navegar(ResumenAperturaFragment()) }
@@ -146,6 +153,19 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
                 }
             } catch (_: Exception) {
             }
+        }
+    }
+
+    private fun cargarContadorNotificaciones() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resultado = NotificacionRepository().contarNoLeidas()
+            if (!isAdded || resultado !is ResultadoNotificaciones.Exito) return@launch
+
+            val noLeidas = resultado.datos
+            binding.tvEmpleadoNotificationsBadge.text =
+                if (noLeidas > 99) "99+" else noLeidas.toString()
+            binding.tvEmpleadoNotificationsBadge.visibility =
+                if (noLeidas > 0) View.VISIBLE else View.GONE
         }
     }
 

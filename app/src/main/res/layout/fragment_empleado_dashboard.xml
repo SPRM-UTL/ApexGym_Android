@@ -64,6 +64,37 @@
                     android:textColor="@color/apex_text_secondary"
                     android:textSize="13sp" />
             </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/flEmpleadoNotificaciones"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_circle_white_elevated"
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Notificaciones"
+                    android:src="@drawable/ic_bell_outline"
+                    app:tint="@color/apex_text_primary" />
+
+                <TextView
+                    android:id="@+id/tvEmpleadoNotificationsBadge"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bg_circle_orange"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="@color/white"
+                    android:textSize="9.5sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </FrameLayout>
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView

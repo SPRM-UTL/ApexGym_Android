@@ -15,6 +15,8 @@ import com.sprm.apexgym.core.network.client.LoginRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.client.UsuarioRemoto
 import com.sprm.apexgym.core.network.dataExitosa
+import com.sprm.apexgym.core.notifications.FcmTokenManager
+import com.sprm.apexgym.core.notifications.NotificacionPermiso
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.feature.main.CartManager
 import com.sprm.apexgym.feature.main.HomeFragment
@@ -101,6 +103,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                         cargarInfoSucursalInicial(sucursalInicialId)
                     }
                     CartManager.vaciarCarrito(requireContext())
+                    NotificacionPermiso.solicitarSiHaceFalta(requireActivity())
+                    FcmTokenManager.registrarAsync(requireContext())
 
                     val destino: Fragment = if (esCliente) {
                         HomeFragment()
