@@ -86,11 +86,11 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
             "Socio ApexGym"
         }
 
-        // Los clientes solo ven ventas y su perfil.
+        // Los clientes solo ven ventas y su perfil; notificaciones ocultas hasta tener backend.
         tvStaffSectionLabel?.visibility = if (esEmpleado) View.VISIBLE else View.GONE
+        btnOpcionNotificaciones?.visibility = View.GONE
+        btnOpcionConfigNotificaciones?.visibility = View.GONE
         listOf(
-            btnOpcionNotificaciones,
-            btnOpcionConfigNotificaciones,
             btnOpcionEmpleados,
             btnOpcionVisitas,
             btnOpcionRecepcion,

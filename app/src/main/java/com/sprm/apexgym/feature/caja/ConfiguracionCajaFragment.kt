@@ -81,10 +81,16 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
                     holder.tvEstado.visibility = View.VISIBLE
                     holder.tvEstado.setBackgroundResource(
                         if (caja.estado?.uppercase() == "ACTIVA") {
-                            R.drawable.bg_badge_green
-                        } else {
                             R.drawable.bg_badge_orange
+                        } else {
+                            R.drawable.bg_chip_unselected
                         }
+                    )
+                    holder.tvEstado.setTextColor(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            if (caja.estado?.uppercase() == "ACTIVA") R.color.white else R.color.apex_text_secondary
+                        )
                     )
                 }
             }
@@ -95,35 +101,51 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
 
     private fun mostrarDialogoNuevaCaja() {
         val context = requireContext()
+        val themedCtx = androidx.appcompat.view.ContextThemeWrapper(
+            context,
+            R.style.Widget_Apex_TextInputLayout
+        )
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(20), dpToPx(8), dpToPx(20), 0)
+            setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(4))
         }
 
-        val etNombre = EditText(context).apply {
-            hint = "Nombre de la caja *"
-            inputType = InputType.TYPE_CLASS_TEXT
+        val tilNombre = com.google.android.material.textfield.TextInputLayout(themedCtx).apply {
+            hint = "Nombre de la caja"
+            boxBackgroundMode = com.google.android.material.textfield.TextInputLayout.BOX_BACKGROUND_OUTLINE
+            setBoxCornerRadii(dpToPx(14).toFloat(), dpToPx(14).toFloat(), dpToPx(14).toFloat(), dpToPx(14).toFloat())
+            boxBackgroundColor = ContextCompat.getColor(context, R.color.apex_bg_screen)
+        }
+        val etNombre = com.google.android.material.textfield.TextInputEditText(tilNombre.context).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-            setHintTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            maxLines = 1
         }
-        container.addView(etNombre)
+        tilNombre.addView(etNombre)
+        container.addView(tilNombre)
 
-        val etUbicacion = EditText(context).apply {
+        val tilUbicacion = com.google.android.material.textfield.TextInputLayout(themedCtx).apply {
             hint = "Ubicación (opcional)"
-            inputType = InputType.TYPE_CLASS_TEXT
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-            setHintTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+            boxBackgroundMode = com.google.android.material.textfield.TextInputLayout.BOX_BACKGROUND_OUTLINE
+            setBoxCornerRadii(dpToPx(14).toFloat(), dpToPx(14).toFloat(), dpToPx(14).toFloat(), dpToPx(14).toFloat())
+            boxBackgroundColor = ContextCompat.getColor(context, R.color.apex_bg_screen)
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dpToPx(8) }
+            ).apply { topMargin = dpToPx(12) }
         }
-        container.addView(etUbicacion)
+        val etUbicacion = com.google.android.material.textfield.TextInputEditText(tilUbicacion.context).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+            maxLines = 1
+        }
+        tilUbicacion.addView(etUbicacion)
+        container.addView(tilUbicacion)
 
         val dialogo = MaterialAlertDialogBuilder(context)
-            .setTitle("Nueva caja")
+            .setTitle("Nueva Caja")
             .setView(container)
             .setNegativeButton("Cancelar", null)
             .setPositiveButton("Crear", null)
@@ -134,7 +156,7 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
                 .setOnClickListener {
                     val nombre = etNombre.text?.toString()?.trim().orEmpty()
                     if (nombre.isEmpty()) {
-                        Toast.makeText(context, "Ingresa el nombre de la caja", Toast.LENGTH_SHORT).show()
+                        tilNombre.error = "Ingresa el nombre de la caja"
                         return@setOnClickListener
                     }
                     dialogo.dismiss()

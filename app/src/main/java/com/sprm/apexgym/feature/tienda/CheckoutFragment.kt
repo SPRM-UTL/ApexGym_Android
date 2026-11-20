@@ -1,12 +1,14 @@
 package com.sprm.apexgym.feature.tienda
 
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -17,11 +19,12 @@ import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.CrearCobroRequest
+import com.sprm.apexgym.core.network.api.MetodoPagoDto
+import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.network.mensajeUsuario
-import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentCheckoutPosBinding
 import com.sprm.apexgym.feature.main.CartItem
@@ -33,16 +36,13 @@ import java.util.UUID
 
 /**
  * Cobro de la tienda POS para empleados.
- * La API solo soporta un proveedor por cobro: efectivo o terminal manual.
+ * Carga dinámicamente las formas de pago configuradas en el catálogo del sistema
+ * (`GET /api/metodos-pago`) y registra el cobro en `/api/pagos/crear-cobro`.
  */
 class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
 
-    private enum class MetodoCobro {
-        EFECTIVO,
-        TERMINAL_MANUAL
-    }
-
-    private var metodoSeleccionado = MetodoCobro.EFECTIVO
+    private var metodosSistema: List<MetodoPagoDto> = emptyList()
+    private var metodoSeleccionado: MetodoPagoDto? = null
     private var total: Double = 0.0
     private var aperturaCajaId: Int? = null
     private var cobrando = false
@@ -62,16 +62,18 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         total = CartManager.obtenerTotalPrecio(requireContext())
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.cardEfectivo.setOnClickListener { seleccionarMetodo(MetodoCobro.EFECTIVO) }
-        binding.cardTerminal.setOnClickListener { seleccionarMetodo(MetodoCobro.TERMINAL_MANUAL) }
         binding.etEfectivoRecibido.doAfterTextChanged { actualizarCambio() }
         binding.btnCobrar.setOnClickListener { validarYCobrar() }
 
         binding.btnCobrar.text = "Cobrar ${total.formatearMonedaSinSufijo()} MXN"
         binding.tvTotalPagar.text = "${total.formatearMonedaSinSufijo()} MXN"
 
+        // Ocultar las 2 tarjetas estáticas heredadas para mostrar las dinámicas del sistema
+        binding.cardEfectivo.visibility = View.GONE
+        binding.cardTerminal.visibility = View.GONE
+
         renderizarResumen(items)
-        seleccionarMetodo(MetodoCobro.EFECTIVO)
+        cargarMetodosPagoDelSistema(view)
         cargarAperturaActiva()
 
         if (!SessionManager.esEmpleado(requireContext())) {
@@ -83,6 +85,145 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             )
             binding.btnCobrar.isEnabled = false
         }
+    }
+
+    private fun cargarMetodosPagoDelSistema(rootView: View) {
+        val contenedor = rootView.findViewWithTag<LinearLayout>("ll_metodos_pago_dinamicos")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val cargados = try {
+                RetrofitClient.empleadoService.obtenerMetodosPago()
+                    .dataExitosa()
+                    .orEmpty()
+                    .filter { it.estado.isNullOrBlank() || it.estado.equals("activo", ignoreCase = true) }
+            } catch (_: Exception) {
+                emptyList()
+            }
+
+            if (!isAdded) return@launch
+
+            metodosSistema = if (cargados.isNotEmpty()) {
+                cargados
+            } else {
+                listOf(
+                    MetodoPagoDto(id = 1, nombre = "Efectivo", descripcion = "Pago en caja con efectivo", estado = "activo"),
+                    MetodoPagoDto(id = 2, nombre = "Tarjeta", descripcion = "Pago con tarjeta en terminal", estado = "activo"),
+                    MetodoPagoDto(id = 3, nombre = "Transferencia", descripcion = "Pago por transferencia bancaria", estado = "activo")
+                )
+            }
+
+            if (metodoSeleccionado == null) {
+                metodoSeleccionado = metodosSistema.firstOrNull()
+            }
+            renderizarMetodosDinamicos(contenedor)
+            actualizarCamposSegunMetodo()
+        }
+    }
+
+    private fun renderizarMetodosDinamicos(contenedor: LinearLayout?) {
+        if (contenedor == null) return
+        val context = requireContext()
+        val naranja = ContextCompat.getColor(context, R.color.apex_orange)
+        val grisBorde = ContextCompat.getColor(context, R.color.apex_stroke_light)
+        val primario = ContextCompat.getColor(context, R.color.apex_text_primary)
+        val secundario = ContextCompat.getColor(context, R.color.apex_text_secondary)
+
+        contenedor.removeAllViews()
+
+        metodosSistema.forEach { metodo ->
+            val seleccionado = metodoSeleccionado?.id == metodo.id && metodoSeleccionado?.nombre == metodo.nombre
+
+            val card = MaterialCardView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(10) }
+                setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                radius = dp(16).toFloat()
+                cardElevation = 0f
+                strokeWidth = dp(if (seleccionado) 2 else 1)
+                strokeColor = if (seleccionado) naranja else grisBorde
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    metodoSeleccionado = metodo
+                    renderizarMetodosDinamicos(contenedor)
+                    actualizarCamposSegunMetodo()
+                }
+            }
+
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(16), dp(14), dp(16), dp(14))
+            }
+
+            val radioOuter = FrameLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(22), dp(22))
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(ContextCompat.getColor(context, R.color.white))
+                    setStroke(dp(if (seleccionado) 2 else 1), if (seleccionado) naranja else grisBorde)
+                }
+                if (seleccionado) {
+                    addView(View(context).apply {
+                        layoutParams = FrameLayout.LayoutParams(dp(12), dp(12), Gravity.CENTER)
+                        background = GradientDrawable().apply {
+                            shape = GradientDrawable.OVAL
+                            setColor(naranja)
+                        }
+                    })
+                }
+            }
+            row.addView(radioOuter)
+
+            val col = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = dp(12)
+                }
+            }
+
+            col.addView(TextView(context).apply {
+                text = metodo.nombre?.takeIf { it.isNotBlank() } ?: "Método #${metodo.id}"
+                setTextColor(primario)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+                setTypeface(typeface, Typeface.BOLD)
+            })
+
+            metodo.descripcion?.takeIf { it.isNotBlank() }?.let { desc ->
+                col.addView(TextView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { topMargin = dp(2) }
+                    text = desc
+                    setTextColor(secundario)
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                    maxLines = 2
+                    ellipsize = TextUtils.TruncateAt.END
+                })
+            }
+
+            row.addView(col)
+            card.addView(row)
+            contenedor.addView(card)
+        }
+    }
+
+    private fun esMetodoEfectivo(metodo: MetodoPagoDto?): Boolean {
+        val nombre = metodo?.nombre?.lowercase().orEmpty()
+        return nombre.contains("efectivo")
+    }
+
+    private fun actualizarCamposSegunMetodo() {
+        val esEfectivo = esMetodoEfectivo(metodoSeleccionado)
+        binding.llEfectivoFields.visibility = if (esEfectivo) View.VISIBLE else View.GONE
+        binding.llTerminalFields.visibility = if (esEfectivo) View.GONE else View.VISIBLE
+        if (!esEfectivo) {
+            val nombre = metodoSeleccionado?.nombre ?: "pago"
+            binding.etFolioVoucher.hint = "Folio / referencia de $nombre"
+        }
+        binding.tvCheckoutError.visibility = View.GONE
     }
 
     private fun renderizarResumen(items: List<CartItem>) {
@@ -128,29 +269,6 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         }
     }
 
-    private fun seleccionarMetodo(metodo: MetodoCobro) {
-        metodoSeleccionado = metodo
-        val context = requireContext()
-        val naranja = ContextCompat.getColor(context, R.color.apex_orange)
-        val gris = ContextCompat.getColor(context, R.color.apex_stroke_light)
-        val secundario = ContextCompat.getColor(context, R.color.apex_text_secondary)
-
-        val esEfectivo = metodo == MetodoCobro.EFECTIVO
-        binding.cardEfectivo.strokeColor = if (esEfectivo) naranja else gris
-        binding.cardEfectivo.strokeWidth = if (esEfectivo) dp(2) else dp(1)
-        binding.cardTerminal.strokeColor = if (esEfectivo) gris else naranja
-        binding.cardTerminal.strokeWidth = if (esEfectivo) dp(1) else dp(2)
-
-        binding.tvEfectivoCheck.text = if (esEfectivo) "●" else "○"
-        binding.tvEfectivoCheck.setTextColor(if (esEfectivo) naranja else secundario)
-        binding.tvTerminalCheck.text = if (esEfectivo) "○" else "●"
-        binding.tvTerminalCheck.setTextColor(if (esEfectivo) secundario else naranja)
-
-        binding.llEfectivoFields.visibility = if (esEfectivo) View.VISIBLE else View.GONE
-        binding.llTerminalFields.visibility = if (esEfectivo) View.GONE else View.VISIBLE
-        binding.tvCheckoutError.visibility = View.GONE
-    }
-
     private fun actualizarCambio() {
         val recibido = leerMonto(binding.etEfectivoRecibido.text?.toString())
         val cambio = if (recibido != null) recibido - total else 0.0
@@ -182,7 +300,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                         ?: "Caja #${activa.cajaId}"
                     "Caja activa: $caja • Apertura #${activa.id}"
                 } else {
-                    "Sin apertura de caja activa. El efectivo no se registrará en caja."
+                    "Sin apertura de caja activa en esta sucursal."
                 }
             } catch (_: Exception) {
                 if (isAdded) {
@@ -202,6 +320,12 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             return
         }
 
+        val metodo = metodoSeleccionado
+        if (metodo == null) {
+            mostrarError("Selecciona una forma de pago.")
+            return
+        }
+
         val empleadoId = SessionManager.obtenerEmpleadoId(requireContext())
         if (empleadoId == null) {
             mostrarError(
@@ -212,34 +336,32 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
 
         var efectivoRecibido: Double? = null
         var folioVoucher: String? = null
+        val esEfectivo = esMetodoEfectivo(metodo)
 
-        when (metodoSeleccionado) {
-            MetodoCobro.EFECTIVO -> {
-                efectivoRecibido = leerMonto(binding.etEfectivoRecibido.text?.toString())
-                if (efectivoRecibido == null) {
-                    mostrarError("Ingresa el efectivo recibido.")
-                    return
-                }
-                if (efectivoRecibido < total) {
-                    mostrarError("El efectivo recibido no cubre el total a cobrar.")
-                    return
-                }
+        if (esEfectivo) {
+            efectivoRecibido = leerMonto(binding.etEfectivoRecibido.text?.toString())
+            if (efectivoRecibido == null) {
+                mostrarError("Ingresa el efectivo recibido.")
+                return
             }
-
-            MetodoCobro.TERMINAL_MANUAL -> {
-                folioVoucher = binding.etFolioVoucher.text?.toString()?.trim()
-                if (folioVoucher.isNullOrBlank()) {
-                    mostrarError("Ingresa el folio o autorización del voucher.")
-                    return
-                }
+            if (efectivoRecibido < total) {
+                mostrarError("El efectivo recibido no cubre el total a cobrar.")
+                return
+            }
+        } else {
+            folioVoucher = binding.etFolioVoucher.text?.toString()?.trim()
+            if (folioVoucher.isNullOrBlank()) {
+                mostrarError("Ingresa el folio o referencia de ${metodo.nombre ?: "pago"}.")
+                return
             }
         }
 
-        realizarCobro(items, empleadoId, efectivoRecibido, folioVoucher)
+        realizarCobro(items, metodo, empleadoId, efectivoRecibido, folioVoucher)
     }
 
     private fun realizarCobro(
         items: List<CartItem>,
+        metodo: MetodoPagoDto,
         empleadoId: Int,
         efectivoRecibido: Double?,
         folioVoucher: String?
@@ -247,6 +369,10 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         cobrando = true
         binding.btnCobrar.isEnabled = false
         binding.btnCobrar.text = "Procesando cobro…"
+
+        val esEfectivo = esMetodoEfectivo(metodo)
+        val proveedorApi = if (esEfectivo) "EFECTIVO" else "TERMINAL_MANUAL"
+        val nombreMetodo = metodo.nombre?.takeIf { it.isNotBlank() } ?: proveedorApi
 
         val concepto = if (items.size == 1) {
             items.first().nombre
@@ -257,6 +383,9 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         val metadatos = mutableMapOf<String, Any>(
             "origen" to "POS_ANDROID",
             "empleadoId" to empleadoId,
+            "metodoPagoId" to metodo.id,
+            "metodoPagoNombre" to nombreMetodo,
+            "sucursalId" to SessionManager.obtenerSucursalId(requireContext()),
             "items" to items.map { item ->
                 mapOf(
                     "tipo" to item.tipo.name,
@@ -277,7 +406,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         val request = CrearCobroRequest(
             concepto = concepto,
             monto = total,
-            proveedor = metodoSeleccionado.name,
+            proveedor = proveedorApi,
             folioVoucher = folioVoucher,
             uuidIdempotencia = idempotenciaKey,
             metadatos = metadatos
@@ -334,7 +463,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                         TicketCompraFragment.newInstance(
                             transaccion = transaccion,
                             itemsJson = itemsJson,
-                            metodoPago = metodoSeleccionado.name
+                            metodoPago = nombreMetodo
                         )
                     )
                     .addToBackStack(null)

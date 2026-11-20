@@ -172,7 +172,7 @@
                 <FrameLayout
                     android:layout_width="38dp"
                     android:layout_height="38dp"
-                    android:background="@drawable/bg_circle_blue_light">
+                    android:background="@drawable/bg_chip_unselected">
 
                     <ImageView
                         android:layout_width="18dp"
@@ -180,7 +180,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_bell_outline"
-                        app:tint="#1976D2" />
+                        app:tint="@color/apex_orange" />
                 </FrameLayout>
 
                 <LinearLayout
@@ -364,7 +364,7 @@
                 <FrameLayout
                     android:layout_width="38dp"
                     android:layout_height="38dp"
-                    android:background="@drawable/bg_circle_green_light">
+                    android:background="@drawable/bg_chip_unselected">
 
                     <ImageView
                         android:layout_width="18dp"
@@ -372,7 +372,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_user_add"
-                        app:tint="#2E7D32" />
+                        app:tint="@color/apex_orange" />
                 </FrameLayout>
 
                 <LinearLayout
@@ -424,7 +424,7 @@
                 <FrameLayout
                     android:layout_width="38dp"
                     android:layout_height="38dp"
-                    android:background="@drawable/bg_circle_purple_light">
+                    android:background="@drawable/bg_chip_unselected">
 
                     <ImageView
                         android:layout_width="18dp"
@@ -432,7 +432,7 @@
                         android:layout_gravity="center"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_calendar_event"
-                        app:tint="#6A1B9A" />
+                        app:tint="@color/apex_orange" />
                 </FrameLayout>
 
                 <LinearLayout

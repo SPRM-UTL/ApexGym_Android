@@ -2,12 +2,14 @@ package com.sprm.apexgym.feature.main
 
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentEmpleadoDashboardBinding
 import com.sprm.apexgym.feature.auth.LoginFragment
@@ -21,7 +23,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Panel principal para usuarios con rol de empleado.
- * Muestra los módulos operativos del gimnasio; los clientes nunca llegan aquí.
+ * Permite seleccionar la sucursal activa (propagada en `x-sucursal-id`) y
+ * acceder a los módulos operativos del gimnasio.
  */
 class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>() {
 
@@ -41,6 +44,28 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
             ?.takeIf { it.isNotBlank() }
             ?.let { "Rol: $it" }
             ?: "Panel de empleado"
+
+        actualizarBannerSucursal(view)
+        sincronizarSucursalActiva(view)
+
+        val cardSucursal = view.findViewWithTag<View>("card_sucursal_activa")
+        cardSucursal?.setOnClickListener {
+            if (!SessionManager.puedeCambiarSucursal(requireContext())) return@setOnClickListener
+            val existing = childFragmentManager.findFragmentByTag(SucursalSelectorBottomSheetFragment.TAG)
+            if (existing == null) {
+                SucursalSelectorBottomSheetFragment().show(
+                    childFragmentManager,
+                    SucursalSelectorBottomSheetFragment.TAG
+                )
+            }
+        }
+
+        childFragmentManager.setFragmentResultListener(
+            SucursalSelectorBottomSheetFragment.RESULT_KEY_SUCURSAL_ACTUALIZADA,
+            viewLifecycleOwner
+        ) { _, _ ->
+            actualizarBannerSucursal(view)
+        }
 
         binding.flAvatar.setOnClickListener {
             val existing = childFragmentManager.findFragmentByTag(ProfileBottomSheetFragment.TAG)
@@ -84,6 +109,42 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
                             .commit()
                     }
                 }
+            }
+        }
+    }
+
+    private fun actualizarBannerSucursal(rootView: View) {
+        if (!isAdded) return
+        val context = requireContext()
+        val tvNombre = rootView.findViewWithTag<TextView>("tv_sucursal_nombre")
+        val tvSubtitulo = rootView.findViewWithTag<TextView>("tv_sucursal_subtitulo")
+        val tvCambiar = rootView.findViewWithTag<View>("tv_sucursal_cambiar")
+        val cardSucursal = rootView.findViewWithTag<View>("card_sucursal_activa")
+        val puedeCambiar = SessionManager.puedeCambiarSucursal(context)
+
+        tvNombre?.text = SessionManager.obtenerSucursalNombre(context)
+        tvSubtitulo?.text = SessionManager.obtenerSucursalSubtitulo(context)
+        tvCambiar?.visibility = if (puedeCambiar) View.VISIBLE else View.GONE
+        cardSucursal?.isClickable = puedeCambiar
+        cardSucursal?.isFocusable = puedeCambiar
+    }
+
+    private fun sincronizarSucursalActiva(rootView: View) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val sucursal = RetrofitClient.empleadoService.obtenerSucursalActual().dataExitosa()
+                if (sucursal != null && isAdded) {
+                    SessionManager.guardarSucursal(
+                        context = requireContext(),
+                        sucursalId = sucursal.id,
+                        nombre = sucursal.nombre,
+                        codigo = sucursal.codigo,
+                        ciudad = sucursal.ciudad,
+                        puedeCambiar = sucursal.puedeCambiarSucursal ?: false
+                    )
+                    actualizarBannerSucursal(rootView)
+                }
+            } catch (_: Exception) {
             }
         }
     }

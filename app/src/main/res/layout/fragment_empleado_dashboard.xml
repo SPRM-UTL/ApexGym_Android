@@ -6,51 +6,27 @@
     android:background="@color/apex_bg_screen"
     android:clipToPadding="false"
     android:overScrollMode="never"
-    android:paddingBottom="100dp">
+    android:paddingBottom="40dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="18dp"
-        android:paddingTop="16dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="22dp"
+            android:layout_marginBottom="18dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvEmployeeGreeting"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Hola, Empleado"
-                    android:textColor="@color/apex_text_primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvEmployeeRole"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Panel de empleado"
-                    android:textColor="@color/apex_text_secondary"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
             <FrameLayout
                 android:id="@+id/flAvatar"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
                 android:background="@drawable/bg_avatar_ring"
                 android:clickable="true"
                 android:focusable="true">
@@ -62,7 +38,122 @@
                     android:contentDescription="Mi cuenta"
                     android:src="@drawable/ic_avatar_placeholder" />
             </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvEmployeeGreeting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hola, Empleado"
+                    android:textColor="@color/apex_text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvEmployeeRole"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Panel de empleado"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
         </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:tag="card_sucursal_activa"
+            app:cardBackgroundColor="@color/apex_card_dark"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="18dp"
+                android:paddingVertical="16dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_circle_orange_outline">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_location_outline"
+                        app:tint="@color/apex_orange" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SUCURSAL ACTIVA"
+                        android:textColor="@color/apex_orange"
+                        android:textSize="10.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:tag="tv_sucursal_nombre"
+                        android:text="Sucursal Matriz"
+                        android:textColor="@color/white"
+                        android:textSize="16.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:tag="tv_sucursal_subtitulo"
+                        android:text="ID #1"
+                        android:textColor="@color/apex_text_on_dark_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_vip_outline"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="6dp"
+                    android:tag="tv_sucursal_cambiar"
+                    android:text="Cambiar"
+                    android:textColor="@color/apex_orange"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
@@ -70,7 +161,7 @@
             android:layout_marginBottom="12dp"
             android:text="Módulos de trabajo"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -82,31 +173,32 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvRecepcion"
                 android:layout_width="0dp"
-                android:layout_height="132dp"
+                android:layout_height="128dp"
                 android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeWidth="0dp">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
 
                     <FrameLayout
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:background="@drawable/bg_icon_circle_orange_outline">
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_chip_unselected">
 
                         <ImageView
-                            android:layout_width="26dp"
-                            android:layout_height="26dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_qr_scanner"
@@ -118,8 +210,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="Recepción"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -128,43 +220,44 @@
                         android:layout_marginTop="2dp"
                         android:gravity="center"
                         android:text="Accesos y asistencias"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp" />
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvCaja"
                 android:layout_width="0dp"
-                android:layout_height="132dp"
+                android:layout_height="128dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeWidth="0dp">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
 
                     <FrameLayout
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:background="@drawable/bg_circle_blue_light">
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_chip_unselected">
 
                         <ImageView
-                            android:layout_width="26dp"
-                            android:layout_height="26dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_wallet_card"
-                            app:tint="#1976D2" />
+                            app:tint="@color/apex_orange" />
                     </FrameLayout>
 
                     <TextView
@@ -172,8 +265,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="Caja"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -181,8 +274,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text="Aperturas y cortes"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp" />
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -197,35 +290,36 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvEmpleados"
                 android:layout_width="0dp"
-                android:layout_height="132dp"
+                android:layout_height="128dp"
                 android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeWidth="0dp">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
 
                     <FrameLayout
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:background="@drawable/bg_circle_green_light">
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_chip_unselected">
 
                         <ImageView
-                            android:layout_width="26dp"
-                            android:layout_height="26dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_user_add"
-                            app:tint="#2E7D32" />
+                            app:tint="@color/apex_orange" />
                     </FrameLayout>
 
                     <TextView
@@ -233,8 +327,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="Empleados"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -242,43 +336,44 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:text="Altas y catálogos"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp" />
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvVisitas"
                 android:layout_width="0dp"
-                android:layout_height="132dp"
+                android:layout_height="128dp"
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeWidth="0dp">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="14dp">
 
                     <FrameLayout
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:background="@drawable/bg_circle_purple_light">
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_chip_unselected">
 
                         <ImageView
-                            android:layout_width="26dp"
-                            android:layout_height="26dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_calendar_event"
-                            app:tint="#6A1B9A" />
+                            app:tint="@color/apex_orange" />
                     </FrameLayout>
 
                     <TextView
@@ -286,17 +381,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="Visitas"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Registro de prospectos"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp" />
+                        android:text="Registro de visitas"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -305,129 +400,103 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:orientation="horizontal"
-            android:weightSum="2">
+            android:orientation="horizontal">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvTienda"
-                android:layout_width="0dp"
-                android:layout_height="132dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="112dp"
                 android:clickable="true"
                 android:focusable="true"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeWidth="0dp">
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="18dp"
+                    android:paddingVertical="14dp">
 
                     <FrameLayout
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:background="@drawable/bg_circle_orange_light">
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_chip_unselected">
 
                         <ImageView
-                            android:layout_width="26dp"
-                            android:layout_height="26dp"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_shopping_cart"
                             app:tint="@color/apex_orange" />
                     </FrameLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="Tienda POS"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Venta de productos"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tienda POS"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="15.5sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Venta de productos, servicios y cobro en caja"
+                            android:textColor="@color/apex_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/apex_text_secondary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvNotificaciones"
                 android:layout_width="0dp"
-                android:layout_height="132dp"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeWidth="0dp">
+                android:layout_height="0dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/white">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <FrameLayout
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:background="@drawable/bg_circle_gray_light">
-
-                        <ImageView
-                            android:layout_width="26dp"
-                            android:layout_height="26dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_bell_outline"
-                            app:tint="@color/apex_text_primary" />
-                    </FrameLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="Notificaciones"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvNotificationsHint"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Sin endpoint disponible"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tvNotificationsHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="28dp"
-            android:backgroundTint="#1AEF4444"
+            android:layout_height="52dp"
+            android:layout_marginTop="24dp"
+            android:backgroundTint="@color/white"
             android:text="Cerrar sesión"
             android:textAllCaps="false"
             android:textColor="#EF4444"
             android:textSize="15sp"
             android:textStyle="bold"
-            app:cornerRadius="16dp"
+            app:cornerRadius="26dp"
+            app:elevation="0dp"
             app:strokeColor="#EF4444"
             app:strokeWidth="1dp" />
     </LinearLayout>
