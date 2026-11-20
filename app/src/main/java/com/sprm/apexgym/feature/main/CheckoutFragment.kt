@@ -855,6 +855,7 @@ class CheckoutFragment : Fragment() {
                     metodoPagoId = metodoId,
                     subtotal = total,
                     total = total,
+                    montoRecibido = total,
                     detalleVenta = detalle,
                     uuidIdempotencia = uuidIdempotencia,
                     pago = pagoReq
