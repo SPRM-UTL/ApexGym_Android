@@ -64,6 +64,28 @@ fun formatearFecha(
 ): String {
     if (valor.isNullOrBlank()) return "—"
 
+    val esSoloFechaSalida = !patronSalida.contains("H") &&
+        !patronSalida.contains("h") &&
+        !patronSalida.contains("m")
+    val matchSoloFecha = Regex("^(\\d{4}-\\d{2}-\\d{2})(?:T00:00:00(?:\\.000)?Z?)?$")
+        .matchEntire(valor.trim())
+
+    if (esSoloFechaSalida && matchSoloFecha != null) {
+        return try {
+            val utc = TimeZone.getTimeZone("UTC")
+            val formatoIso = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
+                timeZone = utc
+                isLenient = false
+            }
+            val fecha = formatoIso.parse(matchSoloFecha.groupValues[1]) ?: return valor
+            SimpleDateFormat(patronSalida, Locale("es", "MX")).apply {
+                timeZone = utc
+            }.format(fecha)
+        } catch (_: Exception) {
+            valor
+        }
+    }
+
     for (patron in FORMATOS_ENTRADA) {
         try {
             val formato = SimpleDateFormat(patron, Locale.US).apply {

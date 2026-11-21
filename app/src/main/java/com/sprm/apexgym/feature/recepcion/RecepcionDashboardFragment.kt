@@ -9,7 +9,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -20,10 +19,10 @@ import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.AsistenciaDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
+import com.sprm.apexgym.core.network.fechaHoyIso
 import com.sprm.apexgym.core.network.formatearHora
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.databinding.FragmentRecepcionDashboardBinding
-import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,40 +46,42 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
             Locale("es", "MX")
         ).format(Date())
 
-        binding.flNotifications.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out,
-                    android.R.anim.fade_in,
-                    android.R.anim.fade_out
-                )
-                .replace(R.id.fragment_container, NotificacionesListFragment())
-                .addToBackStack(null)
-                .commit()
-        }
+        val abrirBuscador = View.OnClickListener { abrirBusquedaCliente("") }
+        view.findViewWithTag<View>("ll_search_bar_recepcion")?.setOnClickListener(abrirBuscador)
+        binding.etSearchClient.setOnClickListener(abrirBuscador)
 
-        binding.cvScanQR.setOnClickListener { abrirAccesoManual() }
-        binding.ivScanQR.setOnClickListener { abrirAccesoManual() }
-
+        binding.cvScanQR.setOnClickListener { abrirEscanerQr() }
+        binding.ivScanQR.setOnClickListener { abrirEscanerQr() }
         binding.cvManualAccess.setOnClickListener { abrirAccesoManual() }
-
         binding.tvVerTodosAccesos.setOnClickListener { abrirHistorialAsistencias() }
-
         binding.cvAlerts.setOnClickListener { abrirHistorialAsistencias() }
 
-        binding.etSearchClient.setOnEditorActionListener { _, _, _ ->
-            abrirBusquedaCliente(binding.etSearchClient.text?.toString()?.trim().orEmpty())
-            true
-        }
-
         binding.rvRecentAccess.layoutManager = LinearLayoutManager(requireContext())
-        cargarAsistencias()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (view != null) {
+            cargarResumenRecepcion()
+        }
     }
 
     private fun abrirBusquedaCliente(termino: String) {
         val sheet = ClienteBusquedaSheetFragment.newInstance(termino)
         sheet.show(parentFragmentManager, ClienteBusquedaSheetFragment.TAG)
+    }
+
+    private fun abrirEscanerQr() {
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .replace(R.id.fragment_container, QrScannerFragment())
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun abrirAccesoManual() {
@@ -109,43 +110,51 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
             .commit()
     }
 
-    private fun cargarAsistencias() {
+    private fun cargarResumenRecepcion() {
         binding.tvEntradasHoy.text = "…"
-        binding.tvEnGimnasio.text = "0"
-        binding.tvCapacidad.text = "Socios únicos"
-        binding.tvAlertas.text = "0"
-        binding.tvAlertasLabel.text = "Sin plan activo"
         binding.tvEntradasDiff.text = "Cargando…"
+        binding.tvEnGimnasio.text = "…"
+        binding.tvCapacidad.text = "Visitantes del día"
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitClient.empleadoService.obtenerAsistenciasHoy()
                 val data = response.dataExitosa()
 
+                val hoy = fechaHoyIso()
+                val visitasHoy = try {
+                    RetrofitClient.empleadoService.obtenerVisitas(
+                        fechaInicio = hoy,
+                        fechaFin = hoy
+                    ).dataExitosa().orEmpty()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+
+                if (!isAdded) return@launch
+
+                binding.tvEnGimnasio.text = visitasHoy.size.toString()
+                binding.tvCapacidad.text = if (visitasHoy.size == 1) "1 visitante hoy" else "${visitasHoy.size} visitantes hoy"
+
                 if (data == null) {
                     binding.tvEntradasHoy.text = "0"
-                    binding.tvEntradasDiff.text =
-                        response.mensajeDeError() ?: "Sin accesos"
+                    binding.tvEntradasDiff.text = response.mensajeDeError() ?: "Sin accesos"
                     renderizarAsistencias(emptyList())
                     return@launch
                 }
 
                 asistencias = data.asistencias
-                val sociosUnicos = asistencias.map { it.clienteId }.distinct().size
-                val sinPlanActivo = asistencias.count { it.clienteMembresia == null }
-
                 binding.tvEntradasHoy.text = data.total.toString()
                 binding.tvEntradasDiff.text = if (data.total == 1) "1 acceso hoy" else "${data.total} accesos hoy"
-                binding.tvEnGimnasio.text = sociosUnicos.toString()
-                binding.tvCapacidad.text = "Socios únicos"
-                binding.tvAlertas.text = sinPlanActivo.toString()
-                binding.tvAlertasLabel.text = "Sin plan activo"
 
-                renderizarAsistencias(asistencias.take(8))
-            } catch (e: Exception) {
-                binding.tvEntradasHoy.text = "0"
-                binding.tvEntradasDiff.text = "Sin conexión"
-                renderizarAsistencias(emptyList())
+                renderizarAsistencias(asistencias.take(MAX_ULTIMOS_ACCESOS))
+            } catch (_: Exception) {
+                if (isAdded) {
+                    binding.tvEntradasHoy.text = "0"
+                    binding.tvEntradasDiff.text = "Sin conexión"
+                    binding.tvEnGimnasio.text = "0"
+                    renderizarAsistencias(emptyList())
+                }
             }
         }
     }
@@ -217,6 +226,13 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
                 col.addView(tvHora)
                 row.addView(col)
 
+                val chevron = ImageView(parent.context).apply {
+                    layoutParams = LinearLayout.LayoutParams(dpToPx(18), dpToPx(18))
+                    setImageResource(R.drawable.ic_chevron_right)
+                    setColorFilter(ContextCompat.getColor(context, R.color.apex_nav_inactive))
+                }
+                row.addView(chevron)
+
                 card.addView(row)
                 return AsistenciaViewHolder(card, tvNombre, tvPlan, tvHora)
             }
@@ -237,7 +253,7 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
     ) : RecyclerView.ViewHolder(itemView) {
         fun bind(asistencia: AsistenciaDto) {
             val cliente = asistencia.cliente
-            tvNombre.text = cliente?.nombreCompleto?.takeIf { it.isNotBlank() } ?: "Cliente"
+            tvNombre.text = cliente?.nombreCompleto?.takeIf { it.isNotBlank() } ?: "Socio"
             tvPlan.text = asistencia.clienteMembresia?.tipoMembresia?.nombre
                 ?.let { "Plan: $it" }
                 ?: "Sin membresía registrada"
@@ -255,4 +271,8 @@ class RecepcionDashboardFragment : BaseFragment<FragmentRecepcionDashboardBindin
         dp.toFloat(),
         resources.displayMetrics
     ).toInt()
+
+    companion object {
+        private const val MAX_ULTIMOS_ACCESOS = 5
+    }
 }

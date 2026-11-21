@@ -27,7 +27,6 @@ import com.sprm.apexgym.databinding.FragmentCrearEditarEmpleadoBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.net.URL
 import java.util.Calendar
@@ -306,7 +305,14 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
             )
             binding.etTelefono.setText(empleado.telefono.orEmpty())
             binding.etEmail.setText(empleado.correo ?: empleado.usuario?.email.orEmpty())
-            cargarDireccionEnCampos(empleado.direccion)
+            binding.etDireccion.setText(empleado.calle.orEmpty())
+            binding.etNumeroExterior.setText(empleado.numeroExterior.orEmpty())
+            binding.etNumeroInterior.setText(empleado.numeroInterior.orEmpty())
+            binding.etColonia.setText(empleado.colonia.orEmpty())
+            binding.etCodigoPostal.setText(empleado.codigoPostal.orEmpty())
+            binding.etMunicipio.setText(empleado.municipio.orEmpty())
+            binding.etEstado.setText(empleado.estado.orEmpty())
+            binding.etEntreCalles.setText(empleado.entreCalles.orEmpty())
             binding.etFechaNacimiento.setText(
                 formatearFecha(empleado.fechaNacimiento, "dd/MM/yyyy")
                     .takeUnless { it == "—" }
@@ -341,55 +347,6 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
                 ).show()
             }
         }
-    }
-
-    private fun cargarDireccionEnCampos(direccionRaw: String?) {
-        if (direccionRaw.isNullOrBlank()) return
-        val texto = direccionRaw.trim()
-        if (texto.startsWith("{")) {
-            try {
-                val json = JSONObject(texto)
-                binding.etDireccion.setText(json.optString("calle", ""))
-                binding.etNumeroExterior.setText(json.optString("numeroExterior", ""))
-                binding.etNumeroInterior.setText(json.optString("numeroInterior", ""))
-                binding.etColonia.setText(json.optString("colonia", ""))
-                binding.etCodigoPostal.setText(json.optString("codigoPostal", ""))
-                binding.etMunicipio.setText(json.optString("municipio", ""))
-                binding.etEstado.setText(json.optString("estado", ""))
-                binding.etEntreCalles.setText(json.optString("entreCalles", ""))
-                return
-            } catch (_: Exception) {
-            }
-        }
-        binding.etDireccion.setText(texto)
-    }
-
-    private fun construirDireccionJson(): String? {
-        val calle = binding.etDireccion.text?.toString()?.trim().orEmpty()
-        val numExt = binding.etNumeroExterior.text?.toString()?.trim().orEmpty()
-        val numInt = binding.etNumeroInterior.text?.toString()?.trim().orEmpty()
-        val colonia = binding.etColonia.text?.toString()?.trim().orEmpty()
-        val cp = binding.etCodigoPostal.text?.toString()?.trim().orEmpty()
-        val municipio = binding.etMunicipio.text?.toString()?.trim().orEmpty()
-        val estado = binding.etEstado.text?.toString()?.trim().orEmpty()
-        val entreCalles = binding.etEntreCalles.text?.toString()?.trim().orEmpty()
-
-        val tieneAlguno = listOf(
-            calle, numExt, numInt, colonia, cp, municipio, estado, entreCalles
-        ).any { it.isNotEmpty() }
-
-        if (!tieneAlguno) return null
-
-        return JSONObject().apply {
-            put("calle", calle)
-            put("numeroExterior", numExt)
-            put("numeroInterior", numInt)
-            put("colonia", colonia)
-            put("codigoPostal", cp)
-            put("municipio", municipio)
-            put("estado", estado)
-            put("entreCalles", entreCalles)
-        }.toString()
     }
 
     private fun guardar() {
@@ -437,7 +394,14 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
             apellidoMaterno = partesApellido.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() },
             telefono = telefono,
             correo = binding.etEmail.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
-            direccion = construirDireccionJson(),
+            calle = binding.etDireccion.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            numeroExterior = binding.etNumeroExterior.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            numeroInterior = binding.etNumeroInterior.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            colonia = binding.etColonia.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            codigoPostal = binding.etCodigoPostal.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            municipio = binding.etMunicipio.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            estado = binding.etEstado.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            entreCalles = binding.etEntreCalles.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
             fechaNacimiento = fechaNacimiento!!,
             fechaIngreso = fechaIngreso!!,
             imagenUrl = imagenBase64Seleccionada ?: empleadoActual?.imagenUrl

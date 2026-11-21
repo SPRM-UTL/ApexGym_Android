@@ -132,10 +132,8 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                             append(SessionManager.obtenerEmail(requireContext()) ?: "—")
                             append("\nRol: ")
                             append(rolSesion ?: "—")
-                            append(
-                                "\n\nLa edición del perfil de empleado no está disponible " +
-                                    "en la API actual."
-                            )
+                            append("\nSucursal: ")
+                            append(SessionManager.obtenerSucursalNombre(requireContext()))
                         }
                     )
                     .setPositiveButton("Cerrar", null)
