@@ -327,12 +327,16 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
 
     private fun actualizarCambio() {
         val recibido = leerMonto(binding.etEfectivoRecibido.text?.toString())
-        val cambio = if (recibido != null) recibido - totales.total else 0.0
-        binding.tvCambio.text = "Cambio: ${cambio.coerceAtLeast(0.0).formatearMonedaSinSufijo()} MXN"
+        val cambio = ValidadorPagoAndroid.calcularCambio(recibido, totales.total)
+        binding.tvCambio.text = "Cambio: ${cambio.formatearMonedaSinSufijo()} MXN"
         binding.tvCambio.setTextColor(
             ContextCompat.getColor(
                 requireContext(),
-                if (recibido != null && recibido >= totales.total) R.color.apex_text_secondary else R.color.apex_orange
+                if (recibido != null && ValidadorPagoAndroid.validarEfectivo(recibido, totales.total).valido) {
+                    R.color.apex_text_secondary
+                } else {
+                    R.color.apex_orange
+                }
             )
         )
     }
@@ -418,16 +422,26 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             } else {
                 leerMonto(textoEfectivo)
             }
-            if (efectivoRecibido == null || efectivoRecibido < totales.total) {
+            val validacionEfectivo = ValidadorPagoAndroid.validarEfectivo(efectivoRecibido, totales.total)
+            if (!validacionEfectivo.valido) {
                 mostrarError("El efectivo recibido no cubre el total a cobrar ($${totales.total.formatearMonedaSinSufijo()} MXN).")
                 return
             }
+            efectivoRecibido = validacionEfectivo.montoRecibido
         } else {
             val typedFolio = binding.etFolioVoucher.text?.toString()?.trim()
-            folioVoucher = if (!typedFolio.isNullOrBlank()) {
-                typedFolio
+            if (!typedFolio.isNullOrBlank()) {
+                val validacionFolio = ValidadorPagoAndroid.validarFolioVoucher(
+                    folioVoucher = typedFolio,
+                    obligatorio = true
+                )
+                if (!validacionFolio.valido) {
+                    mostrarError(validacionFolio.mensajeError ?: "Folio o referencia inválida.")
+                    return
+                }
+                folioVoucher = typedFolio
             } else {
-                "AUT-${System.currentTimeMillis() % 1000000}"
+                folioVoucher = "AUT-${System.currentTimeMillis() % 1000000}"
             }
         }
 

@@ -217,6 +217,7 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                 } finally {
                     RetrofitClient.cookieJar.clear()
                     if (isAdded) {
+                        com.sprm.apexgym.core.notifications.FcmTokenManager.limpiarRegistro(requireContext())
                         SessionManager.limpiar(requireContext())
                         CartManager.vaciarCarrito(requireContext())
                     }

@@ -413,7 +413,8 @@ data class DetalleVentaPosRequest(
     val servicioId: Int? = null,
     val tipoMembresiaId: Int? = null,
     val cantidad: Int,
-    val descripcion: String? = null
+    val descripcion: String? = null,
+    val almacenId: Int? = null
 )
 
 data class PagoVentaPosRequest(
@@ -510,7 +511,8 @@ data class DetallePedidoCompraRequest(
 data class CrearPedidoCompraRequest(
     val proveedor: String? = null,
     val observaciones: String? = null,
-    val detalles: List<DetallePedidoCompraRequest>
+    val detalles: List<DetallePedidoCompraRequest>,
+    val almacenId: Int? = null
 )
 
 data class ProductoResumenPedidoDto(
@@ -547,6 +549,7 @@ data class DetallePedidoCompraDto(
 
 data class PedidoCompraDto(
     val id: Int = 0,
+    val almacenId: Int? = null,
     val proveedor: String? = null,
     val estado: String = "PENDIENTE",
     val totalEstimado: Double = 0.0,
@@ -554,9 +557,111 @@ data class PedidoCompraDto(
     val motivoRechazo: String? = null,
     val fechaValidacion: String? = null,
     val createdAt: String? = null,
+    val almacen: AlmacenDto? = null,
     val solicitanteEmpleado: EmpleadoResumenPedidoDto? = null,
     val validadorEmpleado: EmpleadoResumenPedidoDto? = null,
     val detalles: List<DetallePedidoCompraDto> = emptyList()
+)
+
+// ── Multialmacenes por sucursal ──────────────────────────────────────────────
+
+data class SucursalResumenAlmacenDto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val codigo: String? = null
+)
+
+data class AlmacenDto(
+    val id: Int = 0,
+    val empresaId: Int = 1,
+    val sucursalId: Int = 1,
+    val nombre: String = "",
+    val codigo: String? = null,
+    val tipo: String = "PRINCIPAL",
+    val ubicacion: String? = null,
+    val esPrincipal: Boolean = false,
+    val activo: Boolean = true,
+    val createdAt: String? = null,
+    val sucursal: SucursalResumenAlmacenDto? = null,
+    val totalProductos: Int = 0,
+    val productosConStock: Int = 0,
+    val totalUnidades: Int = 0,
+    val productosStockBajo: Int = 0
+)
+
+data class InventarioAlmacenProductoDto(
+    val id: Int = 0,
+    val productoId: Int = 0,
+    val almacenId: Int = 0,
+    val nombre: String = "",
+    val codigoBarras: String? = null,
+    val categoriaId: Int? = null,
+    val categoria: String? = null,
+    val precioVenta: Double = 0.0,
+    val precioCompra: Double? = null,
+    val stockGlobal: Int = 0,
+    val stockActual: Int = 0,
+    val stockMinimo: Int = 1,
+    val ubicacionEstante: String? = null,
+    val estado: String? = null,
+    val disponibleCompra: Boolean = true,
+    val imagenUrl: String? = null
+)
+
+data class InventarioAlmacenDto(
+    val almacen: AlmacenDto? = null,
+    val productos: List<InventarioAlmacenProductoDto> = emptyList()
+)
+
+data class CrearAlmacenRequest(
+    val nombre: String,
+    val codigo: String? = null,
+    val tipo: String? = null,
+    val ubicacion: String? = null,
+    val esPrincipal: Boolean = false,
+    val activo: Boolean = true
+)
+
+data class AjustarInventarioAlmacenRequest(
+    val stockActual: Int,
+    val stockMinimo: Int? = null,
+    val ubicacionEstante: String? = null
+)
+
+data class AjusteInventarioAlmacenResponseDto(
+    val id: Int = 0,
+    val empresaId: Int = 1,
+    val sucursalId: Int = 1,
+    val almacenId: Int = 0,
+    val productoId: Int = 0,
+    val stockActual: Int = 0,
+    val stockMinimo: Int = 1,
+    val ubicacionEstante: String? = null,
+    val productoNombre: String? = null,
+    val almacenNombre: String? = null,
+    val stockGlobal: Int = 0
+)
+
+data class TransferirStockAlmacenRequest(
+    val origenAlmacenId: Int,
+    val destinoAlmacenId: Int,
+    val productoId: Int,
+    val cantidad: Int
+)
+
+data class TransferenciaAlmacenLadoDto(
+    val almacenId: Int = 0,
+    val nombre: String? = null,
+    val stockActual: Int = 0
+)
+
+data class TransferenciaStockResponseDto(
+    val productoId: Int = 0,
+    val productoNombre: String? = null,
+    val cantidad: Int = 0,
+    val stockGlobal: Int = 0,
+    val origen: TransferenciaAlmacenLadoDto? = null,
+    val destino: TransferenciaAlmacenLadoDto? = null
 )
 
 interface EmpleadoApiService {
@@ -818,4 +923,30 @@ interface EmpleadoApiService {
     suspend fun crearPedidoCompra(
         @Body request: CrearPedidoCompraRequest
     ): Response<ApiResponse<PedidoCompraDto>>
+
+    // Multialmacenes por sucursal
+    @GET("api/almacenes")
+    suspend fun obtenerAlmacenes(): Response<ApiResponse<List<AlmacenDto>>>
+
+    @POST("api/almacenes")
+    suspend fun crearAlmacen(
+        @Body request: CrearAlmacenRequest
+    ): Response<ApiResponse<AlmacenDto>>
+
+    @GET("api/almacenes/{id}/inventario")
+    suspend fun obtenerInventarioAlmacen(
+        @Path("id") id: Int
+    ): Response<ApiResponse<InventarioAlmacenDto>>
+
+    @PUT("api/almacenes/{id}/inventario/{productoId}")
+    suspend fun ajustarInventarioAlmacen(
+        @Path("id") id: Int,
+        @Path("productoId") productoId: Int,
+        @Body request: AjustarInventarioAlmacenRequest
+    ): Response<ApiResponse<AjusteInventarioAlmacenResponseDto>>
+
+    @POST("api/almacenes/transferir")
+    suspend fun transferirStockAlmacen(
+        @Body request: TransferirStockAlmacenRequest
+    ): Response<ApiResponse<TransferenciaStockResponseDto>>
 }

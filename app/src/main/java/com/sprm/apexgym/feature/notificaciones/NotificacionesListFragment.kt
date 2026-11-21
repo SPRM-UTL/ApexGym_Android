@@ -1,5 +1,9 @@
 package com.sprm.apexgym.feature.notificaciones
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
@@ -23,17 +27,36 @@ import com.sprm.apexgym.core.network.api.NotificacionDto
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
+import com.sprm.apexgym.core.notifications.ApexGymMessagingService
+import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentNotificacionesListBinding
 import kotlinx.coroutines.launch
 
 class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBinding>() {
 
+    private data class TabFiltro(
+        val titulo: String,
+        val estado: String? = null,
+        val tipo: String? = null
+    )
+
     private val repositorio = NotificacionRepository()
 
     private var notificaciones: List<NotificacionDto> = emptyList()
     private var estadoSeleccionado: String? = null
+    private var tipoSeleccionado: String? = null
     private var textoBusqueda: String = ""
     private var cargando: Boolean = false
+    private var recargaPendiente: Boolean = false
+    private var primerResume: Boolean = true
+    private var receiverRegistrado: Boolean = false
+
+    private val notificacionReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (!isAdded || view == null) return
+            cargarNotificaciones(silencioso = true)
+        }
+    }
 
     override fun getLayoutRes(): Int = R.layout.fragment_notificaciones_list
 
@@ -51,30 +74,69 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
         configurarBusqueda()
         binding.btnMarcarTodasLeidas.setOnClickListener { marcarTodasLeidas() }
 
+        primerResume = true
         cargarNotificaciones()
     }
 
+    override fun onStart() {
+        super.onStart()
+        if (!receiverRegistrado) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                notificacionReceiver,
+                IntentFilter(ApexGymMessagingService.ACTION_NOTIFICACION_RECIBIDA),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            receiverRegistrado = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (primerResume) {
+            primerResume = false
+        } else if (view != null) {
+            cargarNotificaciones(silencioso = true)
+        }
+    }
+
+    override fun onStop() {
+        if (receiverRegistrado) {
+            try {
+                requireContext().unregisterReceiver(notificacionReceiver)
+            } catch (_: IllegalArgumentException) {
+            }
+            receiverRegistrado = false
+        }
+        super.onStop()
+    }
+
     private fun configurarTabs() {
-        val tabs = listOf(
-            "Todas" to null,
-            "Pendientes" to NotificacionDto.ESTADO_PENDIENTE,
-            "Leídas" to NotificacionDto.ESTADO_LEIDA,
-            "Ignoradas" to NotificacionDto.ESTADO_IGNORADA
-        )
+        val tabs = buildList {
+            add(TabFiltro("Todas"))
+            add(TabFiltro("Pendientes", estado = NotificacionDto.ESTADO_PENDIENTE))
+            add(TabFiltro("Leídas", estado = NotificacionDto.ESTADO_LEIDA))
+            add(TabFiltro("Ignoradas", estado = NotificacionDto.ESTADO_IGNORADA))
+            if (SessionManager.esEmpleado(requireContext())) {
+                add(TabFiltro("Actividad", tipo = NotificacionDto.TIPO_ACTIVIDAD_EMPLEADO))
+            }
+        }
 
         binding.tabLayoutNotificaciones.removeAllTabs()
-        tabs.forEach { (titulo, estado) ->
+        tabs.forEach { filtro ->
             binding.tabLayoutNotificaciones.addTab(
                 binding.tabLayoutNotificaciones.newTab()
-                    .setText(titulo)
-                    .setTag(estado)
+                    .setText(filtro.titulo)
+                    .setTag(filtro)
             )
         }
 
         binding.tabLayoutNotificaciones.addOnTabSelectedListener(
             object : TabLayout.OnTabSelectedListener {
                 override fun onTabSelected(tab: TabLayout.Tab) {
-                    estadoSeleccionado = tab.tag as? String
+                    val filtro = tab.tag as? TabFiltro
+                    estadoSeleccionado = filtro?.estado
+                    tipoSeleccionado = filtro?.tipo
                     renderizar()
                 }
 
@@ -94,20 +156,25 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
         }
     }
 
-    private fun cargarNotificaciones() {
-        if (cargando) return
+    private fun cargarNotificaciones(silencioso: Boolean = false) {
+        if (cargando) {
+            recargaPendiente = true
+            return
+        }
         cargando = true
-        mostrarEstado(
-            titulo = "Cargando notificaciones…",
-            mensaje = "Consultando tus notificaciones.",
-            accionTexto = null,
-            accion = null
-        )
+        if (!silencioso || notificaciones.isEmpty()) {
+            mostrarEstado(
+                titulo = "Cargando notificaciones…",
+                mensaje = "Consultando tus notificaciones.",
+                accionTexto = null,
+                accion = null
+            )
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             val resultado = repositorio.listar()
             cargando = false
-            if (!isAdded) return@launch
+            if (!isAdded || view == null) return@launch
 
             when (resultado) {
                 is ResultadoNotificaciones.Exito -> {
@@ -117,15 +184,22 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
                 }
 
                 is ResultadoNotificaciones.Error -> {
-                    notificaciones = emptyList()
-                    actualizarContador(0)
-                    mostrarEstado(
-                        titulo = "No se pudieron cargar las notificaciones",
-                        mensaje = resultado.mensaje,
-                        accionTexto = "Reintentar",
-                        accion = { cargarNotificaciones() }
-                    )
+                    if (!silencioso || notificaciones.isEmpty()) {
+                        notificaciones = emptyList()
+                        actualizarContador(0)
+                        mostrarEstado(
+                            titulo = "No se pudieron cargar las notificaciones",
+                            mensaje = resultado.mensaje,
+                            accionTexto = "Reintentar",
+                            accion = { cargarNotificaciones() }
+                        )
+                    }
                 }
+            }
+
+            if (recargaPendiente) {
+                recargaPendiente = false
+                cargarNotificaciones(silencioso = true)
             }
         }
     }
@@ -133,7 +207,12 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
     private fun renderizar() {
         if (!isAdded) return
 
-        val filtradas = filtrarNotificaciones(notificaciones, estadoSeleccionado, textoBusqueda)
+        val filtradas = filtrarNotificaciones(
+            notificaciones = notificaciones,
+            estado = estadoSeleccionado,
+            texto = textoBusqueda,
+            tipo = tipoSeleccionado
+        )
         binding.llNotificacionesContainer.removeAllViews()
 
         if (filtradas.isEmpty()) {

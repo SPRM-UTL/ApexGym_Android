@@ -9,6 +9,7 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -21,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
+import com.sprm.apexgym.core.network.api.AlmacenDto
 import com.sprm.apexgym.core.network.api.CrearPedidoCompraRequest
 import com.sprm.apexgym.core.network.api.DetallePedidoCompraRequest
 import com.sprm.apexgym.core.network.api.PedidoCompraDto
@@ -45,6 +47,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
     private var productos: List<ProductoClienteDto> = emptyList()
     private var productosFiltrados: List<ProductoClienteDto> = emptyList()
     private var pedidos: List<PedidoCompraDto> = emptyList()
+    private var almacenes: List<AlmacenDto> = emptyList()
     private val cantidadesSeleccionadas = linkedMapOf<Int, Int>()
     private var textoBusqueda = ""
 
@@ -85,6 +88,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             aplicarFiltroProductos()
         }
 
+        renderizarSelectorAlmacenes()
         actualizarResumenPedido()
         cargarDatos()
     }
@@ -124,9 +128,20 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
                         emptyList()
                     }
                 }
+                val almacenesDef = async {
+                    try {
+                        RetrofitClient.empleadoService.obtenerAlmacenes()
+                            .dataExitosa()
+                            .orEmpty()
+                            .filter { it.activo }
+                    } catch (_: Exception) {
+                        emptyList()
+                    }
+                }
 
                 val cargados = productosDef.await()
                 val historial = pedidosDef.await()
+                val almacenesCargados = almacenesDef.await()
 
                 if (!isAdded || view == null) return@launch
 
@@ -136,7 +151,9 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
                         .thenBy { it.nombre }
                 )
                 pedidos = historial
+                almacenes = almacenesCargados
 
+                renderizarSelectorAlmacenes()
                 aplicarFiltroProductos()
                 renderizarHistorial()
             } catch (e: Exception) {
@@ -199,6 +216,26 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
         actualizarResumenPedido()
     }
 
+    private fun renderizarSelectorAlmacenes() {
+        val opciones = mutableListOf("Automático (Almacén principal)")
+        almacenes.forEach { almacen ->
+            opciones.add(
+                if (almacen.esPrincipal) "${almacen.nombre} (Principal)" else almacen.nombre
+            )
+        }
+        binding.spAlmacenDestinoPedido.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            opciones
+        )
+    }
+
+    private fun obtenerAlmacenDestinoSeleccionado(): Int? {
+        val pos = binding.spAlmacenDestinoPedido.selectedItemPosition
+        if (pos <= 0) return null
+        return almacenes.getOrNull(pos - 1)?.id
+    }
+
     private fun enviarPedido() {
         val detalles = cantidadesSeleccionadas.entries
             .filter { it.value > 0 }
@@ -222,6 +259,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
         val proveedor = binding.etProveedorPedido.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val observaciones = binding.etObservacionesPedido.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
+        val almacenId = obtenerAlmacenDestinoSeleccionado()
 
         binding.btnEnviarPedido.isEnabled = false
         binding.btnEnviarPedido.text = "Enviando pedido…"
@@ -232,7 +270,8 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
                     CrearPedidoCompraRequest(
                         proveedor = proveedor,
                         observaciones = observaciones,
-                        detalles = detalles
+                        detalles = detalles,
+                        almacenId = almacenId
                     )
                 )
                 val creado = response.dataExitosa()
@@ -255,6 +294,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
                 binding.etProveedorPedido.setText("")
                 binding.etObservacionesPedido.setText("")
+                binding.spAlmacenDestinoPedido.setSelection(0)
                 limpiarCantidades()
                 cargarDatos()
                 mostrarTabHistorial()
@@ -523,6 +563,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             holder.tvMeta.text = buildString {
                 append(formatearFecha(pedido.createdAt, "dd/MM/yyyy HH:mm"))
                 pedido.proveedor?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
+                pedido.almacen?.nombre?.takeIf { it.isNotBlank() }?.let { append(" • Almacén: $it") }
             }
 
             holder.tvDetalles.text = pedido.detalles.joinToString("\n") { det ->

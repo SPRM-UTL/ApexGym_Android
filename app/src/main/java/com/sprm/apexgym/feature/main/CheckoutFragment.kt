@@ -18,7 +18,6 @@ import android.text.TextWatcher
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.util.Base64
-import android.util.Patterns
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -49,6 +48,7 @@ import com.sprm.apexgym.core.network.api.TransaccionPagoDto
 import com.sprm.apexgym.core.network.api.VentaDto
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.feature.tienda.TicketCompraFragment
+import com.sprm.apexgym.feature.tienda.ValidadorPagoAndroid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -396,7 +396,7 @@ class CheckoutFragment : Fragment() {
         previewCard.addView(previewContent)
         form.addView(previewCard)
 
-        form.addView(crearEtiquetaCampo("Número de tarjeta (16 dígitos)"))
+        form.addView(crearEtiquetaCampo("Número de tarjeta (15 o 16 dígitos)"))
         val etNumero = crearCampoTexto(
             hint = "0000 0000 0000 0000",
             valorInicial = formatearDigitosTarjeta(numeroTarjetaRaw),
@@ -410,7 +410,9 @@ class CheckoutFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 if (editando) return
                 editando = true
-                val limpio = s?.toString()?.filter { it.isDigit() }?.take(16).orEmpty()
+                val digitosCrudos = s?.toString()?.filter { it.isDigit() }.orEmpty()
+                val maxDigitos = if (ValidadorPagoAndroid.detectarMarcaTarjeta(digitosCrudos) == ValidadorPagoAndroid.MARCA_AMEX) 15 else 16
+                val limpio = digitosCrudos.take(maxDigitos)
                 numeroTarjetaRaw = limpio
                 val formateado = formatearDigitosTarjeta(limpio)
                 if (formateado != s?.toString()) {
@@ -841,51 +843,48 @@ class CheckoutFragment : Fragment() {
 
         when (metodoSeleccionado) {
             PaymentMethodType.TRANSFERENCIA -> {
-                if (bancoLimpio.isBlank()) {
-                    Toast.makeText(context, "Indica el banco desde el que realizas la transferencia", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (bancoLimpio.length !in 3..50 || !Regex("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\\s\\.\\-]+$").matches(bancoLimpio)) {
-                    Toast.makeText(context, "El nombre del banco contiene caracteres no permitidos", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (referenciaLimpia.isBlank()) {
-                    Toast.makeText(context, "Ingresa la clave de rastreo o referencia de transferencia", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (referenciaLimpia.length !in 4..40 || !Regex("^[a-zA-Z0-9\\-\\s]+$").matches(referenciaLimpia)) {
-                    Toast.makeText(context, "La clave de rastreo solo permite números, letras y guiones", Toast.LENGTH_SHORT).show()
+                val resTransferencia = ValidadorPagoAndroid.validarTransferencia(
+                    banco = bancoLimpio,
+                    referencia = referenciaLimpia
+                )
+                if (!resTransferencia.valido) {
+                    Toast.makeText(
+                        context,
+                        resTransferencia.mensajeError ?: "Datos de transferencia inválidos",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
             }
             PaymentMethodType.TARJETA_DEBITO -> {
-                if (numTarjetaLimpio.length != 16) {
-                    Toast.makeText(context, "Ingresa los 16 dígitos de tu tarjeta", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (titularLimpio.isBlank()) {
-                    Toast.makeText(context, "Ingresa el nombre del titular de la tarjeta", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (titularLimpio.length !in 3..60 || !Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s\\.]+$").matches(titularLimpio)) {
-                    Toast.makeText(context, "El nombre del titular solo puede contener letras y espacios", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (!Regex("^(0[1-9]|1[0-2])\\/([0-9]{2})$").matches(vencLimpio)) {
-                    Toast.makeText(context, "Ingresa una fecha de vencimiento válida (MM/AA)", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (!Regex("^[0-9]{3,4}$").matches(cvvLimpio)) {
-                    Toast.makeText(context, "Ingresa el código de seguridad (CVV) de 3 o 4 dígitos", Toast.LENGTH_SHORT).show()
+                val resTarjeta = ValidadorPagoAndroid.validarTarjeta(
+                    tipoTarjeta = tipoTarjetaSeleccionada,
+                    numeroTarjeta = numTarjetaLimpio,
+                    vencimiento = vencLimpio,
+                    cvv = cvvLimpio,
+                    titular = titularLimpio
+                )
+                if (!resTarjeta.valido) {
+                    Toast.makeText(
+                        context,
+                        resTarjeta.mensajeError ?: "Datos de tarjeta inválidos",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
             }
             PaymentMethodType.MERCADO_PAGO -> {
-                if (correoLimpio.isNotBlank()) {
-                    if (correoLimpio.contains(" ") || correoLimpio.length > 100 || !Patterns.EMAIL_ADDRESS.matcher(correoLimpio).matches() || correoLimpio.any { it in "<>'\"/\\;`" }) {
-                        Toast.makeText(context, "Ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show()
-                        return
-                    }
+                val resMp = ValidadorPagoAndroid.validarMercadoPago(
+                    correo = correoLimpio,
+                    obligatorio = false
+                )
+                if (!resMp.valido) {
+                    Toast.makeText(
+                        context,
+                        resMp.mensajeError ?: "Ingresa un correo electrónico válido",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return
                 }
             }
             PaymentMethodType.EFECTIVO -> {
@@ -931,12 +930,7 @@ class CheckoutFragment : Fragment() {
                     )
                     PaymentMethodType.TARJETA_DEBITO -> PagoVentaRequest(
                         tipoTarjeta = tipoTarjetaSeleccionada,
-                        marcaTarjeta = when {
-                            numTarjetaLimpio.startsWith("4") -> "VISA"
-                            numTarjetaLimpio.startsWith("5") || numTarjetaLimpio.startsWith("2") -> "MASTERCARD"
-                            numTarjetaLimpio.startsWith("34") || numTarjetaLimpio.startsWith("37") -> "AMEX"
-                            else -> "OTRA"
-                        },
+                        marcaTarjeta = ValidadorPagoAndroid.detectarMarcaTarjeta(numTarjetaLimpio),
                         ultimosDigitos = numTarjetaLimpio.takeLast(4),
                         folioVoucher = "CARD-${numTarjetaLimpio.takeLast(4)}-${(1000..9999).random()}"
                     )
@@ -1239,12 +1233,26 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun formatearDigitosTarjeta(digitos: String): String {
-        return digitos.chunked(4).joinToString(" ")
+        return if (ValidadorPagoAndroid.detectarMarcaTarjeta(digitos) == ValidadorPagoAndroid.MARCA_AMEX) {
+            buildString {
+                for (i in digitos.indices) {
+                    if (i == 4 || i == 10) append(' ')
+                    append(digitos[i])
+                }
+            }
+        } else {
+            digitos.chunked(4).joinToString(" ")
+        }
     }
 
     private fun formatearNumeroTarjetaPreview(digitos: String): String {
-        val rellenado = digitos.padEnd(16, '•')
-        return rellenado.chunked(4).joinToString(" ")
+        return if (ValidadorPagoAndroid.detectarMarcaTarjeta(digitos) == ValidadorPagoAndroid.MARCA_AMEX) {
+            val rellenado = digitos.padEnd(15, '•')
+            "${rellenado.substring(0, 4)} ${rellenado.substring(4, 10)} ${rellenado.substring(10, 15)}"
+        } else {
+            val rellenado = digitos.padEnd(16, '•')
+            rellenado.chunked(4).joinToString(" ")
+        }
     }
 
     private fun cargarImagenResumen(rutaImagen: String, contenedor: FrameLayout) {
