@@ -63,13 +63,14 @@ class CheckoutFragment : Fragment() {
 
     private enum class PaymentMethodType(val titulo: String) {
         MERCADO_PAGO("Mercado Pago / Pago en línea"),
-        TARJETA_DEBITO("Tarjeta de débito"),
+        TARJETA_DEBITO("Tarjeta bancaria (Débito o Crédito)"),
         TRANSFERENCIA("Transferencia bancaria"),
         EFECTIVO("Pago en recepción / Efectivo")
     }
 
     private var metodoSeleccionado: PaymentMethodType = PaymentMethodType.MERCADO_PAGO
 
+    private var tipoTarjetaSeleccionada: String = "DEBITO"
     private var numeroTarjetaRaw: String = ""
     private var nombreTitular: String = ""
     private var fechaVencimiento: String = ""
@@ -267,6 +268,36 @@ class CheckoutFragment : Fragment() {
             setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(16))
         }
 
+        val rowTipoSelector = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dpToPx(12) }
+        }
+
+        val btnDebito = TextView(context).apply {
+            text = "Tarjeta de Débito"
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dpToPx(6)
+            }
+        }
+
+        val btnCredito = TextView(context).apply {
+            text = "Tarjeta de Crédito"
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dpToPx(6)
+            }
+        }
+
         val previewCard = MaterialCardView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -285,12 +316,43 @@ class CheckoutFragment : Fragment() {
         }
 
         val tvPreviewTipo = TextView(context).apply {
-            text = "TARJETA DE DÉBITO"
+            text = if (tipoTarjetaSeleccionada == "CREDITO") "TARJETA DE CRÉDITO" else "TARJETA DE DÉBITO"
             setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
         previewContent.addView(tvPreviewTipo)
+
+        fun actualizarBotonesTipo() {
+            val transparent = ContextCompat.getColor(context, android.R.color.transparent)
+            if (tipoTarjetaSeleccionada == "DEBITO") {
+                btnDebito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_orange), transparent, 0f, 10f)
+                btnDebito.setTextColor(ContextCompat.getColor(context, R.color.white))
+                btnCredito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_bg_screen), ContextCompat.getColor(context, R.color.apex_stroke_light), 1f, 10f)
+                btnCredito.setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                tvPreviewTipo.text = "TARJETA DE DÉBITO"
+            } else {
+                btnCredito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_orange), transparent, 0f, 10f)
+                btnCredito.setTextColor(ContextCompat.getColor(context, R.color.white))
+                btnDebito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_bg_screen), ContextCompat.getColor(context, R.color.apex_stroke_light), 1f, 10f)
+                btnDebito.setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                tvPreviewTipo.text = "TARJETA DE CRÉDITO"
+            }
+        }
+
+        btnDebito.setOnClickListener {
+            tipoTarjetaSeleccionada = "DEBITO"
+            actualizarBotonesTipo()
+        }
+        btnCredito.setOnClickListener {
+            tipoTarjetaSeleccionada = "CREDITO"
+            actualizarBotonesTipo()
+        }
+
+        actualizarBotonesTipo()
+        rowTipoSelector.addView(btnDebito)
+        rowTipoSelector.addView(btnCredito)
+        form.addView(rowTipoSelector)
 
         val tvPreviewNumero = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -798,7 +860,7 @@ class CheckoutFragment : Fragment() {
             }
             PaymentMethodType.TARJETA_DEBITO -> {
                 if (numTarjetaLimpio.length != 16) {
-                    Toast.makeText(context, "Ingresa los 16 dígitos de tu tarjeta de débito", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Ingresa los 16 dígitos de tu tarjeta", Toast.LENGTH_SHORT).show()
                     return
                 }
                 if (titularLimpio.isBlank()) {
@@ -868,14 +930,15 @@ class CheckoutFragment : Fragment() {
                         correoCliente = correoLimpio.takeIf { it.isNotBlank() } ?: SessionManager.obtenerEmail(context)
                     )
                     PaymentMethodType.TARJETA_DEBITO -> PagoVentaRequest(
-                        tipoTarjeta = "DEBITO",
+                        tipoTarjeta = tipoTarjetaSeleccionada,
                         marcaTarjeta = when {
                             numTarjetaLimpio.startsWith("4") -> "VISA"
-                            numTarjetaLimpio.startsWith("5") -> "MASTERCARD"
+                            numTarjetaLimpio.startsWith("5") || numTarjetaLimpio.startsWith("2") -> "MASTERCARD"
+                            numTarjetaLimpio.startsWith("34") || numTarjetaLimpio.startsWith("37") -> "AMEX"
                             else -> "OTRA"
                         },
                         ultimosDigitos = numTarjetaLimpio.takeLast(4),
-                        folioVoucher = "CARD-${numTarjetaLimpio.takeLast(4)}"
+                        folioVoucher = "CARD-${numTarjetaLimpio.takeLast(4)}-${(1000..9999).random()}"
                     )
                     PaymentMethodType.TRANSFERENCIA -> PagoVentaRequest(
                         referencia = "$bancoLimpio - $referenciaLimpia",
