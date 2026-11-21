@@ -3,10 +3,12 @@ package com.sprm.apexgym.feature.main
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputFilter
@@ -28,6 +30,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
@@ -36,24 +39,38 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.network.dataExitosa
+import com.sprm.apexgym.core.network.mensajeDeError
+import com.sprm.apexgym.core.network.mensajeUsuario
+import com.sprm.apexgym.core.network.api.CrearVentaRequest
+import com.sprm.apexgym.core.network.api.DetalleVentaRequest
+import com.sprm.apexgym.core.network.api.PagoVentaRequest
+import com.sprm.apexgym.core.network.api.TransaccionPagoDto
+import com.sprm.apexgym.core.network.api.VentaDto
+import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.feature.tienda.TicketCompraFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import java.net.URL
 import java.text.NumberFormat
 import java.util.Locale
+import java.util.UUID
 
 class CheckoutFragment : Fragment() {
 
     private enum class PaymentMethodType(val titulo: String) {
-        TARJETA_DEBITO("Tarjeta de débito"),
-        TRANSFERENCIA("Transferencia"),
-        PAYPAL("PayPal"),
-        EFECTIVO("Efectivo")
+        MERCADO_PAGO("Mercado Pago / Pago en línea"),
+        TARJETA_DEBITO("Tarjeta bancaria (Débito o Crédito)"),
+        TRANSFERENCIA("Transferencia bancaria"),
+        EFECTIVO("Pago en recepción / Efectivo")
     }
 
-    private var metodoSeleccionado: PaymentMethodType = PaymentMethodType.TARJETA_DEBITO
+    private var metodoSeleccionado: PaymentMethodType = PaymentMethodType.MERCADO_PAGO
 
+    private var tipoTarjetaSeleccionada: String = "DEBITO"
     private var numeroTarjetaRaw: String = ""
     private var nombreTitular: String = ""
     private var fechaVencimiento: String = ""
@@ -231,9 +248,9 @@ class CheckoutFragment : Fragment() {
                 cardLayout.addView(divider)
 
                 val detailView = when (metodo) {
+                    PaymentMethodType.MERCADO_PAGO -> construirFormularioMercadoPago(totalPagar)
                     PaymentMethodType.TRANSFERENCIA -> construirFormularioTransferencia(totalPagar)
                     PaymentMethodType.TARJETA_DEBITO -> construirFormularioTarjetaDebito()
-                    PaymentMethodType.PAYPAL -> construirFormularioPaypal(totalPagar)
                     PaymentMethodType.EFECTIVO -> construirFormularioEfectivo(totalPagar)
                 }
                 cardLayout.addView(detailView)
@@ -249,6 +266,36 @@ class CheckoutFragment : Fragment() {
         val form = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(16))
+        }
+
+        val rowTipoSelector = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dpToPx(12) }
+        }
+
+        val btnDebito = TextView(context).apply {
+            text = "Tarjeta de Débito"
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginEnd = dpToPx(6)
+            }
+        }
+
+        val btnCredito = TextView(context).apply {
+            text = "Tarjeta de Crédito"
+            gravity = Gravity.CENTER
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dpToPx(6)
+            }
         }
 
         val previewCard = MaterialCardView(context).apply {
@@ -269,12 +316,43 @@ class CheckoutFragment : Fragment() {
         }
 
         val tvPreviewTipo = TextView(context).apply {
-            text = "TARJETA DE DÉBITO"
+            text = if (tipoTarjetaSeleccionada == "CREDITO") "TARJETA DE CRÉDITO" else "TARJETA DE DÉBITO"
             setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
         previewContent.addView(tvPreviewTipo)
+
+        fun actualizarBotonesTipo() {
+            val transparent = ContextCompat.getColor(context, android.R.color.transparent)
+            if (tipoTarjetaSeleccionada == "DEBITO") {
+                btnDebito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_orange), transparent, 0f, 10f)
+                btnDebito.setTextColor(ContextCompat.getColor(context, R.color.white))
+                btnCredito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_bg_screen), ContextCompat.getColor(context, R.color.apex_stroke_light), 1f, 10f)
+                btnCredito.setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                tvPreviewTipo.text = "TARJETA DE DÉBITO"
+            } else {
+                btnCredito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_orange), transparent, 0f, 10f)
+                btnCredito.setTextColor(ContextCompat.getColor(context, R.color.white))
+                btnDebito.background = crearFondoRectangular(ContextCompat.getColor(context, R.color.apex_bg_screen), ContextCompat.getColor(context, R.color.apex_stroke_light), 1f, 10f)
+                btnDebito.setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                tvPreviewTipo.text = "TARJETA DE CRÉDITO"
+            }
+        }
+
+        btnDebito.setOnClickListener {
+            tipoTarjetaSeleccionada = "DEBITO"
+            actualizarBotonesTipo()
+        }
+        btnCredito.setOnClickListener {
+            tipoTarjetaSeleccionada = "CREDITO"
+            actualizarBotonesTipo()
+        }
+
+        actualizarBotonesTipo()
+        rowTipoSelector.addView(btnDebito)
+        rowTipoSelector.addView(btnCredito)
+        form.addView(rowTipoSelector)
 
         val tvPreviewNumero = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -530,7 +608,7 @@ class CheckoutFragment : Fragment() {
         return form
     }
 
-    private fun construirFormularioPaypal(totalPagar: Double): View {
+    private fun construirFormularioMercadoPago(totalPagar: Double): View {
         val context = requireContext()
         val form = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -555,11 +633,22 @@ class CheckoutFragment : Fragment() {
         }
 
         infoBox.addView(crearFilaDatoCopiable("Comercio", "ApexGym S.A. de C.V.", null))
-        infoBox.addView(crearFilaDatoCopiable("Folio de orden", folioGenerado, folioGenerado))
+        infoBox.addView(crearFilaDatoCopiable("Pasarela", "Mercado Pago Checkout (Sandbox)", null))
         infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
         form.addView(infoBox)
 
-        form.addView(crearEtiquetaCampo("Correo electrónico de tu cuenta PayPal"))
+        val tvExplicacion = TextView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dpToPx(12) }
+            text = "Al presionar 'Pagar y finalizar' se abrirá el checkout de Mercado Pago para procesar tu pago con tarjeta o saldo de cuenta."
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+        }
+        form.addView(tvExplicacion)
+
+        form.addView(crearEtiquetaCampo("Correo para tu comprobante digital"))
         val etCorreoPaypal = crearCampoTexto(
             hint = "ejemplo@correo.com",
             valorInicial = correoPaypal,
@@ -600,7 +689,13 @@ class CheckoutFragment : Fragment() {
             )
         }
 
-        infoBox.addView(crearFilaDatoCopiable("Folio de orden", folioGenerado, folioGenerado))
+        val tvInfo = TextView(context).apply {
+            text = "Al presionar 'Pagar y finalizar' se registrará tu orden oficial con su folio para liquidar y recoger en el mostrador."
+            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+            setPadding(0, 0, 0, dpToPx(10))
+        }
+        infoBox.addView(tvInfo)
         infoBox.addView(crearFilaDatoCopiable("Punto de cobro", "Recepción Sucursal ApexGym", null))
         infoBox.addView(crearFilaDatoCopiable("Vigencia del pedido", "24 horas para liquidar en caja", null))
         infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
@@ -730,81 +825,259 @@ class CheckoutFragment : Fragment() {
 
     private fun validarYRegistrarPago() {
         val context = requireContext()
+        val items = CartManager.obtenerItems(context)
+        if (items.isEmpty()) {
+            Toast.makeText(context, "El carrito está vacío", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val bancoLimpio = bancoEmisorSpei.trim()
+        val referenciaLimpia = referenciaSpei.trim()
+        val numTarjetaLimpio = numeroTarjetaRaw.filter { it.isDigit() }
+        val titularLimpio = nombreTitular.trim()
+        val vencLimpio = fechaVencimiento.trim()
+        val cvvLimpio = cvvTarjeta.filter { it.isDigit() }
+        val correoLimpio = correoPaypal.trim()
 
         when (metodoSeleccionado) {
             PaymentMethodType.TRANSFERENCIA -> {
-                if (bancoEmisorSpei.isBlank()) {
-                    Toast.makeText(
-                        context,
-                        "Indica el banco desde el que realizas la transferencia",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (bancoLimpio.isBlank()) {
+                    Toast.makeText(context, "Indica el banco desde el que realizas la transferencia", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (referenciaSpei.isBlank()) {
-                    Toast.makeText(
-                        context,
-                        "Ingresa la clave de rastreo o referencia de transferencia",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (bancoLimpio.length !in 3..50 || !Regex("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\\s\\.\\-]+$").matches(bancoLimpio)) {
+                    Toast.makeText(context, "El nombre del banco contiene caracteres no permitidos", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (referenciaLimpia.isBlank()) {
+                    Toast.makeText(context, "Ingresa la clave de rastreo o referencia de transferencia", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (referenciaLimpia.length !in 4..40 || !Regex("^[a-zA-Z0-9\\-\\s]+$").matches(referenciaLimpia)) {
+                    Toast.makeText(context, "La clave de rastreo solo permite números, letras y guiones", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
             PaymentMethodType.TARJETA_DEBITO -> {
-                if (numeroTarjetaRaw.length < 16) {
-                    Toast.makeText(
-                        context,
-                        "Ingresa los 16 dígitos de tu tarjeta de débito",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (numTarjetaLimpio.length != 16) {
+                    Toast.makeText(context, "Ingresa los 16 dígitos de tu tarjeta", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (nombreTitular.length < 3) {
-                    Toast.makeText(
-                        context,
-                        "Ingresa el nombre del titular de la tarjeta",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (titularLimpio.isBlank()) {
+                    Toast.makeText(context, "Ingresa el nombre del titular de la tarjeta", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (fechaVencimiento.length < 5) {
-                    Toast.makeText(
-                        context,
-                        "Ingresa la fecha de vencimiento (MM/AA)",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (titularLimpio.length !in 3..60 || !Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s\\.]+$").matches(titularLimpio)) {
+                    Toast.makeText(context, "El nombre del titular solo puede contener letras y espacios", Toast.LENGTH_SHORT).show()
                     return
                 }
-                if (cvvTarjeta.length < 3) {
-                    Toast.makeText(
-                        context,
-                        "Ingresa el código de seguridad (CVV)",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                if (!Regex("^(0[1-9]|1[0-2])\\/([0-9]{2})$").matches(vencLimpio)) {
+                    Toast.makeText(context, "Ingresa una fecha de vencimiento válida (MM/AA)", Toast.LENGTH_SHORT).show()
+                    return
+                }
+                if (!Regex("^[0-9]{3,4}$").matches(cvvLimpio)) {
+                    Toast.makeText(context, "Ingresa el código de seguridad (CVV) de 3 o 4 dígitos", Toast.LENGTH_SHORT).show()
                     return
                 }
             }
-            PaymentMethodType.PAYPAL -> {
-                if (correoPaypal.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(correoPaypal).matches()) {
-                    Toast.makeText(
-                        context,
-                        "Ingresa un correo válido de PayPal",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    return
+            PaymentMethodType.MERCADO_PAGO -> {
+                if (correoLimpio.isNotBlank()) {
+                    if (correoLimpio.contains(" ") || correoLimpio.length > 100 || !Patterns.EMAIL_ADDRESS.matcher(correoLimpio).matches() || correoLimpio.any { it in "<>'\"/\\;`" }) {
+                        Toast.makeText(context, "Ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show()
+                        return
+                    }
                 }
             }
             PaymentMethodType.EFECTIVO -> {
             }
         }
 
-        CartManager.vaciarCarrito(context)
-        Toast.makeText(
-            context,
-            "Solicitud generada",
-            Toast.LENGTH_SHORT
-        ).show()
-        parentFragmentManager.popBackStack()
+        val btnContinuar = view?.findViewById<MaterialButton>(R.id.btnContinuar)
+        btnContinuar?.isEnabled = false
+        btnContinuar?.text = "Procesando pedido…"
+
+        val total = CartManager.obtenerTotalPrecio(context)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val metodos = try {
+                    RetrofitClient.empleadoService.obtenerMetodosPago().dataExitosa().orEmpty()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+
+                val metodoId = when (metodoSeleccionado) {
+                    PaymentMethodType.MERCADO_PAGO -> metodos.firstOrNull { it.codigo.equals("MERCADO_PAGO", ignoreCase = true) || it.nombre.orEmpty().contains("Mercado", ignoreCase = true) }?.id ?: 4
+                    PaymentMethodType.TARJETA_DEBITO -> metodos.firstOrNull { it.codigo.equals("TARJETA", ignoreCase = true) || it.nombre.orEmpty().contains("Tarjeta", ignoreCase = true) }?.id ?: 1
+                    PaymentMethodType.TRANSFERENCIA -> metodos.firstOrNull { it.codigo.equals("TRANSFERENCIA", ignoreCase = true) || it.nombre.orEmpty().contains("Transferencia", ignoreCase = true) }?.id ?: 3
+                    PaymentMethodType.EFECTIVO -> metodos.firstOrNull { it.codigo.equals("EFECTIVO", ignoreCase = true) || it.nombre.orEmpty().contains("Efectivo", ignoreCase = true) }?.id ?: 2
+                }
+
+                val detalle = items.map { item ->
+                    DetalleVentaRequest(
+                        tipoItem = item.tipo.name,
+                        cantidad = item.cantidad,
+                        productoId = if (item.tipo == CartItemType.PRODUCTO) item.id else null,
+                        servicioId = if (item.tipo == CartItemType.SERVICIO) item.id else null,
+                        tipoMembresiaId = if (item.tipo == CartItemType.MEMBRESIA) item.id else null,
+                        descripcion = item.nombre
+                    )
+                }
+
+                val uuidIdempotencia = UUID.randomUUID().toString()
+                val pagoReq = when (metodoSeleccionado) {
+                    PaymentMethodType.MERCADO_PAGO -> PagoVentaRequest(
+                        correoCliente = correoLimpio.takeIf { it.isNotBlank() } ?: SessionManager.obtenerEmail(context)
+                    )
+                    PaymentMethodType.TARJETA_DEBITO -> PagoVentaRequest(
+                        tipoTarjeta = tipoTarjetaSeleccionada,
+                        marcaTarjeta = when {
+                            numTarjetaLimpio.startsWith("4") -> "VISA"
+                            numTarjetaLimpio.startsWith("5") || numTarjetaLimpio.startsWith("2") -> "MASTERCARD"
+                            numTarjetaLimpio.startsWith("34") || numTarjetaLimpio.startsWith("37") -> "AMEX"
+                            else -> "OTRA"
+                        },
+                        ultimosDigitos = numTarjetaLimpio.takeLast(4),
+                        folioVoucher = "CARD-${numTarjetaLimpio.takeLast(4)}-${(1000..9999).random()}"
+                    )
+                    PaymentMethodType.TRANSFERENCIA -> PagoVentaRequest(
+                        referencia = "$bancoLimpio - $referenciaLimpia",
+                        folioVoucher = referenciaLimpia
+                    )
+                    PaymentMethodType.EFECTIVO -> null
+                }
+
+                val ventaReq = CrearVentaRequest(
+                    metodoPagoId = metodoId,
+                    subtotal = total,
+                    total = total,
+                    montoRecibido = total,
+                    detalleVenta = detalle,
+                    uuidIdempotencia = uuidIdempotencia,
+                    pago = pagoReq
+                )
+
+                val response = RetrofitClient.empleadoService.crearVenta(ventaReq, idempotencyKey = uuidIdempotencia)
+                val ventaCreada = response.dataExitosa()
+
+                if (!isAdded) return@launch
+
+                if (ventaCreada == null) {
+                    Toast.makeText(
+                        context,
+                        response.mensajeDeError() ?: response.body()?.message ?: "No se pudo registrar la venta.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@launch
+                }
+
+                if (metodoSeleccionado == PaymentMethodType.MERCADO_PAGO) {
+                    val urlCheckout = ventaCreada.pagoDigital?.urlCheckout
+                    if (!urlCheckout.isNullOrBlank()) {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlCheckout))
+                        startActivity(intent)
+
+                        val dialog = AlertDialog.Builder(context)
+                            .setTitle("Pago con Mercado Pago")
+                            .setMessage(
+                                "Se abrió el portal seguro de Mercado Pago en tu navegador.\n\n" +
+                                    "Una vez que hayas completado el pago, presiona 'Comprobar pago' para confirmar tu compra."
+                            )
+                            .setCancelable(false)
+                            .setPositiveButton("Comprobar pago", null)
+                            .setNegativeButton("Cerrar") { d, _ -> d.dismiss() }
+                            .create()
+
+                        dialog.setOnShowListener {
+                            val btnCheck = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                            btnCheck.setOnClickListener {
+                                btnCheck.isEnabled = false
+                                btnCheck.text = "Verificando…"
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    val statusRes = try {
+                                        RetrofitClient.empleadoService.consultarEstadoPagoVenta(ventaCreada.id).dataExitosa()
+                                    } catch (_: Exception) {
+                                        null
+                                    }
+                                    val estadoVenta = statusRes?.venta?.estado?.lowercase()
+                                    val estadoPago = statusRes?.pago?.estado?.uppercase()
+
+                                    if (estadoVenta == "completada" || estadoPago == "APROBADO") {
+                                        dialog.dismiss()
+                                        CartManager.vaciarCarrito(context)
+                                        Toast.makeText(context, "¡Pago acreditado exitosamente!", Toast.LENGTH_LONG).show()
+                                        abrirTicketVenta(ventaCreada, items)
+                                    } else {
+                                        btnCheck.isEnabled = true
+                                        btnCheck.text = "Comprobar pago"
+                                        Toast.makeText(
+                                            context,
+                                            "Tu pago aún está pendiente en Mercado Pago. Si ya lo realizaste, aguarda un momento.",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                            }
+                        }
+                        dialog.show()
+                        return@launch
+                    }
+                }
+
+                // Efectivo, transferencia o tarjeta registrada
+                CartManager.vaciarCarrito(context)
+                Toast.makeText(context, "¡Pedido registrado exitosamente!", Toast.LENGTH_SHORT).show()
+                abrirTicketVenta(ventaCreada, items)
+
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Toast.makeText(context, e.mensajeUsuario(), Toast.LENGTH_LONG).show()
+                }
+            } finally {
+                if (isAdded) {
+                    btnContinuar?.isEnabled = true
+                    btnContinuar?.text = "Pagar y finalizar"
+                }
+            }
+        }
+    }
+
+    private fun abrirTicketVenta(venta: VentaDto, items: List<CartItem>) {
+        val transaccion = TransaccionPagoDto(
+            id = venta.id,
+            monto = venta.total,
+            estado = venta.estado?.uppercase() ?: "APROBADO",
+            concepto = "Compra en línea #${venta.id}",
+            folioVoucher = venta.folioVenta?.id?.let { "APX-$it" } ?: "APX-${venta.id}",
+            createdAt = venta.createdAt
+        )
+        val itemsJson = JSONArray().apply {
+            items.forEach { item ->
+                put(JSONObject().apply {
+                    put("nombre", item.nombre)
+                    put("cantidad", item.cantidad)
+                    put("subtotal", item.subtotal)
+                })
+            }
+        }.toString()
+
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .replace(
+                R.id.fragment_container,
+                TicketCompraFragment.newInstance(
+                    transaccion = transaccion,
+                    itemsJson = itemsJson,
+                    metodoPago = metodoSeleccionado.titulo
+                )
+            )
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun crearEtiquetaCampo(texto: String): TextView {

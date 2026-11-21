@@ -7,6 +7,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -373,6 +374,39 @@ data class CrearCobroDto(
     val urlCheckout: String? = null
 )
 
+// ── Ventas y Checkout Digital ───────────────────────────────────────────────
+
+data class DetalleVentaRequest(
+    val tipoItem: String,
+    val cantidad: Int,
+    val productoId: Int? = null,
+    val servicioId: Int? = null,
+    val tipoMembresiaId: Int? = null,
+    val descripcion: String? = null
+)
+
+data class PagoVentaRequest(
+    val correoCliente: String? = null,
+    val folioVoucher: String? = null,
+    val tipoTarjeta: String? = null,
+    val marcaTarjeta: String? = null,
+    val ultimosDigitos: String? = null,
+    val referencia: String? = null
+)
+
+data class CrearVentaRequest(
+    val clienteId: Int? = null,
+    val empleadoId: Int? = null,
+    val aperturaCajaId: Int? = null,
+    val metodoPagoId: Int,
+    val subtotal: Double,
+    val total: Double,
+    val montoRecibido: Double? = null,
+    val detalleVenta: List<DetalleVentaRequest>,
+    val uuidIdempotencia: String? = null,
+    val pago: PagoVentaRequest? = null
+)
+
 data class DetalleVentaPosRequest(
     val tipoItem: String,
     val productoId: Int? = null,
@@ -402,6 +436,58 @@ data class CrearVentaPosRequest(
 
 data class FolioVentaDto(
     val id: Int = 0
+)
+
+data class ItemNombreDto(
+    val nombre: String? = null
+)
+
+data class DetalleVentaItemDto(
+    val id: Int = 0,
+    val cantidad: Int = 1,
+    val subtotal: Double? = null,
+    val descripcion: String? = null,
+    val tipoItem: String? = null,
+    val producto: ItemNombreDto? = null,
+    val servicio: ItemNombreDto? = null,
+    val tipoMembresia: ItemNombreDto? = null
+)
+
+data class PagoDigitalDto(
+    val estado: String? = null,
+    val urlCheckout: String? = null,
+    val yaPagada: Boolean = false,
+    val venceEn: String? = null
+)
+
+data class VentaDto(
+    val id: Int = 0,
+    val total: Double = 0.0,
+    val subtotal: Double = 0.0,
+    val montoRecibido: Double? = null,
+    val cambio: Double? = null,
+    val estado: String? = null,
+    val clienteId: Int? = null,
+    val empleadoId: Int? = null,
+    val metodoPagoId: Int? = null,
+    val folioVenta: FolioVentaDto? = null,
+    val pagoDigital: PagoDigitalDto? = null,
+    val metodoPago: MetodoPagoDto? = null,
+    val detalleVenta: List<DetalleVentaItemDto>? = null,
+    val transaccionesPago: List<TransaccionPagoDto>? = null,
+    val createdAt: String? = null
+)
+
+data class VentasPaginadasDto(
+    val registros: List<VentaDto> = emptyList(),
+    val total: Int = 0,
+    val totalPaginas: Int = 0,
+    val paginaActual: Int = 1
+)
+
+data class EstadoPagoResponseDto(
+    val venta: VentaDto? = null,
+    val pago: TransaccionPagoDto? = null
 )
 
 data class VentaCreadaDto(
@@ -689,6 +775,32 @@ interface EmpleadoApiService {
     suspend fun obtenerTransacciones(
         @Query("sucursalId") sucursalId: Int? = null
     ): Response<ApiResponse<List<TransaccionPagoDto>>>
+
+    // Ventas y Checkout Digital
+    @GET("api/ventas")
+    suspend fun obtenerVentas(
+        @Query("pagina") pagina: Int = 1,
+        @Query("limite") limite: Int = 50,
+        @Query("clienteId") clienteId: Int? = null,
+        @Query("estado") estado: String? = null
+    ): Response<ApiResponse<VentasPaginadasDto>>
+
+    @POST("api/ventas")
+    suspend fun crearVenta(
+        @Body request: CrearVentaRequest,
+        @Header("x-idempotency-key") idempotencyKey: String? = null
+    ): Response<ApiResponse<VentaDto>>
+
+    @GET("api/ventas/{id}/pago")
+    suspend fun consultarEstadoPagoVenta(
+        @Path("id") ventaId: Int,
+        @Query("payment_id") paymentId: String? = null
+    ): Response<ApiResponse<EstadoPagoResponseDto>>
+
+    @POST("api/ventas/{id}/pago/checkout")
+    suspend fun obtenerCheckoutPagoVenta(
+        @Path("id") ventaId: Int
+    ): Response<ApiResponse<PagoDigitalDto>>
 
     // Ventas POS (descuenta stock en backend)
     @POST("api/ventas")

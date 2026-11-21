@@ -58,6 +58,7 @@ class ServiceDetailBottomSheetFragment : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val args = arguments ?: Bundle()
+        val idServicio = args.getInt(ARG_ID, 0)
         val nombre = args.getString(ARG_NOMBRE, "Servicio ApexGym")
         val descripcion = args.getString(ARG_DESCRIPCION, "")
         val precio = args.getDouble(ARG_PRECIO, 0.0)
@@ -90,12 +91,29 @@ class ServiceDetailBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnConfirmarServicio?.setOnClickListener {
+            val servicioDto = ServicioClienteDto(
+                id = idServicio,
+                nombre = nombre,
+                descripcion = descripcion,
+                precio = precio,
+                imagenUrl = imagenUrl
+            )
+
+            CartManager.agregarServicio(requireContext(), servicioDto)
+
             Toast.makeText(
                 requireContext(),
-                "Solicitud lista: $nombre (${formatearPrecio(precio)} MXN). Agenda en recepción.",
-                Toast.LENGTH_LONG
+                "Agregado al carrito: $nombre (${formatearPrecio(precio)} MXN)",
+                Toast.LENGTH_SHORT
             ).show()
+
             dismiss()
+
+            val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
+            val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+            if (existing == null) {
+                CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)
+            }
         }
     }
 

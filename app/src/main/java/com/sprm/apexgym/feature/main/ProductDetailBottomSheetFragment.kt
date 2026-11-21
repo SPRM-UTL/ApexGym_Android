@@ -20,7 +20,7 @@ import com.google.android.material.button.MaterialButton
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
-import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
+import com.sprm.apexgym.feature.main.CartBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -193,18 +193,12 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 Toast.LENGTH_SHORT
             ).show()
 
-            val fm = parentFragmentManager
+            val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
             dismiss()
 
-            val existing = fm.findFragmentByTag(
-                CarritoBottomSheetFragment.TAG
-            )
-
+            val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
             if (existing == null) {
-                CarritoBottomSheetFragment().show(
-                    fm,
-                    CarritoBottomSheetFragment.TAG
-                )
+                CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)
             }
         }
     }

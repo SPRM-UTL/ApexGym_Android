@@ -227,6 +227,22 @@ object RetrofitClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
+        val hostFallbackInterceptor = Interceptor { chain ->
+            val original = chain.request()
+            try {
+                chain.proceed(original)
+            } catch (e: java.io.IOException) {
+                val currentHost = original.url.host
+                val fallbackHost = if (currentHost == "127.0.0.1" || currentHost == "localhost") "10.16.2.19" else "127.0.0.1"
+                val newUrl = original.url.newBuilder().host(fallbackHost).build()
+                val fallbackRequest = original.newBuilder().url(newUrl).build()
+                try {
+                    chain.proceed(fallbackRequest)
+                } catch (_: java.io.IOException) {
+                    throw e
+                }
+            }
+        }
         val sucursalInterceptor = Interceptor { chain ->
             val original = chain.request()
             val sucursalId = if (::appContext.isInitialized) {
@@ -242,6 +258,7 @@ object RetrofitClient {
             chain.proceed(requestConSucursal)
         }
         OkHttpClient.Builder()
+            .addInterceptor(hostFallbackInterceptor)
             .addInterceptor(sucursalInterceptor)
             .addInterceptor(logging)
             .cookieJar(cookieJar)

@@ -41,7 +41,7 @@ import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
-import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
+import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,7 +57,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var selectedTabIndex = 0
     private var isQrVisible = false
     private var pillAnimator: ValueAnimator? = null
-    private var cartListener: (() -> Unit)? = null
 
     private var listaProductos: List<ProductoClienteDto> = emptyList()
     private var listaServicios: List<ServicioClienteDto> = emptyList()
@@ -67,6 +66,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var errorCargaMembresia: Boolean = false
     private var categoriaSeleccionada: String = "Todos"
     private var textoBusqueda: String = ""
+    private var cartListener: (() -> Unit)? = null
     private val bitmapCache = LruCache<String, Bitmap>(40)
 
     private data class NavTabItem(
@@ -125,6 +125,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         actualizarBadgeCarrito()
 
+        flCartHeader?.setOnClickListener {
+            val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
+            val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+            if (existing == null) {
+                CartBottomSheetFragment().show(
+                    fm,
+                    CartBottomSheetFragment.TAG
+                )
+            }
+        }
+
         val listenerCarrito: () -> Unit = {
             if (isAdded && this@HomeFragment.view != null) {
                 actualizarBadgeCarrito()
@@ -135,16 +146,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         cartListener = listenerCarrito
         CartManager.addListener(listenerCarrito)
-
-        flCartHeader?.setOnClickListener {
-            val existing = childFragmentManager.findFragmentByTag(CarritoBottomSheetFragment.TAG)
-            if (existing == null) {
-                CarritoBottomSheetFragment().show(
-                    childFragmentManager,
-                    CarritoBottomSheetFragment.TAG
-                )
-            }
-        }
 
         val flAvatar = view.findViewById<View>(R.id.flAvatar)
         flAvatar?.setOnClickListener {
@@ -292,8 +293,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             showSectionForTab(1)
             cargarMembresiaDesdeBackend(view)
         }
-        view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(goToMembresiaListener)
-        view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(goToMembresiaListener)
+        val openHistorialComprasListener = View.OnClickListener {
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_container, HistorialComprasFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+        view.findViewById<View>(R.id.chipHomePagos)?.setOnClickListener(openHistorialComprasListener)
+        view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(openHistorialComprasListener)
+        view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(openHistorialComprasListener)
         view.findViewById<View>(R.id.chipHomeMembresia)?.setOnClickListener(goToMembresiaListener)
 
         val goToProductosListener = View.OnClickListener {
@@ -1430,11 +1444,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val accionAgregarMembresia = View.OnClickListener {
             val resultado = CartManager.agregarMembresia(context, plan)
-            Toast.makeText(
-                context,
-                resultado.mensaje,
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(context, resultado.mensaje, Toast.LENGTH_SHORT).show()
+            if (resultado.exito) {
+                val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
+                val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+                if (existing == null) {
+                    CartBottomSheetFragment().show(
+                        fm,
+                        CartBottomSheetFragment.TAG
+                    )
+                }
+            }
         }
 
         btnElegir.setOnClickListener(accionAgregarMembresia)
