@@ -431,12 +431,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:weightSum="2">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cvTienda"
-                android:layout_width="match_parent"
-                android:layout_height="112dp"
+                android:layout_width="0dp"
+                android:layout_height="128dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardBackgroundColor="@color/white"
@@ -448,14 +451,13 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="18dp"
-                    android:paddingVertical="14dp">
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="14dp">
 
                     <FrameLayout
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
                         android:background="@drawable/bg_chip_unselected">
 
                         <ImageView
@@ -467,36 +469,78 @@
                             app:tint="@color/apex_orange" />
                     </FrameLayout>
 
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <TextView
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:layout_marginTop="10dp"
+                        android:text="Tienda POS"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tienda POS"
-                            android:textColor="@color/apex_text_primary"
-                            android:textSize="15.5sp"
-                            android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Ventas y cobro"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Venta de productos, servicios y cobro en caja"
-                            android:textColor="@color/apex_text_secondary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cvPedidosCompra"
+                android:layout_width="0dp"
+                android:layout_height="128dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/apex_stroke_light"
+                app:strokeWidth="1dp">
 
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_chevron_right"
-                        app:tint="@color/apex_text_secondary" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <FrameLayout
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_chip_unselected">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_archive"
+                            app:tint="@color/apex_orange" />
+                    </FrameLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="Pedidos Compra"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:gravity="center"
+                        android:text="Reabastecer stock"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

@@ -41,6 +41,7 @@ import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
+import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -56,11 +57,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var selectedTabIndex = 0
     private var isQrVisible = false
     private var pillAnimator: ValueAnimator? = null
+    private var cartListener: (() -> Unit)? = null
 
     private var listaProductos: List<ProductoClienteDto> = emptyList()
     private var listaServicios: List<ServicioClienteDto> = emptyList()
     private var listaPlanesMembresia: List<TipoMembresiaDto> = emptyList()
     private var miMembresiaData: MiMembresiaResponseDto? = null
+    private var cargandoMembresia: Boolean = true
+    private var errorCargaMembresia: Boolean = false
     private var categoriaSeleccionada: String = "Todos"
     private var textoBusqueda: String = ""
     private val bitmapCache = LruCache<String, Bitmap>(40)
@@ -104,6 +108,43 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
         cargarContadorNotificaciones(view)
+
+        val flCartHeader = view.findViewById<View>(R.id.flCartHeader)
+        val tvCartHeaderBadge = view.findViewById<TextView>(R.id.tvCartHeaderBadge)
+
+        fun actualizarBadgeCarrito() {
+            if (!isAdded) return
+            val totalArticulos = CartManager.obtenerCantidadTotalArticulos(requireContext())
+            if (totalArticulos > 0) {
+                tvCartHeaderBadge?.visibility = View.VISIBLE
+                tvCartHeaderBadge?.text = if (totalArticulos > 99) "99+" else totalArticulos.toString()
+            } else {
+                tvCartHeaderBadge?.visibility = View.GONE
+            }
+        }
+
+        actualizarBadgeCarrito()
+
+        val listenerCarrito: () -> Unit = {
+            if (isAdded && this@HomeFragment.view != null) {
+                actualizarBadgeCarrito()
+                if (listaPlanesMembresia.isNotEmpty() || miMembresiaData != null) {
+                    renderizarSeccionMembresia(view)
+                }
+            }
+        }
+        cartListener = listenerCarrito
+        CartManager.addListener(listenerCarrito)
+
+        flCartHeader?.setOnClickListener {
+            val existing = childFragmentManager.findFragmentByTag(CarritoBottomSheetFragment.TAG)
+            if (existing == null) {
+                CarritoBottomSheetFragment().show(
+                    childFragmentManager,
+                    CarritoBottomSheetFragment.TAG
+                )
+            }
+        }
 
         val flAvatar = view.findViewById<View>(R.id.flAvatar)
         flAvatar?.setOnClickListener {
@@ -263,6 +304,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 viewActiveNavPill = viewActiveNavPill
             )
             showSectionForTab(2)
+            if (listaProductos.isEmpty()) {
+                cargarCatalogoDesdeBackend(
+                    llHomePopularProductsContainer = llHomePopularProductsContainer,
+                    llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
+                    llTiendaProductsGridContainer = llTiendaProductsGridContainer,
+                    tvTiendaEmptyState = tvTiendaEmptyState,
+                    llServiciosListContainer = llServiciosListContainer,
+                    tvServiciosEmptyState = tvServiciosEmptyState
+                )
+            }
         }
         view.findViewById<View>(R.id.cardTienda)?.setOnClickListener(goToProductosListener)
         view.findViewById<View>(R.id.btnComprarMockup)?.setOnClickListener(goToProductosListener)
@@ -297,6 +348,50 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         view.findViewById<View>(R.id.chipHomeAccesoQr)?.setOnClickListener(openQrAccessListener)
         view.findViewById<View>(R.id.btnMembresiaAbrirQr)?.setOnClickListener(openQrAccessListener)
 
+        val openMembresiaDetailListener = View.OnClickListener {
+            val existing = childFragmentManager.findFragmentByTag(MembresiaDetailBottomSheetFragment.TAG)
+            if (existing == null) {
+                MembresiaDetailBottomSheetFragment.newInstance(miMembresiaData)
+                    .show(childFragmentManager, MembresiaDetailBottomSheetFragment.TAG)
+            }
+        }
+        view.findViewById<View>(R.id.cardHeroMembership)?.setOnClickListener(openMembresiaDetailListener)
+        view.findViewById<View>(R.id.btnHeroArrow)?.setOnClickListener(openMembresiaDetailListener)
+
+        childFragmentManager.setFragmentResultListener(
+            MembresiaDetailBottomSheetFragment.RESULT_KEY_ACCION_MEMBRESIA,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            when (bundle.getString(MembresiaDetailBottomSheetFragment.EXTRA_ACCION)) {
+                MembresiaDetailBottomSheetFragment.ACCION_ABRIR_QR -> {
+                    openQrAccessListener.onClick(view)
+                }
+                MembresiaDetailBottomSheetFragment.ACCION_VER_PLANES -> {
+                    goToMembresiaListener.onClick(view)
+                }
+            }
+        }
+
+        childFragmentManager.setFragmentResultListener(
+            MembresiaDetailBottomSheetFragment.RESULT_KEY_DATOS_ACTUALIZADOS,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val json = bundle.getString(MembresiaDetailBottomSheetFragment.EXTRA_MEMBRESIA_JSON)
+            if (!json.isNullOrBlank()) {
+                val actualizado = try {
+                    com.google.gson.Gson().fromJson(json, MiMembresiaResponseDto::class.java)
+                } catch (_: Exception) {
+                    null
+                }
+                if (actualizado != null) {
+                    miMembresiaData = actualizado
+                    cargandoMembresia = false
+                    errorCargaMembresia = false
+                    renderizarSeccionMembresia(view)
+                }
+            }
+        }
+
         val closeQrListener = View.OnClickListener {
             showSectionForTab(selectedTabIndex)
         }
@@ -327,6 +422,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             llServiciosListContainer = llServiciosListContainer,
             tvServiciosEmptyState = tvServiciosEmptyState
         )
+        renderizarHeroMembresia(view)
         cargarMembresiaDesdeBackend(view)
     }
 
@@ -704,7 +800,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
             addView(plusIcon)
             setOnClickListener {
-                abrirDetalleProducto(producto)
+                val res = CartManager.agregarProducto(context, producto, 1)
+                Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
             }
         }
         bottomRow.addView(btnAdd)
@@ -839,7 +936,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
             addView(plusIcon)
             setOnClickListener {
-                abrirDetalleProducto(producto)
+                val res = CartManager.agregarProducto(context, producto, 1)
+                Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
             }
         }
         bottomRow.addView(btnAdd)
@@ -1036,11 +1134,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         tvMembresiaPlanesEmpty?.visibility = View.VISIBLE
         tvMembresiaPlanesEmpty?.text = "Cargando planes de membresía..."
 
+        cargandoMembresia = true
+        errorCargaMembresia = false
+        if (miMembresiaData == null) {
+            renderizarHeroMembresia(rootView)
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
+            var exitoMembresia = false
             try {
                 val resMiMembresia = RetrofitClient.authService.obtenerMiMembresia()
                 if (resMiMembresia.isSuccessful && resMiMembresia.body()?.responseFlag == 0) {
                     miMembresiaData = resMiMembresia.body()?.data
+                    exitoMembresia = true
                 }
             } catch (_: Exception) {
             }
@@ -1056,12 +1162,31 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 listaPlanesMembresia = emptyList()
             }
 
+            cargandoMembresia = false
+            errorCargaMembresia = !exitoMembresia
+
             if (!isAdded) return@launch
             renderizarSeccionMembresia(rootView)
         }
     }
 
+    private fun renderizarHeroMembresia(rootView: View) {
+        val tvPlanBadge = rootView.findViewById<TextView>(R.id.tvPlanBadge)
+        val tvHeroSubtitle = rootView.findViewById<TextView>(R.id.tvHeroSubtitle)
+
+        val resumen = MembresiaVigenciaHelper.construirResumenHero(
+            data = miMembresiaData,
+            cargando = cargandoMembresia,
+            errorCarga = errorCargaMembresia
+        )
+
+        tvPlanBadge?.text = resumen.badgeTexto
+        tvHeroSubtitle?.text = resumen.subtituloTexto
+    }
+
     private fun renderizarSeccionMembresia(rootView: View) {
+        renderizarHeroMembresia(rootView)
+
         val tvMembresiaEstadoBadge = rootView.findViewById<TextView>(R.id.tvMembresiaEstadoBadge)
         val tvMembresiaRenovacionBadge = rootView.findViewById<TextView>(R.id.tvMembresiaRenovacionBadge)
         val tvMembresiaPlanActualNombre = rootView.findViewById<TextView>(R.id.tvMembresiaPlanActualNombre)
@@ -1277,6 +1402,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         bottomRow.addView(tvPrecio)
 
+        val estaEnCarrito = CartManager.obtenerMembresiaActual(context)?.id == plan.id
+
         val btnElegir = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1285,9 +1412,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             gravity = Gravity.CENTER
             setPadding(dpToPx(16), 0, dpToPx(16), 0)
             setBackgroundResource(
-                if (esPlanActual) R.drawable.bg_badge_vip_outline else R.drawable.bg_badge_orange
+                if (estaEnCarrito || esPlanActual) R.drawable.bg_badge_vip_outline else R.drawable.bg_badge_orange
             )
-            text = if (esPlanActual) "Renovar" else "Solicitar plan"
+            text = when {
+                estaEnCarrito -> "En tu carrito"
+                esPlanActual -> "Renovar"
+                else -> "Solicitar plan"
+            }
             setTextColor(ContextCompat.getColor(context, R.color.white))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
@@ -1297,13 +1428,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         container.addView(bottomRow)
         card.addView(container)
 
-        card.setOnClickListener {
+        val accionAgregarMembresia = View.OnClickListener {
+            val resultado = CartManager.agregarMembresia(context, plan)
             Toast.makeText(
                 context,
-                "${plan.nombre} (${plan.duracionDias} días • ${formatearPrecio(plan.precio)} MXN). Solicítalo en recepción.",
+                resultado.mensaje,
                 Toast.LENGTH_LONG
             ).show()
         }
+
+        btnElegir.setOnClickListener(accionAgregarMembresia)
+        card.setOnClickListener(accionAgregarMembresia)
 
         return card
     }
@@ -1388,27 +1523,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun calcularDiasRestantes(fechaFinIso: String?): Long? {
-        if (fechaFinIso.isNullOrBlank()) return null
-        return try {
-            val fechaStr = fechaFinIso.take(10)
-            val fin = LocalDate.parse(fechaStr)
-            val hoy = LocalDate.now()
-            ChronoUnit.DAYS.between(hoy, fin)
-        } catch (_: Exception) {
-            null
-        }
+        return MembresiaVigenciaHelper.calcularDiasRestantes(fechaFinIso)
     }
 
     private fun formatearFechaCorta(fechaIso: String?): String {
-        if (fechaIso.isNullOrBlank()) return "—"
-        return try {
-            val fechaStr = fechaIso.take(10)
-            val date = LocalDate.parse(fechaStr)
-            val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "MX"))
-            date.format(formatter)
-        } catch (_: Exception) {
-            fechaIso.take(10)
-        }
+        return MembresiaVigenciaHelper.formatearFechaCorta(fechaIso)
     }
 
     private fun formatearPrecio(monto: Double): String {
@@ -1671,6 +1790,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     override fun onDestroyView() {
+        cartListener?.let { CartManager.removeListener(it) }
+        cartListener = null
         pillAnimator?.cancel()
         pillAnimator = null
         super.onDestroyView()

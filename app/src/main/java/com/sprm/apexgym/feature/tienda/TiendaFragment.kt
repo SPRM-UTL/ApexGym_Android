@@ -53,6 +53,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
     private val servicioAdapter = ServicioAdapter()
 
     private var cartListener: (() -> Unit)? = null
+    private var omitirPrimerResume = false
 
     override fun getLayoutRes(): Int = R.layout.fragment_tienda
 
@@ -91,7 +92,17 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         CartManager.addListener(listener)
         actualizarBadgeCarrito()
 
+        omitirPrimerResume = true
         cargarCatalogo()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (omitirPrimerResume) {
+            omitirPrimerResume = false
+        } else if (view != null) {
+            cargarCatalogo()
+        }
     }
 
     override fun onDestroyView() {

@@ -87,6 +87,7 @@ data class ProductoClienteDto(
     val nombre: String = "",
     val descripcion: String? = null,
     val precioVenta: Double = 0.0,
+    val descuentoPorcentaje: Double = 0.0,
     val precioCompra: Double? = null,
     val stockActual: Int = 0,
     val stockMinimo: Int = 1,
@@ -236,6 +237,7 @@ object RetrofitClient {
             val requestConSucursal = original.newBuilder()
                 .header("x-empresa-id", "1")
                 .header("x-sucursal-id", sucursalId.toString())
+                .header("x-plataforma", "ANDROID")
                 .build()
             chain.proceed(requestConSucursal)
         }

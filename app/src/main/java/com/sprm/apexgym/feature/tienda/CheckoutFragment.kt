@@ -8,6 +8,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,8 +19,12 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
-import com.sprm.apexgym.core.network.api.CrearCobroRequest
+import com.sprm.apexgym.core.network.api.ClienteAsistenciaDto
+import com.sprm.apexgym.core.network.api.CrearVentaPosRequest
+import com.sprm.apexgym.core.network.api.DetalleVentaPosRequest
 import com.sprm.apexgym.core.network.api.MetodoPagoDto
+import com.sprm.apexgym.core.network.api.PagoVentaPosRequest
+import com.sprm.apexgym.core.network.api.TransaccionPagoDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
@@ -28,6 +33,7 @@ import com.sprm.apexgym.core.network.mensajeUsuario
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentCheckoutPosBinding
 import com.sprm.apexgym.feature.main.CartItem
+import com.sprm.apexgym.feature.main.CartItemType
 import com.sprm.apexgym.feature.main.CartManager
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -35,15 +41,15 @@ import org.json.JSONObject
 import java.util.UUID
 
 /**
- * Cobro de la tienda POS para empleados.
- * Carga dinámicamente las formas de pago configuradas en el catálogo del sistema
- * (`GET /api/metodos-pago`) y registra el cobro en `/api/pagos/crear-cobro`.
+ * Cobro de la tienda POS para empleados conectado a `POST /api/ventas`
+ * para registrar la venta en caja y descontar el stock del inventario en el servidor.
  */
 class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
 
     private var metodosSistema: List<MetodoPagoDto> = emptyList()
     private var metodoSeleccionado: MetodoPagoDto? = null
-    private var total: Double = 0.0
+    private var clientesDisponibles: List<ClienteAsistenciaDto> = emptyList()
+    private var totales: TotalesVentaPos = TotalesVentaPos(0.0, 0.0, 0.0)
     private var aperturaCajaId: Int? = null
     private var cobrando = false
     private val idempotenciaKey: String = UUID.randomUUID().toString()
@@ -59,20 +65,23 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             return
         }
 
-        total = CartManager.obtenerTotalPrecio(requireContext())
+        totales = CalculoVentaPos.calcularTotales(items.map { it.precioUnitario to it.cantidad })
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.etEfectivoRecibido.doAfterTextChanged { actualizarCambio() }
         binding.btnCobrar.setOnClickListener { validarYCobrar() }
 
-        binding.btnCobrar.text = "Cobrar ${total.formatearMonedaSinSufijo()} MXN"
-        binding.tvTotalPagar.text = "${total.formatearMonedaSinSufijo()} MXN"
+        binding.tvSubtotalPagar.text = "${totales.subtotal.formatearMonedaSinSufijo()} MXN"
+        binding.tvIvaPagar.text = "${totales.iva.formatearMonedaSinSufijo()} MXN"
+        binding.tvTotalPagar.text = "${totales.total.formatearMonedaSinSufijo()} MXN"
+        binding.btnCobrar.text = "Cobrar ${totales.total.formatearMonedaSinSufijo()} MXN"
 
         // Ocultar las 2 tarjetas estáticas heredadas para mostrar las dinámicas del sistema
         binding.cardEfectivo.visibility = View.GONE
         binding.cardTerminal.visibility = View.GONE
 
         renderizarResumen(items)
+        cargarClientes()
         cargarMetodosPagoDelSistema(view)
         cargarAperturaActiva()
 
@@ -87,6 +96,45 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         }
     }
 
+    private fun cargarClientes() {
+        binding.spClienteVenta.adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            listOf("Cargando clientes…")
+        )
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val lista = RetrofitClient.empleadoService.obtenerClientes()
+                    .dataExitosa()
+                    .orEmpty()
+                if (!isAdded || view == null) return@launch
+
+                clientesDisponibles = lista
+                val etiquetas = if (lista.isEmpty()) {
+                    listOf("Sin clientes registrados en la sucursal")
+                } else {
+                    lista.map { cliente ->
+                        cliente.nombreCompleto.ifBlank { "Cliente #${cliente.id}" }
+                    }
+                }
+                binding.spClienteVenta.adapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_dropdown_item,
+                    etiquetas
+                )
+            } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
+                clientesDisponibles = emptyList()
+                binding.spClienteVenta.adapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_dropdown_item,
+                    listOf("Error al cargar clientes")
+                )
+            }
+        }
+    }
+
     private fun cargarMetodosPagoDelSistema(rootView: View) {
         val contenedor = rootView.findViewWithTag<LinearLayout>("ll_metodos_pago_dinamicos")
         viewLifecycleOwner.lifecycleScope.launch {
@@ -94,20 +142,23 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                 RetrofitClient.empleadoService.obtenerMetodosPago()
                     .dataExitosa()
                     .orEmpty()
-                    .filter { it.estado.isNullOrBlank() || it.estado.equals("activo", ignoreCase = true) }
+                    .filter {
+                        (it.estado.isNullOrBlank() || it.estado.equals("activo", ignoreCase = true)) &&
+                            !it.codigo.equals("MERCADO_PAGO", ignoreCase = true)
+                    }
             } catch (_: Exception) {
                 emptyList()
             }
 
-            if (!isAdded) return@launch
+            if (!isAdded || view == null) return@launch
 
             metodosSistema = if (cargados.isNotEmpty()) {
                 cargados
             } else {
                 listOf(
-                    MetodoPagoDto(id = 1, nombre = "Efectivo", descripcion = "Pago en caja con efectivo", estado = "activo"),
-                    MetodoPagoDto(id = 2, nombre = "Tarjeta", descripcion = "Pago con tarjeta en terminal", estado = "activo"),
-                    MetodoPagoDto(id = 3, nombre = "Transferencia", descripcion = "Pago por transferencia bancaria", estado = "activo")
+                    MetodoPagoDto(id = 1, nombre = "Efectivo", codigo = "EFECTIVO", descripcion = "Pago en caja con efectivo", estado = "activo"),
+                    MetodoPagoDto(id = 2, nombre = "Tarjeta", codigo = "TARJETA", descripcion = "Pago con tarjeta en terminal", estado = "activo"),
+                    MetodoPagoDto(id = 3, nombre = "Transferencia", codigo = "TRANSFERENCIA", descripcion = "Pago por transferencia bancaria", estado = "activo")
                 )
             }
 
@@ -211,8 +262,15 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
     }
 
     private fun esMetodoEfectivo(metodo: MetodoPagoDto?): Boolean {
+        val codigo = metodo?.codigo?.uppercase().orEmpty()
         val nombre = metodo?.nombre?.lowercase().orEmpty()
-        return nombre.contains("efectivo")
+        return codigo == "EFECTIVO" || nombre.contains("efectivo")
+    }
+
+    private fun esMetodoTransferencia(metodo: MetodoPagoDto?): Boolean {
+        val codigo = metodo?.codigo?.uppercase().orEmpty()
+        val nombre = metodo?.nombre?.lowercase().orEmpty()
+        return codigo == "TRANSFERENCIA" || nombre.contains("transferencia")
     }
 
     private fun actualizarCamposSegunMetodo() {
@@ -243,9 +301,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 text = buildString {
                     append(item.nombre)
-                    if (item.tipo == com.sprm.apexgym.feature.main.CartItemType.PRODUCTO &&
-                        item.cantidad > 1
-                    ) {
+                    if (item.tipo == CartItemType.PRODUCTO && item.cantidad > 1) {
                         append(" × ${item.cantidad}")
                     }
                 }
@@ -271,12 +327,12 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
 
     private fun actualizarCambio() {
         val recibido = leerMonto(binding.etEfectivoRecibido.text?.toString())
-        val cambio = if (recibido != null) recibido - total else 0.0
+        val cambio = if (recibido != null) recibido - totales.total else 0.0
         binding.tvCambio.text = "Cambio: ${cambio.coerceAtLeast(0.0).formatearMonedaSinSufijo()} MXN"
         binding.tvCambio.setTextColor(
             ContextCompat.getColor(
                 requireContext(),
-                if (recibido != null && recibido >= total) R.color.apex_text_secondary else R.color.apex_orange
+                if (recibido != null && recibido >= totales.total) R.color.apex_text_secondary else R.color.apex_orange
             )
         )
     }
@@ -286,24 +342,29 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             try {
                 val aperturas = RetrofitClient.empleadoService.obtenerAperturas().dataExitosa()
                     .orEmpty()
-                if (!isAdded) return@launch
+                if (!isAdded || view == null) return@launch
 
                 val empleadoId = SessionManager.obtenerEmpleadoId(requireContext())
                 val activas = aperturas.filter { it.estado.equals("ABIERTA", ignoreCase = true) }
-                val activa = activas.firstOrNull {
+                // VentaDao requiere que la apertura pertenezca al empleado que registra la venta.
+                val activaPropia = activas.firstOrNull {
                     empleadoId != null && it.empleadoId == empleadoId
-                } ?: activas.firstOrNull()
+                }
 
-                aperturaCajaId = activa?.id
-                binding.tvCajaActiva.text = if (activa != null) {
-                    val caja = activa.caja?.nombre?.takeIf { it.isNotBlank() }
-                        ?: "Caja #${activa.cajaId}"
-                    "Caja activa: $caja • Apertura #${activa.id}"
-                } else {
-                    "Sin apertura de caja activa en esta sucursal."
+                aperturaCajaId = activaPropia?.id
+                binding.tvCajaActiva.text = when {
+                    activaPropia != null -> {
+                        val caja = activaPropia.caja?.nombre?.takeIf { it.isNotBlank() }
+                            ?: "Caja #${activaPropia.cajaId}"
+                        "Caja activa: $caja • Apertura #${activaPropia.id}"
+                    }
+                    activas.isNotEmpty() ->
+                        "No tienes una caja abierta asignada a tu empleado. Abre una caja para cobrar."
+                    else ->
+                        "Sin apertura de caja activa en esta sucursal. Abre una caja primero."
                 }
             } catch (_: Exception) {
-                if (isAdded) {
+                if (isAdded && view != null) {
                     binding.tvCajaActiva.text = "No se pudo verificar la caja activa."
                 }
             }
@@ -317,6 +378,18 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         val items = CartManager.obtenerItems(requireContext())
         if (items.isEmpty()) {
             mostrarError("El carrito está vacío.")
+            return
+        }
+
+        val aperturaId = aperturaCajaId
+        if (aperturaId == null) {
+            mostrarError("Necesitas abrir una caja a tu nombre en esta sucursal para registrar la venta.")
+            return
+        }
+
+        val cliente = clientesDisponibles.getOrNull(binding.spClienteVenta.selectedItemPosition)
+        if (cliente == null) {
+            mostrarError("Selecciona el cliente para registrar la venta.")
             return
         }
 
@@ -344,7 +417,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                 mostrarError("Ingresa el efectivo recibido.")
                 return
             }
-            if (efectivoRecibido < total) {
+            if (efectivoRecibido < totales.total) {
                 mostrarError("El efectivo recibido no cubre el total a cobrar.")
                 return
             }
@@ -356,11 +429,21 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             }
         }
 
-        realizarCobro(items, metodo, empleadoId, efectivoRecibido, folioVoucher)
+        realizarVenta(
+            items = items,
+            aperturaId = aperturaId,
+            clienteId = cliente.id,
+            metodo = metodo,
+            empleadoId = empleadoId,
+            efectivoRecibido = efectivoRecibido,
+            folioVoucher = folioVoucher
+        )
     }
 
-    private fun realizarCobro(
+    private fun realizarVenta(
         items: List<CartItem>,
+        aperturaId: Int,
+        clienteId: Int,
         metodo: MetodoPagoDto,
         empleadoId: Int,
         efectivoRecibido: Double?,
@@ -368,86 +451,89 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
     ) {
         cobrando = true
         binding.btnCobrar.isEnabled = false
-        binding.btnCobrar.text = "Procesando cobro…"
+        binding.btnCobrar.text = "Procesando venta…"
 
-        val esEfectivo = esMetodoEfectivo(metodo)
-        val proveedorApi = if (esEfectivo) "EFECTIVO" else "TERMINAL_MANUAL"
-        val nombreMetodo = metodo.nombre?.takeIf { it.isNotBlank() } ?: proveedorApi
+        val detalles = items.map { item ->
+            when (item.tipo) {
+                CartItemType.PRODUCTO -> DetalleVentaPosRequest(
+                    tipoItem = "PRODUCTO",
+                    productoId = item.id,
+                    cantidad = item.cantidad,
+                    descripcion = item.nombre
+                )
+                CartItemType.SERVICIO -> DetalleVentaPosRequest(
+                    tipoItem = "SERVICIO",
+                    servicioId = item.id,
+                    cantidad = item.cantidad,
+                    descripcion = item.nombre
+                )
+                CartItemType.MEMBRESIA -> DetalleVentaPosRequest(
+                    tipoItem = "MEMBRESIA",
+                    tipoMembresiaId = item.id,
+                    cantidad = item.cantidad,
+                    descripcion = item.nombre
+                )
+            }
+        }
 
+        val pagoRequest = when {
+            esMetodoEfectivo(metodo) -> null
+            esMetodoTransferencia(metodo) -> PagoVentaPosRequest(referenciaTransferencia = folioVoucher)
+            else -> PagoVentaPosRequest(folioVoucher = folioVoucher)
+        }
+
+        val request = CrearVentaPosRequest(
+            empleadoId = empleadoId,
+            aperturaCajaId = aperturaId,
+            clienteId = clienteId,
+            metodoPagoId = metodo.id,
+            subtotal = totales.subtotal,
+            total = totales.total,
+            montoRecibido = efectivoRecibido,
+            uuidIdempotencia = idempotenciaKey,
+            detalleVenta = detalles,
+            pago = pagoRequest
+        )
+
+        val nombreMetodo = metodo.nombre?.takeIf { it.isNotBlank() } ?: "Pago"
         val concepto = if (items.size == 1) {
             items.first().nombre
         } else {
             "Venta POS (${items.sumOf { it.cantidad }} artículos)"
-        }.take(240)
-
-        val metadatos = mutableMapOf<String, Any>(
-            "origen" to "POS_ANDROID",
-            "empleadoId" to empleadoId,
-            "metodoPagoId" to metodo.id,
-            "metodoPagoNombre" to nombreMetodo,
-            "sucursalId" to SessionManager.obtenerSucursalId(requireContext()),
-            "items" to items.map { item ->
-                mapOf(
-                    "tipo" to item.tipo.name,
-                    "id" to item.id,
-                    "nombre" to item.nombre,
-                    "cantidad" to item.cantidad,
-                    "precioUnitario" to item.precioUnitario,
-                    "subtotal" to item.subtotal
-                )
-            }
-        )
-        aperturaCajaId?.let { metadatos["aperturaCajaId"] = it }
-        efectivoRecibido?.let {
-            metadatos["efectivoRecibido"] = it
-            metadatos["cambio"] = it - total
         }
-
-        val request = CrearCobroRequest(
-            concepto = concepto,
-            monto = total,
-            proveedor = proveedorApi,
-            folioVoucher = folioVoucher,
-            uuidIdempotencia = idempotenciaKey,
-            metadatos = metadatos
-        )
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.empleadoService.crearCobro(request)
-                val resultado = response.dataExitosa()
+                val response = RetrofitClient.empleadoService.crearVenta(request)
+                val venta = response.dataExitosa()
 
-                if (!isAdded) return@launch
+                if (!isAdded || view == null) return@launch
 
-                if (resultado == null) {
+                if (venta == null) {
                     mostrarError(
                         response.mensajeDeError()
                             ?: response.body()?.message
-                            ?: "No se pudo registrar el cobro."
+                            ?: "No se pudo registrar la venta."
                     )
                     return@launch
                 }
 
-                val transaccion = resultado.transaccion
-                if (transaccion == null) {
-                    mostrarError("El servidor no devolvió la transacción del cobro.")
-                    return@launch
-                }
-
-                if (!transaccion.estado.equals("APROBADO", ignoreCase = true)) {
-                    mostrarError(
-                        "El cobro quedó en estado ${transaccion.estado ?: "desconocido"}. " +
-                            "El carrito no se vació."
-                    )
-                    return@launch
-                }
+                val transaccionTicket = TransaccionPagoDto(
+                    id = venta.folioVenta?.id ?: venta.id,
+                    proveedor = metodo.codigo ?: nombreMetodo,
+                    monto = venta.total,
+                    estado = venta.estado ?: "completada",
+                    concepto = concepto,
+                    folioVoucher = folioVoucher ?: venta.folioVenta?.id?.let { "Folio #$it" },
+                    createdAt = venta.createdAt
+                )
 
                 val itemsJson = construirItemsJson(items)
                 CartManager.vaciarCarrito(requireContext())
 
                 Toast.makeText(
                     requireContext(),
-                    resultado.mensaje ?: "Cobro registrado correctamente.",
+                    "Venta registrada y descontada del inventario.",
                     Toast.LENGTH_SHORT
                 ).show()
 
@@ -461,7 +547,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                     .replace(
                         R.id.fragment_container,
                         TicketCompraFragment.newInstance(
-                            transaccion = transaccion,
+                            transaccion = transaccionTicket,
                             itemsJson = itemsJson,
                             metodoPago = nombreMetodo
                         )
@@ -469,12 +555,12 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                     .addToBackStack(null)
                     .commit()
             } catch (e: Exception) {
-                if (isAdded) mostrarError(e.mensajeUsuario())
+                if (isAdded && view != null) mostrarError(e.mensajeUsuario())
             } finally {
                 cobrando = false
-                if (isAdded) {
+                if (isAdded && view != null) {
                     binding.btnCobrar.isEnabled = true
-                    binding.btnCobrar.text = "Cobrar ${total.formatearMonedaSinSufijo()} MXN"
+                    binding.btnCobrar.text = "Cobrar ${totales.total.formatearMonedaSinSufijo()} MXN"
                 }
             }
         }

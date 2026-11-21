@@ -4,6 +4,7 @@ import android.content.Context
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
+import com.sprm.apexgym.feature.tienda.CalculoVentaPos
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -121,10 +122,15 @@ object CartManager {
             val nuevaCantidad = (actual.cantidad + cantidadSegura).coerceAtMost(stockMax)
             val ajustadoPorStock = (actual.cantidad + cantidadSegura) > stockMax
 
+            val precioUnitarioNeto = CalculoVentaPos.precioConDescuento(
+                producto.precioVenta,
+                producto.descuentoPorcentaje
+            )
+
             items[indexExistente] = actual.copy(
                 nombre = producto.nombre,
                 subtitulo = producto.categoria?.nombre ?: "Producto",
-                precioUnitario = producto.precioVenta,
+                precioUnitario = precioUnitarioNeto,
                 cantidad = nuevaCantidad,
                 stockMaximo = stockMax,
                 imagenUrl = producto.imagenUrl
@@ -146,13 +152,17 @@ object CartManager {
         } else {
             val stockMax = producto.stockActual
             val cantidadInicial = cantidadSegura.coerceAtMost(stockMax)
+            val precioUnitarioNeto = CalculoVentaPos.precioConDescuento(
+                producto.precioVenta,
+                producto.descuentoPorcentaje
+            )
             items.add(
                 CartItem(
                     tipo = CartItemType.PRODUCTO,
                     id = producto.id,
                     nombre = producto.nombre,
                     subtitulo = producto.categoria?.nombre ?: "Producto",
-                    precioUnitario = producto.precioVenta,
+                    precioUnitario = precioUnitarioNeto,
                     cantidad = cantidadInicial,
                     stockMaximo = stockMax,
                     imagenUrl = producto.imagenUrl

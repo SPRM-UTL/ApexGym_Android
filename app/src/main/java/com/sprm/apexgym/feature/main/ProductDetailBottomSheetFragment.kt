@@ -193,15 +193,16 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 Toast.LENGTH_SHORT
             ).show()
 
+            val fm = parentFragmentManager
             dismiss()
 
-            val existing = parentFragmentManager.findFragmentByTag(
+            val existing = fm.findFragmentByTag(
                 CarritoBottomSheetFragment.TAG
             )
 
             if (existing == null) {
                 CarritoBottomSheetFragment().show(
-                    parentFragmentManager,
+                    fm,
                     CarritoBottomSheetFragment.TAG
                 )
             }
