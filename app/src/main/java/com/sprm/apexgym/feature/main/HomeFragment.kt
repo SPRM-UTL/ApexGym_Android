@@ -41,6 +41,7 @@ import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
+import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -287,8 +288,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             showSectionForTab(1)
             cargarMembresiaDesdeBackend(view)
         }
-        view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(goToMembresiaListener)
-        view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(goToMembresiaListener)
+        val openHistorialComprasListener = View.OnClickListener {
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_container, HistorialComprasFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+        view.findViewById<View>(R.id.chipHomePagos)?.setOnClickListener(openHistorialComprasListener)
+        view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(openHistorialComprasListener)
+        view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(openHistorialComprasListener)
         view.findViewById<View>(R.id.chipHomeMembresia)?.setOnClickListener(goToMembresiaListener)
 
         val goToProductosListener = View.OnClickListener {

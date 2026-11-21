@@ -392,6 +392,21 @@ data class FolioVentaDto(
     val id: Int = 0
 )
 
+data class ItemNombreDto(
+    val nombre: String? = null
+)
+
+data class DetalleVentaItemDto(
+    val id: Int = 0,
+    val cantidad: Int = 1,
+    val subtotal: Double? = null,
+    val descripcion: String? = null,
+    val tipoItem: String? = null,
+    val producto: ItemNombreDto? = null,
+    val servicio: ItemNombreDto? = null,
+    val tipoMembresia: ItemNombreDto? = null
+)
+
 data class PagoDigitalDto(
     val estado: String? = null,
     val urlCheckout: String? = null,
@@ -403,13 +418,25 @@ data class VentaDto(
     val id: Int = 0,
     val total: Double = 0.0,
     val subtotal: Double = 0.0,
+    val montoRecibido: Double? = null,
+    val cambio: Double? = null,
     val estado: String? = null,
     val clienteId: Int? = null,
     val empleadoId: Int? = null,
     val metodoPagoId: Int? = null,
     val folioVenta: FolioVentaDto? = null,
     val pagoDigital: PagoDigitalDto? = null,
+    val metodoPago: MetodoPagoDto? = null,
+    val detalleVenta: List<DetalleVentaItemDto>? = null,
+    val transaccionesPago: List<TransaccionPagoDto>? = null,
     val createdAt: String? = null
+)
+
+data class VentasPaginadasDto(
+    val registros: List<VentaDto> = emptyList(),
+    val total: Int = 0,
+    val totalPaginas: Int = 0,
+    val paginaActual: Int = 1
 )
 
 data class EstadoPagoResponseDto(
@@ -630,6 +657,14 @@ interface EmpleadoApiService {
     ): Response<ApiResponse<List<TransaccionPagoDto>>>
 
     // Ventas y Checkout Digital
+    @GET("api/ventas")
+    suspend fun obtenerVentas(
+        @Query("pagina") pagina: Int = 1,
+        @Query("limite") limite: Int = 50,
+        @Query("clienteId") clienteId: Int? = null,
+        @Query("estado") estado: String? = null
+    ): Response<ApiResponse<VentasPaginadasDto>>
+
     @POST("api/ventas")
     suspend fun crearVenta(
         @Body request: CrearVentaRequest,

@@ -20,6 +20,7 @@ import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.TransaccionPagoDto
+import com.sprm.apexgym.core.network.api.VentaDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearFecha
@@ -27,11 +28,14 @@ import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentHistorialComprasBinding
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>() {
 
+    private var ventas: List<VentaDto> = emptyList()
     private var transacciones: List<TransaccionPagoDto> = emptyList()
     private var filtroSeleccionado: String = "Todas"
     private var textoBusqueda: String = ""
@@ -51,11 +55,6 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         binding.etSearchPurchases.doAfterTextChanged { texto ->
             textoBusqueda = texto?.toString()?.trim().orEmpty()
             aplicarFiltros()
-        }
-
-        if (!SessionManager.esEmpleado(requireContext())) {
-            mostrarNoDisponible()
-            return
         }
 
         construirChips()
@@ -87,9 +86,44 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.empleadoService.obtenerTransacciones()
-                transacciones = response.dataExitosa().orEmpty()
+                val response = RetrofitClient.empleadoService.obtenerVentas(limite = 50)
+                ventas = response.dataExitosa()?.registros.orEmpty()
+                transacciones = ventas.map { v ->
+                    val primerDetalle = v.detalleVenta?.firstOrNull()
+                    val nombreConcepto = primerDetalle?.let {
+                        it.descripcion ?: it.producto?.nombre ?: it.servicio?.nombre ?: it.tipoMembresia?.nombre
+                    } ?: "Compra #${v.id}"
+                    val conceptoFinal = if ((v.detalleVenta?.size ?: 0) > 1) {
+                        "$nombreConcepto (+${v.detalleVenta!!.size - 1} más)"
+                    } else {
+                        nombreConcepto
+                    }
+                    val proveedor = v.metodoPago?.codigo
+                        ?: v.transaccionesPago?.firstOrNull()?.proveedor
+                        ?: when (v.metodoPagoId) {
+                            1 -> "TERMINAL_MANUAL"
+                            2 -> "EFECTIVO"
+                            3 -> "TRANSFERENCIA"
+                            4 -> "MERCADO_PAGO"
+                            else -> "EFECTIVO"
+                        }
+                    TransaccionPagoDto(
+                        id = v.id,
+                        monto = v.total,
+                        estado = when (v.estado?.lowercase()) {
+                            "completada", "completado" -> "APROBADO"
+                            "pendiente_pago" -> "PENDIENTE"
+                            "cancelada", "cancelado" -> "CANCELADO"
+                            else -> v.estado?.uppercase() ?: "APROBADO"
+                        },
+                        concepto = conceptoFinal,
+                        folioVoucher = v.folioVenta?.id?.let { "APX-$it" } ?: "APX-${v.id}",
+                        proveedor = proveedor,
+                        createdAt = v.createdAt
+                    )
+                }
             } catch (_: Exception) {
+                ventas = emptyList()
                 transacciones = emptyList()
             }
 
@@ -202,6 +236,33 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
     }
 
     private fun abrirTicket(transaccion: TransaccionPagoDto) {
+        val ventaAsociada = ventas.firstOrNull { it.id == transaccion.id }
+        val detalles = ventaAsociada?.detalleVenta
+        val itemsJson = if (!detalles.isNullOrEmpty()) {
+            JSONArray().apply {
+                detalles.forEach { d ->
+                    val nombre = d.descripcion
+                        ?: d.producto?.nombre
+                        ?: d.servicio?.nombre
+                        ?: d.tipoMembresia?.nombre
+                        ?: "Artículo"
+                    put(JSONObject().apply {
+                        put("nombre", nombre)
+                        put("cantidad", d.cantidad)
+                        put("subtotal", d.subtotal ?: (transaccion.monto / detalles.size))
+                    })
+                }
+            }.toString()
+        } else null
+
+        val metodoTexto = when (transaccion.proveedor?.uppercase()) {
+            "EFECTIVO" -> "Pago en recepción / Efectivo"
+            "MERCADO_PAGO" -> "Mercado Pago / Pago en línea"
+            "TERMINAL_MANUAL", "TARJETA" -> "Tarjeta de débito"
+            "TRANSFERENCIA" -> "Transferencia bancaria"
+            else -> transaccion.proveedor ?: "Efectivo"
+        }
+
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 android.R.anim.fade_in,
@@ -209,7 +270,14 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
                 android.R.anim.fade_in,
                 android.R.anim.fade_out
             )
-            .replace(R.id.fragment_container, TicketCompraFragment.newInstance(transaccion))
+            .replace(
+                R.id.fragment_container,
+                TicketCompraFragment.newInstance(
+                    transaccion = transaccion,
+                    itemsJson = itemsJson,
+                    metodoPago = metodoTexto
+                )
+            )
             .addToBackStack(null)
             .commit()
     }
