@@ -193,9 +193,9 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 Toast.LENGTH_SHORT
             ).show()
 
+            val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
             dismiss()
 
-            val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
             val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
             if (existing == null) {
                 CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)

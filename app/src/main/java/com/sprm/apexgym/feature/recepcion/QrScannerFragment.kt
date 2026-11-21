@@ -203,7 +203,9 @@ class QrScannerFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.empleadoService.validarQr(ValidarQrRequest(rawQr))
+                val response = RetrofitClient.empleadoService.validarQr(
+                    ValidarQrRequest(qr = rawQr, plataforma = "ANDROID")
+                )
                 val resultado = response.dataExitosa()
                 if (!isAdded) return@launch
 

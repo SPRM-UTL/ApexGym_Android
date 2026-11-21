@@ -350,6 +350,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground"
                     app:cardBackgroundColor="@color/apex_card_dark"
                     app:cardCornerRadius="22dp"
                     app:cardElevation="4dp"
@@ -378,7 +381,7 @@
                             android:background="@drawable/bg_badge_vip_outline"
                             android:paddingHorizontal="12dp"
                             android:paddingVertical="4dp"
-                            android:text="@string/hero_plan_badge"
+                            android:text="CONSULTANDO..."
                             android:textColor="@color/apex_orange"
                             android:textSize="10sp"
                             android:textStyle="bold"
@@ -418,10 +421,13 @@
                                 android:src="@drawable/ic_calendar" />
 
                             <TextView
+                                android:id="@+id/tvHeroSubtitle"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="6dp"
-                                android:text="@string/hero_subtitle"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:text="Cargando vigencia de tu membresía..."
                                 android:textColor="@color/apex_text_on_dark_secondary"
                                 android:textSize="11.5sp" />
                         </LinearLayout>
@@ -431,6 +437,8 @@
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:background="@drawable/bg_circle_white_elevated"
+                            android:clickable="true"
+                            android:focusable="true"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="parent">

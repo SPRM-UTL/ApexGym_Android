@@ -203,7 +203,8 @@ data class ValidarAccesoRequest(
 )
 
 data class ValidarQrRequest(
-    val qr: String
+    val qr: String,
+    val plataforma: String = "ANDROID"
 )
 
 data class ValidarAccesoDto(
@@ -406,6 +407,33 @@ data class CrearVentaRequest(
     val pago: PagoVentaRequest? = null
 )
 
+data class DetalleVentaPosRequest(
+    val tipoItem: String,
+    val productoId: Int? = null,
+    val servicioId: Int? = null,
+    val tipoMembresiaId: Int? = null,
+    val cantidad: Int,
+    val descripcion: String? = null
+)
+
+data class PagoVentaPosRequest(
+    val folioVoucher: String? = null,
+    val referenciaTransferencia: String? = null
+)
+
+data class CrearVentaPosRequest(
+    val empleadoId: Int,
+    val aperturaCajaId: Int,
+    val clienteId: Int,
+    val metodoPagoId: Int,
+    val subtotal: Double,
+    val total: Double,
+    val montoRecibido: Double? = null,
+    val uuidIdempotencia: String? = null,
+    val detalleVenta: List<DetalleVentaPosRequest>,
+    val pago: PagoVentaPosRequest? = null
+)
+
 data class FolioVentaDto(
     val id: Int = 0
 )
@@ -460,6 +488,75 @@ data class VentasPaginadasDto(
 data class EstadoPagoResponseDto(
     val venta: VentaDto? = null,
     val pago: TransaccionPagoDto? = null
+)
+
+data class VentaCreadaDto(
+    val id: Int = 0,
+    val total: Double = 0.0,
+    val subtotal: Double = 0.0,
+    val estado: String? = null,
+    val createdAt: String? = null,
+    val folioVenta: FolioVentaDto? = null
+)
+
+// ── Pedidos de Compra (Android -> Validación Web) ───────────────────────────
+
+data class DetallePedidoCompraRequest(
+    val productoId: Int,
+    val cantidad: Int,
+    val costoUnitario: Double? = null
+)
+
+data class CrearPedidoCompraRequest(
+    val proveedor: String? = null,
+    val observaciones: String? = null,
+    val detalles: List<DetallePedidoCompraRequest>
+)
+
+data class ProductoResumenPedidoDto(
+    val id: Int = 0,
+    val nombre: String = "",
+    val codigoBarras: String? = null,
+    val stockActual: Int = 0,
+    val stockMinimo: Int = 1,
+    val precioCompra: Double? = null,
+    val precioVenta: Double = 0.0
+)
+
+data class EmpleadoResumenPedidoDto(
+    val id: Int = 0,
+    val nombre: String? = null,
+    val apellidoPaterno: String? = null,
+    val apellidoMaterno: String? = null
+) {
+    val nombreCompleto: String
+        get() = listOf(nombre, apellidoPaterno, apellidoMaterno)
+            .filterNotNull()
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+}
+
+data class DetallePedidoCompraDto(
+    val id: Int = 0,
+    val productoId: Int = 0,
+    val cantidad: Int = 0,
+    val costoUnitario: Double = 0.0,
+    val subtotal: Double = 0.0,
+    val producto: ProductoResumenPedidoDto? = null
+)
+
+data class PedidoCompraDto(
+    val id: Int = 0,
+    val proveedor: String? = null,
+    val estado: String = "PENDIENTE",
+    val totalEstimado: Double = 0.0,
+    val observaciones: String? = null,
+    val motivoRechazo: String? = null,
+    val fechaValidacion: String? = null,
+    val createdAt: String? = null,
+    val solicitanteEmpleado: EmpleadoResumenPedidoDto? = null,
+    val validadorEmpleado: EmpleadoResumenPedidoDto? = null,
+    val detalles: List<DetallePedidoCompraDto> = emptyList()
 )
 
 interface EmpleadoApiService {
@@ -704,4 +801,21 @@ interface EmpleadoApiService {
     suspend fun obtenerCheckoutPagoVenta(
         @Path("id") ventaId: Int
     ): Response<ApiResponse<PagoDigitalDto>>
+
+    // Ventas POS (descuenta stock en backend)
+    @POST("api/ventas")
+    suspend fun crearVenta(
+        @Body request: CrearVentaPosRequest
+    ): Response<ApiResponse<VentaCreadaDto>>
+
+    // Pedidos de compra (Android -> validación web)
+    @GET("api/pedidos-compra")
+    suspend fun obtenerPedidosCompra(
+        @Query("estado") estado: String? = null
+    ): Response<ApiResponse<List<PedidoCompraDto>>>
+
+    @POST("api/pedidos-compra")
+    suspend fun crearPedidoCompra(
+        @Body request: CrearPedidoCompraRequest
+    ): Response<ApiResponse<PedidoCompraDto>>
 }

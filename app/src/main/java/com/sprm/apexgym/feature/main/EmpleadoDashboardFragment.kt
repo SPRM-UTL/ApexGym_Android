@@ -17,6 +17,7 @@ import com.sprm.apexgym.databinding.FragmentEmpleadoDashboardBinding
 import com.sprm.apexgym.feature.auth.LoginFragment
 import com.sprm.apexgym.feature.caja.ResumenAperturaFragment
 import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
+import com.sprm.apexgym.feature.inventario.PedidosCompraFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
 import com.sprm.apexgym.feature.tienda.TiendaFragment
@@ -89,6 +90,7 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
         binding.cvEmpleados.setOnClickListener { navegar(EmpleadosListFragment()) }
         binding.cvVisitas.setOnClickListener { navegar(VisitasListFragment()) }
         binding.cvTienda.setOnClickListener { navegar(TiendaFragment()) }
+        binding.cvPedidosCompra.setOnClickListener { navegar(PedidosCompraFragment()) }
         binding.cvNotificaciones.setOnClickListener { navegar(NotificacionesListFragment()) }
 
         binding.btnLogout.setOnClickListener {

@@ -10,7 +10,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -30,7 +29,6 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
 
     private var empleados: List<EmpleadoDto> = emptyList()
     private var filtrados: List<EmpleadoDto> = emptyList()
-    private var estadoSeleccionado: String = "Todos"
     private var textoBusqueda: String = ""
 
     override fun getLayoutRes(): Int = R.layout.fragment_empleados_list
@@ -40,9 +38,6 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
 
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flAddEmpleado.setOnClickListener { navegar(CrearEditarEmpleadoFragment()) }
-        binding.ivFilter.setOnClickListener {
-            Toast.makeText(requireContext(), "Usa los filtros de estado", Toast.LENGTH_SHORT).show()
-        }
 
         binding.etSearchEmpleados.doAfterTextChanged { editable ->
             textoBusqueda = editable?.toString()?.trim().orEmpty()
@@ -56,7 +51,6 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
     private fun cargarEmpleados() {
         binding.tvTotalEmpleados.text = "…"
         binding.tvEmpleadosActivos.text = "…"
-        binding.tvEmpleadosEnTurno.text = "…"
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -67,7 +61,6 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
                     empleados = emptyList()
                     binding.tvTotalEmpleados.text = "—"
                     binding.tvEmpleadosActivos.text = "—"
-                    binding.tvEmpleadosEnTurno.text = "—"
                     binding.llEmptyEmpleados.visibility = View.VISIBLE
                     mostrarMensajeVacio(
                         response.mensajeDeError() ?: "No se pudieron cargar los empleados"
@@ -78,14 +71,11 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
                 empleados = data
                 binding.tvTotalEmpleados.text = data.size.toString()
                 binding.tvEmpleadosActivos.text = data.count { esActivo(it) }.toString()
-                binding.tvEmpleadosEnTurno.text = data.count { esEnTurno(it) }.toString()
 
-                construirChips()
                 aplicarFiltros()
             } catch (_: Exception) {
                 binding.tvTotalEmpleados.text = "—"
                 binding.tvEmpleadosActivos.text = "—"
-                binding.tvEmpleadosEnTurno.text = "—"
                 binding.llEmptyEmpleados.visibility = View.VISIBLE
                 mostrarMensajeVacio("No se pudo conectar con el servidor")
             }
@@ -97,77 +87,12 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
         return estado.contains("ACTIV") || estado.contains("TURNO")
     }
 
-    private fun esEnTurno(empleado: EmpleadoDto): Boolean {
-        val estado = empleado.estadoEmpleado?.nombre.orEmpty().uppercase()
-        return estado.contains("TURNO")
-    }
-
-    private fun construirChips() {
-        val container = binding.llFilterChips
-        container.removeAllViews()
-
-        val estados = mutableListOf("Todos")
-        empleados.mapNotNull { it.estadoEmpleado?.nombre?.trim() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .forEach { estados.add(it) }
-
-        if (estadoSeleccionado !in estados) estadoSeleccionado = "Todos"
-
-        val chips = mutableListOf<TextView>()
-        estados.forEachIndexed { index, nombre ->
-            val chip = TextView(requireContext()).apply {
-                text = nombre
-                gravity = Gravity.CENTER
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(dpToPx(18), 0, dpToPx(18), 0)
-                isClickable = true
-                isFocusable = true
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    dpToPx(38)
-                ).apply {
-                    if (index > 0) marginStart = dpToPx(8)
-                }
-            }
-            chips.add(chip)
-            container.addView(chip)
-        }
-
-        fun actualizarEstilos() {
-            val blanco = ContextCompat.getColor(requireContext(), R.color.white)
-            val primario = ContextCompat.getColor(requireContext(), R.color.apex_text_primary)
-            chips.forEach { chip ->
-                if (chip.text.toString() == estadoSeleccionado) {
-                    chip.setBackgroundResource(R.drawable.bg_chip_selected)
-                    chip.setTextColor(blanco)
-                } else {
-                    chip.setBackgroundResource(R.drawable.bg_chip_unselected)
-                    chip.setTextColor(primario)
-                }
-            }
-        }
-
-        actualizarEstilos()
-        chips.forEach { chip ->
-            chip.setOnClickListener {
-                estadoSeleccionado = chip.text.toString()
-                actualizarEstilos()
-                aplicarFiltros()
-            }
-        }
-    }
-
     private fun aplicarFiltros() {
         filtrados = empleados.filter { empleado ->
-            val coincideEstado = estadoSeleccionado == "Todos" ||
-                empleado.estadoEmpleado?.nombre.equals(estadoSeleccionado, ignoreCase = true)
-            val coincideTexto = textoBusqueda.isBlank() ||
+            textoBusqueda.isBlank() ||
                 empleado.nombreCompleto.contains(textoBusqueda, ignoreCase = true) ||
                 empleado.correo?.contains(textoBusqueda, ignoreCase = true) == true ||
                 empleado.telefono?.contains(textoBusqueda, ignoreCase = true) == true
-            coincideEstado && coincideTexto
         }
 
         if (filtrados.isEmpty()) {
@@ -177,7 +102,7 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
                 if (empleados.isEmpty()) {
                     "No hay empleados registrados"
                 } else {
-                    "No hay empleados que coincidan con el filtro"
+                    "No hay empleados que coincidan con la búsqueda"
                 }
             )
             return

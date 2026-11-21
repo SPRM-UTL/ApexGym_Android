@@ -1,8 +1,11 @@
 package com.sprm.apexgym.feature.auth
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Patterns
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -42,6 +45,40 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         val btnIniciarSesion = view.findViewById<MaterialButton>(R.id.btnIniciarSesion)
         val tvRegistrarse = view.findViewById<View>(R.id.tvRegistrarse)
         val llIrARegistro = view.findViewById<View>(R.id.llIrARegistro)
+        val flLoginLoading = view.findViewById<View>(R.id.flLoginLoading)
+        val tvLoginLoadingSubtitle = view.findViewById<TextView>(R.id.tvLoginLoadingSubtitle)
+
+        var estaCargando = false
+
+        fun actualizarCarga(cargando: Boolean, subtituloRes: Int = R.string.login_loading_subtitle) {
+            estaCargando = cargando
+            etCorreo.isEnabled = !cargando
+            etContrasena.isEnabled = !cargando
+            btnIniciarSesion.isEnabled = !cargando
+            tvRegistrarse.isEnabled = !cargando
+            llIrARegistro.isEnabled = !cargando
+            btnIniciarSesion.setText(
+                if (cargando) R.string.login_btn_loading else R.string.login_btn_submit
+            )
+
+            flLoginLoading.animate().cancel()
+            if (cargando) {
+                (context?.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+                    ?.hideSoftInputFromWindow(view.windowToken, 0)
+                etCorreo.clearFocus()
+                etContrasena.clearFocus()
+                tvLoginLoadingSubtitle.setText(subtituloRes)
+                flLoginLoading.alpha = 0f
+                flLoginLoading.visibility = View.VISIBLE
+                flLoginLoading.animate()
+                    .alpha(1f)
+                    .setDuration(180L)
+                    .start()
+            } else {
+                flLoginLoading.visibility = View.GONE
+                flLoginLoading.alpha = 1f
+            }
+        }
 
         etCorreo.setText("")
         etContrasena.setText("")
@@ -50,6 +87,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         etContrasena.doAfterTextChanged { tilContrasena.error = null }
 
         btnIniciarSesion.setOnClickListener {
+            if (estaCargando) return@setOnClickListener
+
             val correo = etCorreo.text?.toString()?.trim().orEmpty()
             val contrasena = etContrasena.text?.toString().orEmpty()
 
@@ -70,12 +109,14 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
             if (!valido) return@setOnClickListener
 
-            btnIniciarSesion.isEnabled = false
-            btnIniciarSesion.text = "Iniciando sesión..."
+            actualizarCarga(true, R.string.login_loading_subtitle)
 
             viewLifecycleOwner.lifecycleScope.launch {
+                var navegando = false
                 try {
                     val resultado = autenticar(correo, contrasena)
+                    if (!isAdded || this@LoginFragment.view == null) return@launch
+
                     val usuario = resultado.usuario
                     val usuarioId = usuario.id
                     val esCliente = resultado.rol.equals(SessionManager.ROL_CLIENTE, ignoreCase = true)
@@ -83,8 +124,11 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     val empleadoAsociado = if (esCliente) {
                         null
                     } else {
+                        tvLoginLoadingSubtitle.setText(R.string.login_loading_preparing)
                         resolverEmpleado(usuarioId, correo)
                     }
+                    if (!isAdded || this@LoginFragment.view == null) return@launch
+
                     val empleadoId = empleadoAsociado?.id
                     val sucursalInicialId = empleadoAsociado?.sucursalId
                         ?.takeIf { it > 0 }
@@ -102,6 +146,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     if (!esCliente) {
                         cargarInfoSucursalInicial(sucursalInicialId)
                     }
+                    if (!isAdded || this@LoginFragment.view == null) return@launch
+
                     CartManager.vaciarCarrito(requireContext())
                     NotificacionPermiso.solicitarSiHaceFalta(requireActivity())
                     FcmTokenManager.registrarAsync(requireContext())
@@ -112,6 +158,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                         EmpleadoDashboardFragment()
                     }
 
+                    navegando = true
                     parentFragmentManager.beginTransaction()
                         .setCustomAnimations(
                             android.R.anim.fade_in,
@@ -122,33 +169,39 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                         .replace(R.id.fragment_container, destino)
                         .commit()
                 } catch (e: CredencialesInvalidasException) {
-                    Toast.makeText(
-                        requireContext(),
-                        e.message ?: "Credenciales incorrectas",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } catch (_: IOException) {
-                    Toast.makeText(
-                        requireContext(),
-                        "No se pudo conectar con el servidor. Verifica tu conexión.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } catch (e: Exception) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Error al iniciar sesión: ${e.localizedMessage ?: "desconocido"}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                } finally {
                     if (isAdded) {
-                        btnIniciarSesion.isEnabled = true
-                        btnIniciarSesion.setText(R.string.login_btn_submit)
+                        Toast.makeText(
+                            requireContext(),
+                            e.message ?: "Credenciales incorrectas",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                } catch (_: IOException) {
+                    if (isAdded) {
+                        Toast.makeText(
+                            requireContext(),
+                            "No se pudo conectar con el servidor. Verifica tu conexión.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    if (isAdded) {
+                        Toast.makeText(
+                            requireContext(),
+                            "Error al iniciar sesión: ${e.localizedMessage ?: "desconocido"}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                } finally {
+                    if (!navegando && isAdded && this@LoginFragment.view != null) {
+                        actualizarCarga(false)
                     }
                 }
             }
         }
 
         val irARegistroListener = View.OnClickListener {
+            if (estaCargando) return@OnClickListener
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
                     android.R.anim.fade_in,
