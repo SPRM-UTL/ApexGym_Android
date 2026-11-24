@@ -71,7 +71,8 @@
                 android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:contentDescription="Cerrar detalle"
-                android:src="@drawable/ic_close" />
+                android:src="@drawable/ic_close"
+                app:tint="@color/apex_text_primary" />
         </FrameLayout>
     </LinearLayout>
 

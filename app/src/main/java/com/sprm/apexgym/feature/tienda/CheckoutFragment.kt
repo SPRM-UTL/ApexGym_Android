@@ -52,7 +52,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
     private var totales: TotalesVentaPos = TotalesVentaPos(0.0, 0.0, 0.0)
     private var aperturaCajaId: Int? = null
     private var cobrando = false
-    private val idempotenciaKey: String = UUID.randomUUID().toString()
+    private var idempotenciaKey: String = UUID.randomUUID().toString()
 
     override fun getLayoutRes(): Int = R.layout.fragment_checkout_pos
 
@@ -156,8 +156,8 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                 cargados
             } else {
                 listOf(
-                    MetodoPagoDto(id = 1, nombre = "Efectivo", codigo = "EFECTIVO", descripcion = "Pago en caja con efectivo", estado = "activo"),
-                    MetodoPagoDto(id = 2, nombre = "Tarjeta", codigo = "TARJETA", descripcion = "Pago con tarjeta en terminal", estado = "activo"),
+                    MetodoPagoDto(id = 2, nombre = "Efectivo", codigo = "EFECTIVO", descripcion = "Pago en caja con efectivo", estado = "activo"),
+                    MetodoPagoDto(id = 1, nombre = "Tarjeta", codigo = "TARJETA", descripcion = "Pago con tarjeta en terminal", estado = "activo"),
                     MetodoPagoDto(id = 3, nombre = "Transferencia", codigo = "TRANSFERENCIA", descripcion = "Pago por transferencia bancaria", estado = "activo")
                 )
             }
@@ -424,7 +424,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             }
             val validacionEfectivo = ValidadorPagoAndroid.validarEfectivo(efectivoRecibido, totales.total)
             if (!validacionEfectivo.valido) {
-                mostrarError("El efectivo recibido no cubre el total a cobrar ($${totales.total.formatearMonedaSinSufijo()} MXN).")
+                mostrarError("El efectivo recibido no cubre el total a cobrar (${totales.total.formatearMonedaSinSufijo()} MXN).")
                 return
             }
             efectivoRecibido = validacionEfectivo.montoRecibido
@@ -526,6 +526,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                 if (!isAdded || view == null) return@launch
 
                 if (venta == null) {
+                    idempotenciaKey = UUID.randomUUID().toString()
                     mostrarError(
                         response.mensajeDeError()
                             ?: response.body()?.message
@@ -566,7 +567,9 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                         TicketCompraFragment.newInstance(
                             transaccion = transaccionTicket,
                             itemsJson = itemsJson,
-                            metodoPago = nombreMetodo
+                            metodoPago = nombreMetodo,
+                            subtotal = if (venta.subtotal > 0.0) venta.subtotal else totales.subtotal,
+                            iva = if (venta.subtotal > 0.0) (venta.total - venta.subtotal).coerceAtLeast(0.0) else totales.iva
                         )
                     )
                     .addToBackStack(null)

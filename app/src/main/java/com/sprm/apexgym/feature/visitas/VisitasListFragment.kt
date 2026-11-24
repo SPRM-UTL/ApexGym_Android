@@ -42,13 +42,17 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
 
         binding.rvVisitas.layoutManager = LinearLayoutManager(requireContext())
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.flRefreshVisitas.setOnClickListener { cargarVisitas() }
         binding.flAddVisita.setOnClickListener {
             navegar(CrearEditarVisitaFragment.newInstance())
         }
-        binding.ivFilterVisitas.setOnClickListener { cargarVisitas() }
+        binding.ivFilterVisitas.setOnClickListener {
+            binding.etSearchVisitas.setText("")
+        }
 
         binding.etSearchVisitas.doAfterTextChanged { texto ->
             textoBusqueda = texto?.toString()?.trim().orEmpty()
+            binding.ivFilterVisitas.visibility = if (textoBusqueda.isNotEmpty()) View.VISIBLE else View.GONE
             aplicarFiltros()
         }
 

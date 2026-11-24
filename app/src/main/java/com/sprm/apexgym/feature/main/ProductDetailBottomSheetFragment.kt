@@ -20,6 +20,9 @@ import com.google.android.material.button.MaterialButton
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.feature.tienda.CalculoVentaPos
+import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
 import com.sprm.apexgym.feature.main.CartBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,6 +70,8 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
         val codigoBarras = args.getString(ARG_CODIGO, "")
         val descripcion = args.getString(ARG_DESCRIPCION, "")
         val precioVenta = args.getDouble(ARG_PRECIO, 0.0)
+        val descuentoPorcentaje = args.getDouble(ARG_DESCUENTO, 0.0)
+        val precioUnitarioNeto = CalculoVentaPos.precioConDescuento(precioVenta, descuentoPorcentaje)
         val stockActual = args.getInt(ARG_STOCK, 0)
         val stockMinimo = args.getInt(ARG_STOCK_MINIMO, 1)
         val imagenUrl = args.getString(ARG_IMAGEN_URL, null)
@@ -92,25 +97,35 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
         } else {
             "Catálogo oficial ApexGym"
         }
-        tvDetailProdPrecioUnitario?.text = formatearPrecio(precioVenta)
+        tvDetailProdPrecioUnitario?.text = if (descuentoPorcentaje > 0.0) {
+            "${formatearPrecio(precioUnitarioNeto)} (-${descuentoPorcentaje.toInt()}%)"
+        } else {
+            formatearPrecio(precioUnitarioNeto)
+        }
 
         when {
             stockActual <= 0 -> {
-                tvDetailProdStockBadge?.text = "AGOTADO TEMPORALMENTE"
+                tvDetailProdStockBadge?.text = "Agotado temporalmente"
+                tvDetailProdStockBadge?.setBackgroundResource(R.drawable.bg_badge_orange)
                 tvDetailProdStockValor?.text = "Sin existencias"
             }
             stockActual <= stockMinimo -> {
-                tvDetailProdStockBadge?.text = "ÚLTIMAS $stockActual UNIDADES"
+                tvDetailProdStockBadge?.text = "Últimas $stockActual unidades"
+                tvDetailProdStockBadge?.setBackgroundResource(R.drawable.bg_badge_orange)
                 tvDetailProdStockValor?.text = "$stockActual disponibles"
             }
             else -> {
-                tvDetailProdStockBadge?.text = "EN STOCK • DISPONIBLE"
+                tvDetailProdStockBadge?.text = "En stock • Disponible"
+                tvDetailProdStockBadge?.setBackgroundResource(R.drawable.bg_badge_green)
                 tvDetailProdStockValor?.text = "$stockActual disponibles"
             }
         }
 
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
         tvDetailProdDescripcion?.text = if (!descripcion.isNullOrBlank()) {
             descripcion
+        } else if (esEmpleado) {
+            "Producto disponible para venta en mostrador de sucursal ApexGym."
         } else {
             "Producto disponible directamente en la recepción de tu sucursal ApexGym. Solicítalo al personal en mostrador."
         }
@@ -124,15 +139,14 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
 
         fun actualizarTotal() {
             tvProdCantidadValor?.text = cantidadSeleccionada.toString()
-            val total = precioVenta * cantidadSeleccionada
             if (stockActual <= 0) {
                 btnConfirmarProducto?.isEnabled = false
-                btnConfirmarProducto?.text = "Agotado en sucursal"
+                btnConfirmarProducto?.text = "Agotado"
                 btnConfirmarProducto?.alpha = 0.6f
             } else {
                 btnConfirmarProducto?.isEnabled = true
                 btnConfirmarProducto?.alpha = 1f
-                btnConfirmarProducto?.text = "Comprar ${formatearPrecio(total)} MXN"
+                btnConfirmarProducto?.text = "Agregar"
             }
         }
 
@@ -170,6 +184,7 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 codigoBarras = codigoBarras,
                 descripcion = descripcion,
                 precioVenta = precioVenta,
+                descuentoPorcentaje = descuentoPorcentaje,
                 stockActual = stockActual,
                 stockMinimo = stockMinimo,
                 imagenUrl = imagenUrl,
@@ -179,26 +194,33 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 )
             )
 
-            CartManager.agregarProducto(
+            val resultado = CartManager.agregarProducto(
                 context = requireContext(),
                 producto = productoDto,
                 cantidadAgregar = cantidadSeleccionada
             )
 
-            val total = precioVenta * cantidadSeleccionada
-
             Toast.makeText(
                 requireContext(),
-                "Agregado al carrito: $cantidadSeleccionada x $nombre (${formatearPrecio(total)} MXN)",
+                resultado.mensaje,
                 Toast.LENGTH_SHORT
             ).show()
+
+            if (!resultado.exito) return@setOnClickListener
 
             val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
             dismiss()
 
-            val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
-            if (existing == null) {
-                CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)
+            if (esEmpleado) {
+                val existing = fm.findFragmentByTag(CarritoBottomSheetFragment.TAG)
+                if (existing == null) {
+                    CarritoBottomSheetFragment().show(fm, CarritoBottomSheetFragment.TAG)
+                }
+            } else {
+                val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+                if (existing == null) {
+                    CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)
+                }
             }
         }
     }
@@ -258,6 +280,7 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
         private const val ARG_CODIGO = "arg_codigo"
         private const val ARG_DESCRIPCION = "arg_descripcion"
         private const val ARG_PRECIO = "arg_precio"
+        private const val ARG_DESCUENTO = "arg_descuento"
         private const val ARG_STOCK = "arg_stock"
         private const val ARG_STOCK_MINIMO = "arg_stock_minimo"
         private const val ARG_IMAGEN_URL = "arg_imagen_url"
@@ -271,6 +294,7 @@ class ProductDetailBottomSheetFragment : BottomSheetDialogFragment() {
                     putString(ARG_CODIGO, producto.codigoBarras)
                     putString(ARG_DESCRIPCION, producto.descripcion)
                     putDouble(ARG_PRECIO, producto.precioVenta)
+                    putDouble(ARG_DESCUENTO, producto.descuentoPorcentaje)
                     putInt(ARG_STOCK, producto.stockActual)
                     putInt(ARG_STOCK_MINIMO, producto.stockMinimo)
                     putString(ARG_IMAGEN_URL, producto.imagenUrl)

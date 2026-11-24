@@ -28,6 +28,7 @@
         <item name="colorSurfaceContainerHighest">@color/apex_bg_screen</item>
         <item name="colorOutline">@color/apex_stroke_light</item>
         <item name="colorOutlineVariant">@color/apex_stroke_light</item>
+        <item name="elevationOverlayEnabled">false</item>
 
         <item name="alertDialogTheme">@style/ThemeOverlay.Apex.AlertDialog</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.Apex.AlertDialog</item>

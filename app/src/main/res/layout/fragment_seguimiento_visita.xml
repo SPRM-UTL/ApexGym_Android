@@ -73,9 +73,12 @@
                     android:id="@+id/ivSegProspectAvatar"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
+                    android:padding="2dp"
+                    app:contentPadding="7dp"
                     android:background="@drawable/bg_circle_white_elevated"
-                    android:scaleType="centerCrop"
+                    android:scaleType="centerInside"
                     android:src="@drawable/ic_user_profile"
+                    app:tint="@color/apex_text_secondary"
                     app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Apex.Circle"
                     app:strokeColor="@color/apex_orange"
                     app:strokeWidth="2dp" />

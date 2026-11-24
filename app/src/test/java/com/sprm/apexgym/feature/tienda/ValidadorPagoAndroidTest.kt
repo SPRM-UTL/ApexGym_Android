@@ -164,4 +164,56 @@ class ValidadorPagoAndroidTest {
         assertFalse(ValidadorPagoAndroid.validarMercadoPago("mal..punto@dominio.com").valido)
         assertFalse(ValidadorPagoAndroid.validarMercadoPago("<xss>@dominio.com").valido)
     }
+
+    @Test
+    fun `calcularCambio y validarEfectivo rechazan montos no finitos o insuficientes`() {
+        assertEquals(0.0, ValidadorPagoAndroid.calcularCambio(null, 100.0), 0.001)
+        assertEquals(0.0, ValidadorPagoAndroid.calcularCambio(Double.NaN, 100.0), 0.001)
+        assertEquals(0.0, ValidadorPagoAndroid.calcularCambio(50.0, 100.0), 0.001)
+        assertEquals(25.50, ValidadorPagoAndroid.calcularCambio(125.5, 100.0), 0.001)
+
+        assertFalse(ValidadorPagoAndroid.validarEfectivo(Double.POSITIVE_INFINITY, 100.0).valido)
+        assertFalse(ValidadorPagoAndroid.validarEfectivo(100.0, Double.NaN).valido)
+    }
+
+    @Test
+    fun `validarTarjeta rechaza tipo no soportado titular con numeros y mes invalido`() {
+        val tipoInvalido = ValidadorPagoAndroid.validarTarjeta(
+            tipoTarjeta = "PREPAGO",
+            numeroTarjeta = "4111111111111111",
+            vencimiento = "12/28",
+            cvv = "123",
+            fechaReferencia = fechaReferencia
+        )
+        assertFalse(tipoInvalido.valido)
+
+        val titularNumerico = ValidadorPagoAndroid.validarTarjeta(
+            tipoTarjeta = "DEBITO",
+            numeroTarjeta = "4111111111111111",
+            vencimiento = "12/28",
+            cvv = "123",
+            titular = "Carlos 123",
+            fechaReferencia = fechaReferencia
+        )
+        assertFalse(titularNumerico.valido)
+
+        val mesInvalido = ValidadorPagoAndroid.validarTarjeta(
+            tipoTarjeta = "CREDITO",
+            numeroTarjeta = "5412345678901234",
+            vencimiento = "13/28",
+            cvv = "123",
+            fechaReferencia = fechaReferencia
+        )
+        assertFalse(mesInvalido.valido)
+    }
+
+    @Test
+    fun `mercado pago opcional permite vacio y transferencia valida longitudes limite`() {
+        assertTrue(ValidadorPagoAndroid.validarMercadoPago("", obligatorio = false).valido)
+        assertFalse(ValidadorPagoAndroid.validarMercadoPago("invalido", obligatorio = false).valido)
+
+        assertFalse(ValidadorPagoAndroid.validarTransferencia("A", "REF-1234").valido)
+        assertFalse(ValidadorPagoAndroid.validarTransferencia("BBVA", "123").valido)
+        assertTrue(ValidadorPagoAndroid.validarTransferencia("BBVA", "1234").valido)
+    }
 }

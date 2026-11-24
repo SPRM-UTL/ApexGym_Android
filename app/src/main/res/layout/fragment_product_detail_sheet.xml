@@ -53,7 +53,8 @@
                 android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_close" />
+                android:src="@drawable/ic_close"
+                app:tint="@color/apex_text_primary" />
         </FrameLayout>
     </LinearLayout>
 
@@ -81,45 +82,39 @@
                 app:strokeWidth="0dp">
 
                 <FrameLayout
+                    android:id="@+id/flDetailProdImageContainer"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    android:background="@color/apex_card_product_img">
 
-                    <FrameLayout
-                        android:id="@+id/flDetailProdImageContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@color/apex_card_product_img">
-
-                        <ImageView
-                            android:id="@+id/ivDetailProdPlaceholder"
-                            android:layout_width="68dp"
-                            android:layout_height="68dp"
-                            android:layout_gravity="center"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_supplement_bottle" />
-                    </FrameLayout>
-
-                    <TextView
-                        android:id="@+id/tvDetailProdStockBadge"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="top|start"
-                        android:layout_margin="14dp"
-                        android:background="@drawable/bg_badge_vip_outline"
-                        android:letterSpacing="0.05"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="5dp"
-                        android:text="DISPONIBLE EN SUCURSAL"
-                        android:textColor="@color/white"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold" />
+                    <ImageView
+                        android:id="@+id/ivDetailProdPlaceholder"
+                        android:layout_width="68dp"
+                        android:layout_height="68dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_supplement_bottle" />
                 </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:id="@+id/tvDetailProdStockBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_badge_green"
+                android:letterSpacing="0.04"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="5dp"
+                android:text="Disponible en sucursal"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
+                android:layout_marginTop="10dp"
                 android:gravity="top"
                 android:orientation="horizontal">
 
@@ -368,14 +363,18 @@
             android:layout_height="52dp"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="Comprar $0 MXN"
+            android:text="Agregar"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            android:textSize="14.5sp"
+            android:textSize="15sp"
             android:textStyle="bold"
             app:backgroundTint="@color/apex_orange"
             app:cornerRadius="26dp"
-            app:elevation="2dp" />
+            app:elevation="2dp"
+            app:icon="@drawable/ic_add_shopping_cart"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconTint="@color/white" />
     </LinearLayout>
 
 </LinearLayout>

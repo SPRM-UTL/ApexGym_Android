@@ -17,12 +17,14 @@ import kotlinx.coroutines.launch
 class VisitaDetalleFragment : BaseFragment<FragmentVisitaDetalleBinding>() {
 
     private var visitaId: Int = 0
+    private var primerResume = true
 
     override fun getLayoutRes(): Int = R.layout.fragment_visita_detalle
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        primerResume = true
         visitaId = arguments?.getInt(ARG_VISITA_ID, 0) ?: 0
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flEdit.setOnClickListener {
@@ -54,6 +56,7 @@ class VisitaDetalleFragment : BaseFragment<FragmentVisitaDetalleBinding>() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val visita = RetrofitClient.empleadoService.obtenerVisita(visitaId).dataExitosa()
+                if (!isAdded || view == null) return@launch
                 if (visita == null) {
                     Toast.makeText(
                         requireContext(),
@@ -64,6 +67,7 @@ class VisitaDetalleFragment : BaseFragment<FragmentVisitaDetalleBinding>() {
                     mostrarVisita(visita)
                 }
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
                 Toast.makeText(
                     requireContext(),
                     "No se pudo conectar con el servidor",
@@ -99,7 +103,11 @@ class VisitaDetalleFragment : BaseFragment<FragmentVisitaDetalleBinding>() {
 
     override fun onResume() {
         super.onResume()
-        if (view != null) cargarVisita()
+        if (primerResume) {
+            primerResume = false
+        } else if (view != null) {
+            cargarVisita()
+        }
     }
 
     companion object {

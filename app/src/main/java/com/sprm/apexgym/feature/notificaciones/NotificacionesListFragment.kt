@@ -66,7 +66,7 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
 
         // La API todavía no expone preferencias de notificaciones: no se muestra un acceso sin función.
-        binding.flConfig.visibility = View.GONE
+        binding.flConfig.visibility = View.INVISIBLE
         binding.vpNotificacionesTabs.visibility = View.GONE
         binding.cvUnreadBadge.visibility = View.GONE
 
@@ -315,7 +315,15 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
 
         filaEtiquetas.addView(
             TextView(context).apply {
-                text = notificacion.tipo.ifBlank { "GENERAL" }
+                val norm = notificacion.tipo.trim().uppercase()
+                text = when (norm) {
+                    "ACCESO_QR" -> "Acceso QR"
+                    "ACTIVIDAD_EMPLEADO" -> "Actividad"
+                    "MEMBRESIA" -> "Membresía"
+                    "PAGO", "VENTA" -> "Pagos"
+                    "GENERAL", "" -> "General"
+                    else -> norm.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
+                }
                 setBackgroundResource(R.drawable.bg_chip_orange)
                 setPadding(dp(8), dp(2), dp(8), dp(2))
                 setTextColor(ContextCompat.getColor(context, R.color.white))

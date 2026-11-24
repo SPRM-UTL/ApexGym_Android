@@ -1,30 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
-    android:clipToPadding="false"
-    android:overScrollMode="never"
-    android:paddingBottom="100dp">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="18dp"
-        android:paddingTop="16dp">
+        android:paddingTop="16dp"
+        android:paddingBottom="10dp">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginBottom="16dp"
+            android:layout_height="52dp"
+            android:layout_marginBottom="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <FrameLayout
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_circle_white_elevated"
                 android:clickable="true"
@@ -47,13 +46,13 @@
                 android:layout_weight="1"
                 android:text="Tienda POS"
                 android:textColor="@color/apex_text_primary"
-                android:textSize="21sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <FrameLayout
                 android:id="@+id/flHistoryButton"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:layout_marginEnd="10dp"
                 android:background="@drawable/bg_circle_white_elevated"
                 android:clickable="true"
@@ -64,15 +63,15 @@
                     android:layout_width="20dp"
                     android:layout_height="20dp"
                     android:layout_gravity="center"
-                    android:contentDescription="Historial de compras"
+                    android:contentDescription="Historial de ventas"
                     android:src="@drawable/ic_calendar_clock"
                     app:tint="@color/apex_text_primary" />
             </FrameLayout>
 
             <FrameLayout
                 android:id="@+id/flCartButton"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/bg_circle_white_elevated"
                 android:clickable="true"
                 android:elevation="2dp"
@@ -101,141 +100,248 @@
             </FrameLayout>
         </LinearLayout>
 
-        <!-- Category Filter Chips -->
-        <HorizontalScrollView
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:overScrollMode="never"
-            android:scrollbars="none">
+            android:layout_height="48dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_search_bar"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_search"
+                app:tint="@color/apex_nav_inactive" />
+
+            <EditText
+                android:id="@+id/etSearchTiendaPos"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="Buscar producto, código o servicio..."
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
+                android:textColor="@color/apex_text_primary"
+                android:textColorHint="@color/apex_nav_inactive"
+                android:textSize="13.5sp" />
+
+            <ImageView
+                android:id="@+id/ivClearSearchTiendaPos"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:clickable="true"
+                android:contentDescription="Limpiar búsqueda"
+                android:focusable="true"
+                android:padding="4dp"
+                android:src="@drawable/ic_close"
+                android:visibility="gone"
+                app:tint="@color/apex_text_secondary" />
+        </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/llCategoryChips"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingEnd="18dp">
+            android:weightSum="2">
 
-            <!-- Chips: Todos, Suplementos, Ropa, Accesorios, Bebidas -->
+            <TextView
+                android:id="@+id/btnTabPosProductos"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_chip_selected"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="Productos"
+                android:textColor="@color/white"
+                android:textSize="13.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnTabPosServicios"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_chip_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="Servicios"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="13.5sp"
+                android:textStyle="bold" />
         </LinearLayout>
-    </HorizontalScrollView>
-
-    <!-- Products Section -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Productos"
-            android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvProductCount"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
-            android:text="24 productos"
-            android:textColor="@color/apex_text_secondary"
-            android:textSize="13sp" />
     </LinearLayout>
 
-    <!-- Products Grid (2 columns) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvProducts"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingHorizontal="18dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="90dp">
 
-    <!-- Services Section -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="16dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Servicios"
-            android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvServiceCount"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
-            android:text="8 servicios"
-            android:textColor="@color/apex_text_secondary"
-            android:textSize="13sp" />
-    </LinearLayout>
+            <LinearLayout
+                android:id="@+id/llPosProductsSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-    <!-- Services Horizontal List -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvServices"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false" />
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
 
-    <!-- Empty States -->
-    <LinearLayout
-        android:id="@+id/llEmptyProducts"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:visibility="gone">
+                    <LinearLayout
+                        android:id="@+id/llCategoryChips"
+                        android:layout_width="wrap_content"
+                        android:layout_height="38dp"
+                        android:orientation="horizontal"
+                        android:paddingEnd="12dp" />
+                </HorizontalScrollView>
 
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_shopping_cart"
-            app:tint="@color/apex_nav_inactive" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="No hay productos en esta categoría"
-            android:textColor="@color/apex_text_secondary"
-            android:textSize="16sp" />
-    </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Catálogo"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
 
-    <LinearLayout
-        android:id="@+id/llEmptyServices"
-        android:layout_width="match_parent"
-        android:layout_height="150dp"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:visibility="gone">
+                    <TextView
+                        android:id="@+id/tvProductCount"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="0 productos"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
 
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/ic_fitness_service"
-            app:tint="@color/apex_nav_inactive" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="No hay servicios disponibles"
-            android:textColor="@color/apex_text_secondary"
-            android:textSize="16sp" />
-    </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/llEmptyProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_shopping_cart"
+                        app:tint="@color/apex_nav_inactive" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="No hay productos en esta categoría"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="14.5sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llPosServicesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Servicios disponibles"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvServiceCount"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="0 servicios"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvServices"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+
+                <LinearLayout
+                    android:id="@+id/llEmptyServices"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_fitness_service"
+                        app:tint="@color/apex_nav_inactive" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="No hay servicios disponibles"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="14.5sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>
-</androidx.core.widget.NestedScrollView>

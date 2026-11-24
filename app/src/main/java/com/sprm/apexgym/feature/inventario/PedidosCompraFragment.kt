@@ -1,5 +1,6 @@
 package com.sprm.apexgym.feature.inventario
 
+import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -11,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.AlmacenDto
@@ -44,12 +45,18 @@ import kotlinx.coroutines.launch
  */
 class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
+    private enum class FiltroCatalogo { TODOS, STOCK_BAJO, SELECCIONADOS }
+    private enum class FiltroHistorial { TODOS, PENDIENTES, APROBADOS, RECHAZADOS }
+
     private var productos: List<ProductoClienteDto> = emptyList()
     private var productosFiltrados: List<ProductoClienteDto> = emptyList()
     private var pedidos: List<PedidoCompraDto> = emptyList()
     private var almacenes: List<AlmacenDto> = emptyList()
+    private var almacenSeleccionadoId: Int? = null
     private val cantidadesSeleccionadas = linkedMapOf<Int, Int>()
     private var textoBusqueda = ""
+    private var filtroCatalogo = FiltroCatalogo.TODOS
+    private var filtroHistorial = FiltroHistorial.TODOS
 
     private lateinit var productoAdapter: ProductoPedidoAdapter
     private val historialAdapter = HistorialPedidosAdapter()
@@ -80,21 +87,67 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
         binding.btnTabNuevoPedido.setOnClickListener { mostrarTabNuevoPedido() }
         binding.btnTabHistorialPedidos.setOnClickListener { mostrarTabHistorial() }
+        binding.btnIrNuevoPedidoVacio.setOnClickListener { mostrarTabNuevoPedido() }
         binding.tvLimpiarPedido.setOnClickListener { limpiarCantidades() }
-        binding.btnEnviarPedido.setOnClickListener { enviarPedido() }
+        binding.btnEnviarPedido.setOnClickListener { confirmarYEnviarPedido() }
 
+        binding.ivLimpiarBusquedaPedido.setOnClickListener {
+            binding.etBuscarProductoPedido.setText("")
+        }
         binding.etBuscarProductoPedido.doAfterTextChanged { texto ->
             textoBusqueda = texto?.toString()?.trim().orEmpty()
+            binding.ivLimpiarBusquedaPedido.visibility =
+                if (textoBusqueda.isNotEmpty()) View.VISIBLE else View.GONE
             aplicarFiltroProductos()
         }
 
+        binding.chipPedidoTodos.setOnClickListener {
+            filtroCatalogo = FiltroCatalogo.TODOS
+            actualizarChipsCatalogo()
+            aplicarFiltroProductos()
+        }
+        binding.chipPedidoStockBajo.setOnClickListener {
+            filtroCatalogo = FiltroCatalogo.STOCK_BAJO
+            actualizarChipsCatalogo()
+            aplicarFiltroProductos()
+        }
+        binding.chipPedidoSeleccionados.setOnClickListener {
+            filtroCatalogo = FiltroCatalogo.SELECCIONADOS
+            actualizarChipsCatalogo()
+            aplicarFiltroProductos()
+        }
+
+        binding.chipHistTodos.setOnClickListener {
+            filtroHistorial = FiltroHistorial.TODOS
+            actualizarChipsHistorial()
+            renderizarHistorial()
+        }
+        binding.chipHistPendientes.setOnClickListener {
+            filtroHistorial = FiltroHistorial.PENDIENTES
+            actualizarChipsHistorial()
+            renderizarHistorial()
+        }
+        binding.chipHistAprobados.setOnClickListener {
+            filtroHistorial = FiltroHistorial.APROBADOS
+            actualizarChipsHistorial()
+            renderizarHistorial()
+        }
+        binding.chipHistRechazados.setOnClickListener {
+            filtroHistorial = FiltroHistorial.RECHAZADOS
+            actualizarChipsHistorial()
+            renderizarHistorial()
+        }
+
         renderizarSelectorAlmacenes()
+        actualizarChipsCatalogo()
+        actualizarChipsHistorial()
         actualizarResumenPedido()
         cargarDatos()
     }
 
     private fun mostrarTabNuevoPedido() {
         binding.llNuevoPedido.visibility = View.VISIBLE
+        binding.llBarraInferiorPedido.visibility = View.VISIBLE
         binding.llHistorialPedidos.visibility = View.GONE
         binding.btnTabNuevoPedido.setBackgroundResource(R.drawable.bg_chip_selected)
         binding.btnTabNuevoPedido.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
@@ -104,6 +157,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
     private fun mostrarTabHistorial() {
         binding.llNuevoPedido.visibility = View.GONE
+        binding.llBarraInferiorPedido.visibility = View.GONE
         binding.llHistorialPedidos.visibility = View.VISIBLE
         binding.btnTabHistorialPedidos.setBackgroundResource(R.drawable.bg_chip_selected)
         binding.btnTabHistorialPedidos.setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
@@ -154,6 +208,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
                 almacenes = almacenesCargados
 
                 renderizarSelectorAlmacenes()
+                actualizarChipsCatalogo()
                 aplicarFiltroProductos()
                 renderizarHistorial()
             } catch (e: Exception) {
@@ -165,16 +220,53 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
         }
     }
 
+    private fun actualizarChipsCatalogo() {
+        val ctx = requireContext()
+        val stockBajoCount = productos.count { it.stockActual <= it.stockMinimo }
+        val seleccionadosCount = cantidadesSeleccionadas.count { it.value > 0 }
+
+        binding.chipPedidoTodos.text = "Todos (${productos.size})"
+        binding.chipPedidoStockBajo.text = "Stock bajo ($stockBajoCount)"
+        binding.chipPedidoSeleccionados.text = "Seleccionados ($seleccionadosCount)"
+
+        val mapping = listOf(
+            binding.chipPedidoTodos to (filtroCatalogo == FiltroCatalogo.TODOS),
+            binding.chipPedidoStockBajo to (filtroCatalogo == FiltroCatalogo.STOCK_BAJO),
+            binding.chipPedidoSeleccionados to (filtroCatalogo == FiltroCatalogo.SELECCIONADOS)
+        )
+        mapping.forEach { (chip, activo) ->
+            chip.setBackgroundResource(if (activo) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+            chip.setTextColor(ContextCompat.getColor(ctx, if (activo) R.color.white else R.color.apex_text_primary))
+        }
+    }
+
+    private fun actualizarChipsHistorial() {
+        val ctx = requireContext()
+        val mapping = listOf(
+            binding.chipHistTodos to (filtroHistorial == FiltroHistorial.TODOS),
+            binding.chipHistPendientes to (filtroHistorial == FiltroHistorial.PENDIENTES),
+            binding.chipHistAprobados to (filtroHistorial == FiltroHistorial.APROBADOS),
+            binding.chipHistRechazados to (filtroHistorial == FiltroHistorial.RECHAZADOS)
+        )
+        mapping.forEach { (chip, activo) ->
+            chip.setBackgroundResource(if (activo) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+            chip.setTextColor(ContextCompat.getColor(ctx, if (activo) R.color.white else R.color.apex_text_primary))
+        }
+    }
+
     private fun aplicarFiltroProductos() {
         val termino = textoBusqueda.lowercase()
-        productosFiltrados = if (termino.isEmpty()) {
-            productos
-        } else {
-            productos.filter { prod ->
-                prod.nombre.lowercase().contains(termino) ||
-                    prod.codigoBarras.orEmpty().lowercase().contains(termino) ||
-                    prod.categoria?.nombre.orEmpty().lowercase().contains(termino)
+        productosFiltrados = productos.filter { prod ->
+            val coincideChip = when (filtroCatalogo) {
+                FiltroCatalogo.TODOS -> true
+                FiltroCatalogo.STOCK_BAJO -> prod.stockActual <= prod.stockMinimo
+                FiltroCatalogo.SELECCIONADOS -> (cantidadesSeleccionadas[prod.id] ?: 0) > 0
             }
+            val coincideBusqueda = termino.isEmpty() ||
+                prod.nombre.lowercase().contains(termino) ||
+                prod.codigoBarras.orEmpty().lowercase().contains(termino) ||
+                prod.categoria?.nombre.orEmpty().lowercase().contains(termino)
+            coincideChip && coincideBusqueda
         }
 
         productoAdapter.actualizar(productosFiltrados)
@@ -182,10 +274,11 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
         binding.tvProductosPedidoVacio.visibility = if (vacio) View.VISIBLE else View.GONE
         binding.rvProductosPedido.visibility = if (vacio) View.GONE else View.VISIBLE
         if (vacio) {
-            binding.tvProductosPedidoVacio.text = if (productos.isEmpty()) {
-                "No hay productos registrados en esta sucursal."
-            } else {
-                "No hay productos que coincidan con \"$textoBusqueda\"."
+            binding.tvProductosPedidoVacio.text = when {
+                productos.isEmpty() -> "No hay productos registrados en esta sucursal."
+                filtroCatalogo == FiltroCatalogo.SELECCIONADOS -> "Aún no has agregado productos a este pedido."
+                filtroCatalogo == FiltroCatalogo.STOCK_BAJO -> "No hay productos con stock bajo."
+                else -> "No hay productos que coincidan con \"$textoBusqueda\"."
             }
         }
     }
@@ -206,8 +299,16 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
         binding.tvLimpiarPedido.visibility = if (totalPiezas > 0) View.VISIBLE else View.GONE
         binding.tvTotalEstimadoPedido.text = totalEstimado.formatearMoneda()
-        binding.tvResumenPiezasPedido.text =
-            "$totalProductos producto(s) • $totalPiezas pieza(s) • Pendiente de validar en web"
+        binding.tvResumenPiezasPedido.text = buildString {
+            append(if (totalProductos == 1) "1 producto" else "$totalProductos productos")
+            append(" • ")
+            append(if (totalPiezas == 1) "1 pieza" else "$totalPiezas piezas")
+        }
+        binding.btnEnviarPedido.alpha = if (totalPiezas > 0) 1f else 0.55f
+        actualizarChipsCatalogo()
+        if (filtroCatalogo == FiltroCatalogo.SELECCIONADOS) {
+            aplicarFiltroProductos()
+        }
     }
 
     private fun limpiarCantidades() {
@@ -217,26 +318,29 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
     }
 
     private fun renderizarSelectorAlmacenes() {
-        val opciones = mutableListOf("Automático (Almacén principal)")
+        val etiquetas = mutableListOf("Automático (Principal)")
+        val ids = mutableListOf<Int?>(null)
         almacenes.forEach { almacen ->
-            opciones.add(
-                if (almacen.esPrincipal) "${almacen.nombre} (Principal)" else almacen.nombre
-            )
+            etiquetas.add(almacen.nombre)
+            ids.add(almacen.id)
         }
-        binding.spAlmacenDestinoPedido.adapter = ArrayAdapter(
+
+        val adapter = ArrayAdapter(
             requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
-            opciones
+            android.R.layout.simple_dropdown_item_1line,
+            etiquetas
         )
+        binding.actvAlmacenDestinoPedido.setAdapter(adapter)
+
+        val idxActual = ids.indexOf(almacenSeleccionadoId).takeIf { it >= 0 } ?: 0
+        binding.actvAlmacenDestinoPedido.setText(etiquetas[idxActual], false)
+
+        binding.actvAlmacenDestinoPedido.setOnItemClickListener { _, _, position, _ ->
+            almacenSeleccionadoId = ids.getOrNull(position)
+        }
     }
 
-    private fun obtenerAlmacenDestinoSeleccionado(): Int? {
-        val pos = binding.spAlmacenDestinoPedido.selectedItemPosition
-        if (pos <= 0) return null
-        return almacenes.getOrNull(pos - 1)?.id
-    }
-
-    private fun enviarPedido() {
+    private fun confirmarYEnviarPedido() {
         val detalles = cantidadesSeleccionadas.entries
             .filter { it.value > 0 }
             .map { (productoId, cantidad) ->
@@ -257,12 +361,31 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             return
         }
 
+        val totalPiezas = detalles.sumOf { it.cantidad }
+        val totalEst = detalles.sumOf { (it.costoUnitario ?: 0.0) * it.cantidad }
+        val nombreAlmacen = binding.actvAlmacenDestinoPedido.text?.toString().orEmpty()
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Confirmar pedido")
+            .setMessage(
+                "Se enviará a validación un pedido con ${detalles.size} productos ($totalPiezas piezas).\n\n" +
+                    "Destino: $nombreAlmacen\n" +
+                    "Total estimado: ${totalEst.formatearMoneda()}"
+            )
+            .setNegativeButton("Revisar", null)
+            .setPositiveButton("Enviar pedido") { _, _ ->
+                enviarPedido(detalles)
+            }
+            .show()
+    }
+
+    private fun enviarPedido(detalles: List<DetallePedidoCompraRequest>) {
         val proveedor = binding.etProveedorPedido.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val observaciones = binding.etObservacionesPedido.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
-        val almacenId = obtenerAlmacenDestinoSeleccionado()
+        val almacenId = almacenSeleccionadoId
 
         binding.btnEnviarPedido.isEnabled = false
-        binding.btnEnviarPedido.text = "Enviando pedido…"
+        binding.btnEnviarPedido.text = "Enviando…"
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -288,13 +411,14 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
                 Toast.makeText(
                     requireContext(),
-                    "Pedido #${creado.id} enviado. Se sumará al inventario cuando sea aceptado en web.",
+                    "Pedido #${creado.id} enviado a validación.",
                     Toast.LENGTH_LONG
                 ).show()
 
                 binding.etProveedorPedido.setText("")
                 binding.etObservacionesPedido.setText("")
-                binding.spAlmacenDestinoPedido.setSelection(0)
+                almacenSeleccionadoId = null
+                renderizarSelectorAlmacenes()
                 limpiarCantidades()
                 cargarDatos()
                 mostrarTabHistorial()
@@ -305,17 +429,33 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             } finally {
                 if (isAdded && view != null) {
                     binding.btnEnviarPedido.isEnabled = true
-                    binding.btnEnviarPedido.text = "Enviar Pedido a Validación"
+                    binding.btnEnviarPedido.text = "Enviar pedido"
                 }
             }
         }
     }
 
     private fun renderizarHistorial() {
-        historialAdapter.actualizar(pedidos)
-        val vacio = pedidos.isEmpty()
-        binding.tvHistorialVacio.visibility = if (vacio) View.VISIBLE else View.GONE
+        val filtrados = pedidos.filter { pedido ->
+            when (filtroHistorial) {
+                FiltroHistorial.TODOS -> true
+                FiltroHistorial.PENDIENTES -> pedido.estado.equals("PENDIENTE", ignoreCase = true)
+                FiltroHistorial.APROBADOS -> pedido.estado.equals("APROBADO", ignoreCase = true)
+                FiltroHistorial.RECHAZADOS -> pedido.estado.equals("RECHAZADO", ignoreCase = true)
+            }
+        }
+
+        historialAdapter.actualizar(filtrados)
+        val vacio = filtrados.isEmpty()
+        binding.llHistorialVacio.visibility = if (vacio) View.VISIBLE else View.GONE
         binding.rvHistorialPedidos.visibility = if (vacio) View.GONE else View.VISIBLE
+        if (vacio) {
+            binding.tvHistorialVacio.text = if (pedidos.isEmpty()) {
+                "No hay pedidos de compra registrados en esta sucursal."
+            } else {
+                "No hay pedidos en el estado seleccionado."
+            }
+        }
         binding.btnTabHistorialPedidos.text = if (pedidos.isEmpty()) {
             "Historial"
         } else {
@@ -336,13 +476,15 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
         }
 
         class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val card: MaterialCardView = itemView.findViewById(R.id.cardProductoPedido)
             val tvNombre: TextView = itemView.findViewById(R.id.tvProductoPedidoNombre)
+            val tvBadgeStock: TextView = itemView.findViewById(R.id.tvBadgeStockPedido)
             val tvStock: TextView = itemView.findViewById(R.id.tvProductoPedidoStock)
             val tvCosto: TextView = itemView.findViewById(R.id.tvProductoPedidoCosto)
+            val tvSubtotal: TextView = itemView.findViewById(R.id.tvSubtotalProductoPedido)
             val btnMenos: TextView = itemView.findViewById(R.id.btnMenosPedido)
             val etCantidad: EditText = itemView.findViewById(R.id.etCantidadPedido)
             val btnMas: TextView = itemView.findViewById(R.id.btnMasPedido)
-            val vDivider: View = itemView.findViewById(R.id.vDividerPedido)
             var watcher: TextWatcher? = null
             var actualizandoTexto = false
         }
@@ -359,20 +501,30 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             val cantidadActual = (cantidades[prod.id] ?: 0).coerceIn(0, MAX_CANTIDAD)
 
             holder.tvNombre.text = prod.nombre
-            holder.tvStock.text = "Stock actual: ${prod.stockActual} • Mín: ${prod.stockMinimo}"
-            holder.tvStock.setTextColor(
-                ContextCompat.getColor(
-                    context,
-                    if (prod.stockActual <= prod.stockMinimo) R.color.apex_orange else R.color.apex_text_secondary
+            holder.tvStock.text = "Existencia actual: ${prod.stockActual} u. • Mínimo: ${prod.stockMinimo} u."
+
+            val (badgeTexto, bgColor, textColor) = when {
+                prod.stockActual <= 0 -> Triple("Sin stock", "#FEE2E2", "#991B1B")
+                prod.stockActual <= prod.stockMinimo -> Triple("Stock bajo", "#FFEDD5", "#9A3412")
+                else -> Triple("En stock", "#DCFCE7", "#166534")
+            }
+            holder.tvBadgeStock.text = badgeTexto
+            holder.tvBadgeStock.setTextColor(Color.parseColor(textColor))
+            holder.tvBadgeStock.background = GradientDrawable().apply {
+                cornerRadius = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 100f, context.resources.displayMetrics
                 )
-            )
+                setColor(Color.parseColor(bgColor))
+            }
+
             val costo = prod.precioCompra ?: 0.0
             holder.tvCosto.text = if (costo > 0) {
-                "Costo ref.: ${costo.formatearMonedaSinSufijo()} MXN"
+                "Costo unitario ref.: ${costo.formatearMonedaSinSufijo()} MXN"
             } else {
-                "Sin costo de compra registrado"
+                "Costo unitario no definido"
             }
-            holder.vDivider.visibility = if (position == items.lastIndex) View.GONE else View.VISIBLE
+
+            actualizarVisualSeleccion(holder, prod, cantidadActual)
 
             holder.watcher?.let { holder.etCantidad.removeTextChangedListener(it) }
             holder.actualizandoTexto = true
@@ -398,6 +550,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
                     } else {
                         cantidades.remove(prod.id)
                     }
+                    actualizarVisualSeleccion(holder, prod, normalizada)
                     onCambioCantidad()
                 }
             }
@@ -406,26 +559,56 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
 
             holder.btnMenos.setOnClickListener {
                 val actual = cantidades[prod.id] ?: 0
-                aplicarCantidad(holder, prod.id, actual - 1)
+                aplicarCantidad(holder, prod, actual - 1)
             }
             holder.btnMas.setOnClickListener {
                 val actual = cantidades[prod.id] ?: 0
-                aplicarCantidad(holder, prod.id, actual + 1)
+                aplicarCantidad(holder, prod, actual + 1)
             }
         }
 
-        private fun aplicarCantidad(holder: Holder, productoId: Int, candidato: Int) {
+        private fun actualizarVisualSeleccion(
+            holder: Holder,
+            prod: ProductoClienteDto,
+            cantidad: Int
+        ) {
+            val ctx = holder.itemView.context
+            val seleccionado = cantidad > 0
+            holder.card.strokeWidth = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                if (seleccionado) 1.5f else 1f,
+                ctx.resources.displayMetrics
+            ).toInt()
+            holder.card.strokeColor = ContextCompat.getColor(
+                ctx,
+                if (seleccionado) R.color.apex_orange else R.color.apex_stroke_light
+            )
+            holder.btnMenos.alpha = if (seleccionado) 1f else 0.4f
+            val costo = prod.precioCompra ?: 0.0
+            if (seleccionado && costo > 0) {
+                holder.tvSubtotal.visibility = View.VISIBLE
+                holder.tvSubtotal.text = "Subtotal: ${(costo * cantidad).formatearMonedaSinSufijo()} MXN"
+            } else if (seleccionado) {
+                holder.tvSubtotal.visibility = View.VISIBLE
+                holder.tvSubtotal.text = "$cantidad piezas seleccionadas"
+            } else {
+                holder.tvSubtotal.visibility = View.INVISIBLE
+            }
+        }
+
+        private fun aplicarCantidad(holder: Holder, prod: ProductoClienteDto, candidato: Int) {
             val nueva = candidato.coerceIn(0, MAX_CANTIDAD)
             if (nueva > 0) {
-                cantidades[productoId] = nueva
+                cantidades[prod.id] = nueva
             } else {
-                cantidades.remove(productoId)
+                cantidades.remove(prod.id)
             }
             holder.actualizandoTexto = true
             val texto = if (nueva > 0) nueva.toString() else ""
             holder.etCantidad.setText(texto)
             holder.etCantidad.setSelection(texto.length)
             holder.actualizandoTexto = false
+            actualizarVisualSeleccion(holder, prod, nueva)
             onCambioCantidad()
         }
 
@@ -445,148 +628,80 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             notifyDataSetChanged()
         }
 
-        inner class Holder(
-            val card: MaterialCardView,
-            val tvFolio: TextView,
-            val tvEstado: TextView,
-            val tvMeta: TextView,
-            val tvDetalles: TextView,
-            val tvMotivo: TextView,
-            val tvTotal: TextView
-        ) : RecyclerView.ViewHolder(card)
+        inner class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            val tvFolio: TextView = itemView.findViewById(R.id.tvPedidoHistFolio)
+            val tvEstado: TextView = itemView.findViewById(R.id.tvPedidoHistEstado)
+            val tvMeta: TextView = itemView.findViewById(R.id.tvPedidoHistMeta)
+            val tvDetalles: TextView = itemView.findViewById(R.id.tvPedidoHistDetalles)
+            val tvObservaciones: TextView = itemView.findViewById(R.id.tvPedidoHistObservaciones)
+            val tvMotivo: TextView = itemView.findViewById(R.id.tvPedidoHistMotivo)
+            val tvTotal: TextView = itemView.findViewById(R.id.tvPedidoHistTotal)
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Holder {
-            val context = parent.context
-            val card = MaterialCardView(context).apply {
-                layoutParams = RecyclerView.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = dp(10) }
-                setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
-                radius = dp(16).toFloat()
-                cardElevation = 0f
-                strokeWidth = dp(1)
-                strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
-            }
-
-            val body = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(14), dp(16), dp(14))
-            }
-
-            val header = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-
-            val tvFolio = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
-                setTypeface(typeface, Typeface.BOLD)
-            }
-            header.addView(tvFolio)
-
-            val tvEstado = TextView(context).apply {
-                setPadding(dp(10), dp(3), dp(10), dp(3))
-                setTextColor(ContextCompat.getColor(context, R.color.white))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-                setTypeface(typeface, Typeface.BOLD)
-            }
-            header.addView(tvEstado)
-            body.addView(header)
-
-            val tvMeta = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(4) }
-                setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            }
-            body.addView(tvMeta)
-
-            val tvDetalles = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(8) }
-                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-            }
-            body.addView(tvDetalles)
-
-            val tvMotivo = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(6) }
-                setTextColor(android.graphics.Color.parseColor("#DC2626"))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-                visibility = View.GONE
-            }
-            body.addView(tvMotivo)
-
-            val tvTotal = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(8) }
-                setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                setTypeface(typeface, Typeface.BOLD)
-            }
-            body.addView(tvTotal)
-
-            card.addView(body)
-            return Holder(card, tvFolio, tvEstado, tvMeta, tvDetalles, tvMotivo, tvTotal)
+            val vista = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_pedido_historial, parent, false)
+            return Holder(vista)
         }
 
         override fun onBindViewHolder(holder: Holder, position: Int) {
             val pedido = items[position]
+            val ctx = holder.itemView.context
             holder.tvFolio.text = "Pedido #${pedido.id}"
 
-            val (etiqueta, colorHex) = when (pedido.estado.uppercase()) {
-                "APROBADO" -> "Aprobado" to "#2B8A3E"
-                "RECHAZADO" -> "Rechazado" to "#DC2626"
-                else -> "Pendiente" to "#F59E0B"
+            val (etiqueta, bgHex, textHex) = when (pedido.estado.uppercase()) {
+                "APROBADO" -> Triple("Aprobado", "#DCFCE7", "#166534")
+                "RECHAZADO" -> Triple("Rechazado", "#FEE2E2", "#991B1B")
+                else -> Triple("Pendiente", "#FEF3C7", "#92400E")
             }
             holder.tvEstado.text = etiqueta
+            holder.tvEstado.setTextColor(Color.parseColor(textHex))
             holder.tvEstado.background = GradientDrawable().apply {
-                cornerRadius = dp(12).toFloat()
-                setColor(android.graphics.Color.parseColor(colorHex))
+                cornerRadius = TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 100f, ctx.resources.displayMetrics
+                )
+                setColor(Color.parseColor(bgHex))
             }
 
             holder.tvMeta.text = buildString {
                 append(formatearFecha(pedido.createdAt, "dd/MM/yyyy HH:mm"))
-                pedido.proveedor?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
-                pedido.almacen?.nombre?.takeIf { it.isNotBlank() }?.let { append(" • Almacén: $it") }
+                pedido.almacen?.nombre?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
+                pedido.proveedor?.takeIf { it.isNotBlank() }?.let { append(" • Prov: $it") }
             }
 
             holder.tvDetalles.text = pedido.detalles.joinToString("\n") { det ->
                 val nombre = det.producto?.nombre ?: "Producto #${det.productoId}"
-                "• $nombre × ${det.cantidad}"
+                if (det.subtotal > 0) {
+                    "• $nombre × ${det.cantidad} (${det.subtotal.formatearMonedaSinSufijo()})"
+                } else {
+                    "• $nombre × ${det.cantidad}"
+                }
+            }
+
+            if (!pedido.observaciones.isNullOrBlank()) {
+                holder.tvObservaciones.visibility = View.VISIBLE
+                holder.tvObservaciones.text = "Notas: ${pedido.observaciones}"
+            } else {
+                holder.tvObservaciones.visibility = View.GONE
             }
 
             if (!pedido.motivoRechazo.isNullOrBlank()) {
                 holder.tvMotivo.visibility = View.VISIBLE
                 holder.tvMotivo.text = "Motivo de rechazo: ${pedido.motivoRechazo}"
+                holder.tvMotivo.setTextColor(Color.parseColor("#991B1B"))
+                holder.tvMotivo.background = GradientDrawable().apply {
+                    cornerRadius = TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DIP, 12f, ctx.resources.displayMetrics
+                    )
+                    setColor(Color.parseColor("#FEE2E2"))
+                }
             } else {
                 holder.tvMotivo.visibility = View.GONE
             }
 
-            holder.tvTotal.text = "Total estimado: ${pedido.totalEstimado.formatearMonedaSinSufijo()} MXN"
+            holder.tvTotal.text = "${pedido.totalEstimado.formatearMonedaSinSufijo()} MXN"
         }
 
         override fun getItemCount(): Int = items.size
     }
-
-    private fun dp(valor: Int): Int = TypedValue.applyDimension(
-        TypedValue.COMPLEX_UNIT_DIP,
-        valor.toFloat(),
-        resources.displayMetrics
-    ).toInt()
 }

@@ -29,7 +29,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import android.content.DialogInterface
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
@@ -109,7 +110,7 @@ class CheckoutFragment : Fragment() {
             correoPaypal = prefs.getString("usuario_email", "").orEmpty()
         }
 
-        val total = CartManager.obtenerTotalPrecio(context)
+        val totales = CartManager.obtenerTotalesConIva(context)
 
         val flBack = view.findViewById<View>(R.id.flBack)
         val rvPaymentMethods = view.findViewById<LinearLayout>(R.id.rvPaymentMethods)
@@ -122,8 +123,8 @@ class CheckoutFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
-        renderizarMetodosPago(rvPaymentMethods, rootContainer, total)
-        renderizarResumenPedido(rvOrderSummary, tvTotalPagar, items, total)
+        renderizarMetodosPago(rvPaymentMethods, rootContainer, totales.total)
+        renderizarResumenPedido(rvOrderSummary, tvTotalPagar, items, totales.total)
 
         btnContinuar?.setOnClickListener {
             validarYRegistrarPago()
@@ -567,7 +568,7 @@ class CheckoutFragment : Fragment() {
         )
         infoBox.addView(
             crearFilaDatoCopiable(
-                "Total a pagar",
+                "Total a pagar (incluye IVA 16%)",
                 "${formatearPrecio(totalPagar)} MXN",
                 null
             )
@@ -636,7 +637,7 @@ class CheckoutFragment : Fragment() {
 
         infoBox.addView(crearFilaDatoCopiable("Comercio", "ApexGym S.A. de C.V.", null))
         infoBox.addView(crearFilaDatoCopiable("Pasarela", "Mercado Pago Checkout (Sandbox)", null))
-        infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
+        infoBox.addView(crearFilaDatoCopiable("Total a pagar (incluye IVA 16%)", "${formatearPrecio(totalPagar)} MXN", null))
         form.addView(infoBox)
 
         val tvExplicacion = TextView(context).apply {
@@ -700,7 +701,7 @@ class CheckoutFragment : Fragment() {
         infoBox.addView(tvInfo)
         infoBox.addView(crearFilaDatoCopiable("Punto de cobro", "Recepción Sucursal ApexGym", null))
         infoBox.addView(crearFilaDatoCopiable("Vigencia del pedido", "24 horas para liquidar en caja", null))
-        infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
+        infoBox.addView(crearFilaDatoCopiable("Total a pagar (incluye IVA 16%)", "${formatearPrecio(totalPagar)} MXN", null))
 
         form.addView(infoBox)
         return form
@@ -737,8 +738,11 @@ class CheckoutFragment : Fragment() {
                 val icon = ImageView(context).apply {
                     layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
                     setImageResource(
-                        if (esMembresia) R.drawable.ic_membership_card
-                        else R.drawable.ic_supplement_bottle
+                        when (item.tipo) {
+                            CartItemType.MEMBRESIA -> R.drawable.ic_membership_card
+                            CartItemType.SERVICIO -> R.drawable.ic_fitness_service
+                            CartItemType.PRODUCTO -> R.drawable.ic_supplement_bottle
+                        }
                     )
                     ImageViewCompat.setImageTintList(
                         this,
@@ -771,10 +775,10 @@ class CheckoutFragment : Fragment() {
             infoCol.addView(tvNombre)
 
             val tvMeta = TextView(context).apply {
-                text = if (esMembresia) {
-                    "Membresía • ${item.subtitulo}"
-                } else {
-                    "Cantidad: ${item.cantidad} × ${formatearPrecio(item.precioUnitario)} MXN"
+                text = when (item.tipo) {
+                    CartItemType.MEMBRESIA -> "Membresía • ${item.subtitulo}"
+                    CartItemType.SERVICIO -> "Servicio fitness"
+                    CartItemType.PRODUCTO -> "Cantidad: ${item.cantidad} × ${formatearPrecio(item.precioUnitario)} MXN"
                 }
                 setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
@@ -806,23 +810,43 @@ class CheckoutFragment : Fragment() {
         container.addView(sep)
 
         val subtotalProductos = CartManager.obtenerSubtotalProductos(context)
+        val subtotalServicios = CartManager.obtenerSubtotalServicios(context)
         val membresia = CartManager.obtenerMembresiaActual(context)
 
-        if (subtotalProductos > 0) {
-            container.addView(
-                crearFilaResumen("Subtotal de productos", "${formatearPrecio(subtotalProductos)} MXN")
-            )
+        val totales = CartManager.obtenerTotalesConIva(context)
+        val categoriasActivas = listOf(
+            subtotalProductos > 0,
+            subtotalServicios > 0,
+            membresia != null
+        ).count { it }
+        if (categoriasActivas > 1) {
+            if (subtotalProductos > 0) {
+                container.addView(
+                    crearFilaResumen("Subtotal de productos", "${formatearPrecio(subtotalProductos)} MXN")
+                )
+            }
+            if (subtotalServicios > 0) {
+                container.addView(
+                    crearFilaResumen("Subtotal de servicios", "${formatearPrecio(subtotalServicios)} MXN")
+                )
+            }
+            if (membresia != null) {
+                container.addView(
+                    crearFilaResumen("Plan de membresía (${membresia.nombre})", "${formatearPrecio(membresia.subtotal)} MXN")
+                )
+            }
         }
-        if (membresia != null) {
-            container.addView(
-                crearFilaResumen("Plan de membresía (${membresia.nombre})", "${formatearPrecio(membresia.subtotal)} MXN")
-            )
-        }
+        container.addView(
+            crearFilaResumen("Subtotal", "${formatearPrecio(totales.subtotal)} MXN")
+        )
+        container.addView(
+            crearFilaResumen("IVA (16%)", "${formatearPrecio(totales.iva)} MXN")
+        )
         container.addView(
             crearFilaResumen("Forma de pago", metodoSeleccionado.titulo)
         )
 
-        tvTotalPagar?.text = "${formatearPrecio(total)} MXN"
+        tvTotalPagar?.text = "${formatearPrecio(totales.total)} MXN"
     }
 
     private fun validarYRegistrarPago() {
@@ -895,7 +919,7 @@ class CheckoutFragment : Fragment() {
         btnContinuar?.isEnabled = false
         btnContinuar?.text = "Procesando pedido…"
 
-        val total = CartManager.obtenerTotalPrecio(context)
+        val totales = CartManager.obtenerTotalesConIva(context)
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -943,9 +967,9 @@ class CheckoutFragment : Fragment() {
 
                 val ventaReq = CrearVentaRequest(
                     metodoPagoId = metodoId,
-                    subtotal = total,
-                    total = total,
-                    montoRecibido = total,
+                    subtotal = totales.subtotal,
+                    total = totales.total,
+                    montoRecibido = totales.total,
                     detalleVenta = detalle,
                     uuidIdempotencia = uuidIdempotencia,
                     pago = pagoReq
@@ -971,7 +995,7 @@ class CheckoutFragment : Fragment() {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlCheckout))
                         startActivity(intent)
 
-                        val dialog = AlertDialog.Builder(context)
+                        val dialog = MaterialAlertDialogBuilder(context)
                             .setTitle("Pago con Mercado Pago")
                             .setMessage(
                                 "Se abrió el portal seguro de Mercado Pago en tu navegador.\n\n" +
@@ -983,7 +1007,7 @@ class CheckoutFragment : Fragment() {
                             .create()
 
                         dialog.setOnShowListener {
-                            val btnCheck = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                            val btnCheck = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
                             btnCheck.setOnClickListener {
                                 btnCheck.isEnabled = false
                                 btnCheck.text = "Verificando…"
@@ -1037,9 +1061,13 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun abrirTicketVenta(venta: VentaDto, items: List<CartItem>) {
+        val totalesLocal = CartManager.obtenerTotalesConIva(requireContext())
+        val subtotalReal = if (venta.subtotal > 0.0) venta.subtotal else totalesLocal.subtotal
+        val totalReal = if (venta.total > 0.0) venta.total else totalesLocal.total
+        val ivaReal = (totalReal - subtotalReal).coerceAtLeast(0.0)
         val transaccion = TransaccionPagoDto(
             id = venta.id,
-            monto = venta.total,
+            monto = totalReal,
             estado = venta.estado?.uppercase() ?: "APROBADO",
             concepto = "Compra en línea #${venta.id}",
             folioVoucher = venta.folioVenta?.id?.let { "APX-$it" } ?: "APX-${venta.id}",
@@ -1055,6 +1083,7 @@ class CheckoutFragment : Fragment() {
             }
         }.toString()
 
+        parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 android.R.anim.fade_in,
@@ -1067,7 +1096,9 @@ class CheckoutFragment : Fragment() {
                 TicketCompraFragment.newInstance(
                     transaccion = transaccion,
                     itemsJson = itemsJson,
-                    metodoPago = metodoSeleccionado.titulo
+                    metodoPago = metodoSeleccionado.titulo,
+                    subtotal = subtotalReal,
+                    iva = ivaReal
                 )
             )
             .addToBackStack(null)

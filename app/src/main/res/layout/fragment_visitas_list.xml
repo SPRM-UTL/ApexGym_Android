@@ -49,11 +49,32 @@
                 android:textStyle="bold" />
 
             <FrameLayout
+                android:id="@+id/flRefreshVisitas"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/bg_circle_white_elevated"
+                android:clickable="true"
+                android:elevation="2dp"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Actualizar visitas"
+                    android:src="@drawable/ic_refresh_cw"
+                    app:tint="@color/apex_text_primary" />
+            </FrameLayout>
+
+            <FrameLayout
                 android:id="@+id/flAddVisita"
                 android:layout_width="46dp"
                 android:layout_height="46dp"
                 android:background="@drawable/bg_circle_orange"
-                android:elevation="4dp">
+                android:clickable="true"
+                android:elevation="4dp"
+                android:focusable="true">
 
                 <ImageView
                     android:layout_width="24dp"
@@ -257,11 +278,16 @@
 
             <ImageView
                 android:id="@+id/ivFilterVisitas"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
-                android:layout_marginStart="12dp"
-                android:src="@drawable/ic_filter_funnel"
-                app:tint="@color/apex_text_primary" />
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:clickable="true"
+                android:contentDescription="Limpiar búsqueda"
+                android:focusable="true"
+                android:padding="3dp"
+                android:src="@drawable/ic_close"
+                android:visibility="gone"
+                app:tint="@color/apex_text_secondary" />
         </LinearLayout>
 
         <!-- Filter Chips -->

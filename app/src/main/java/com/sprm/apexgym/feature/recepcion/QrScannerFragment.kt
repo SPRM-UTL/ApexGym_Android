@@ -106,6 +106,9 @@ class QrScannerFragment : Fragment() {
             }
             linternaActiva = !linternaActiva
             cam.cameraControl.enableTorch(linternaActiva)
+            binding.ivFlashlight.setImageResource(
+                if (linternaActiva) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off
+            )
             binding.ivFlashlight.setColorFilter(
                 ContextCompat.getColor(
                     requireContext(),
@@ -114,7 +117,6 @@ class QrScannerFragment : Fragment() {
             )
         }
         binding.flFlashlight.setOnClickListener(alternarLinterna)
-        binding.ivFlashlight.setOnClickListener(alternarLinterna)
 
         verificarPermisoYArrancar()
     }

@@ -64,81 +64,76 @@
             </FrameLayout>
         </LinearLayout>
 
-        <!-- Visit Header Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/apex_card_dark"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="3dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:orientation="vertical"
                 android:padding="20dp">
 
-                <com.google.android.material.imageview.ShapeableImageView
-                    android:id="@+id/ivVisitaAvatar"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:background="@drawable/bg_circle_white_elevated"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_user_profile"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Apex.Circle"
-                    app:strokeColor="@color/apex_orange"
-                    app:strokeWidth="3dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.06"
+                    android:text="DETALLE DE VISITA"
+                    android:textColor="@color/apex_orange"
+                    android:textSize="10.5sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvVisitaNombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Visitante"
+                    android:textColor="@color/white"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_marginTop="12dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
                     <TextView
-                        android:id="@+id/tvVisitaNombre"
+                        android:id="@+id/tvVisitaEstado"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Visitante"
+                        android:background="@drawable/bg_badge_blue"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="5dp"
+                        android:text="Tipo de visita"
                         android:textColor="@color/white"
-                        android:textSize="22sp"
+                        android:textSize="11sp"
                         android:textStyle="bold" />
 
-                    <LinearLayout
+                    <TextView
+                        android:id="@+id/tvVisitaOrigen"
                         android:layout_width="wrap_content"
-                        android:layout_height="24dp"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvVisitaEstado"
-                            android:layout_width="wrap_content"
-                            android:layout_height="24dp"
-                            android:background="@drawable/bg_badge_blue"
-                            android:gravity="center"
-                            android:paddingHorizontal="12dp"
-                            android:text="Tipo de visita"
-                            android:textColor="@color/white"
-                            android:textSize="10sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvVisitaOrigen"
-                            android:layout_width="wrap_content"
-                            android:layout_height="24dp"
-                            android:layout_marginStart="8dp"
-                            android:background="@drawable/bg_chip_outline"
-                            android:gravity="center"
-                            android:paddingHorizontal="12dp"
-                            android:text="Gratis"
-                            android:textColor="@color/apex_text_on_dark_secondary"
-                            android:textSize="10sp" />
-                    </LinearLayout>
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_badge_green"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="5dp"
+                        android:text="Gratis"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -149,7 +144,7 @@
             android:layout_marginBottom="12dp"
             android:text="Información de la visita"
             android:textColor="@color/apex_text_primary"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
@@ -157,8 +152,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             app:cardBackgroundColor="@color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="1dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
             app:strokeColor="@color/apex_stroke_light"
             app:strokeWidth="1dp">
 
@@ -166,13 +161,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingBottom="12dp">
 
                     <TextView
                         android:layout_width="0dp"
@@ -192,11 +187,17 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/apex_stroke_light" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingBottom="12dp">
 
                     <TextView
                         android:layout_width="0dp"
@@ -216,11 +217,17 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/apex_stroke_light" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingBottom="14dp">
 
                     <TextView
                         android:layout_width="0dp"
@@ -240,6 +247,12 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/apex_stroke_light" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -251,10 +264,12 @@
                     android:id="@+id/tvVisitaNotas"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_profile_option_card"
+                    android:padding="12dp"
                     android:text="Sin observaciones registradas"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14sp" />
+                    android:textSize="13.5sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

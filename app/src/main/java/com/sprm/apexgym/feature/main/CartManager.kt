@@ -5,6 +5,7 @@ import com.sprm.apexgym.core.network.client.ProductoClienteDto
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import com.sprm.apexgym.feature.tienda.CalculoVentaPos
+import com.sprm.apexgym.feature.tienda.TotalesVentaPos
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -73,6 +74,11 @@ object CartManager {
     fun obtenerTotalPrecio(context: Context): Double {
         asegurarInicializado(context)
         return items.sumOf { it.subtotal }
+    }
+
+    fun obtenerTotalesConIva(context: Context): TotalesVentaPos {
+        asegurarInicializado(context)
+        return CalculoVentaPos.calcularTotales(items.map { it.precioUnitario to it.cantidad })
     }
 
     fun obtenerSubtotalProductos(context: Context): Double {
