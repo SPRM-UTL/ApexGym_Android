@@ -18,7 +18,6 @@ import android.text.TextWatcher
 import android.transition.AutoTransition
 import android.transition.TransitionManager
 import android.util.Base64
-import android.util.Patterns
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -30,7 +29,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import android.content.DialogInterface
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.Fragment
@@ -49,6 +49,7 @@ import com.sprm.apexgym.core.network.api.TransaccionPagoDto
 import com.sprm.apexgym.core.network.api.VentaDto
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.feature.tienda.TicketCompraFragment
+import com.sprm.apexgym.feature.tienda.ValidadorPagoAndroid
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -109,7 +110,7 @@ class CheckoutFragment : Fragment() {
             correoPaypal = prefs.getString("usuario_email", "").orEmpty()
         }
 
-        val total = CartManager.obtenerTotalPrecio(context)
+        val totales = CartManager.obtenerTotalesConIva(context)
 
         val flBack = view.findViewById<View>(R.id.flBack)
         val rvPaymentMethods = view.findViewById<LinearLayout>(R.id.rvPaymentMethods)
@@ -122,8 +123,8 @@ class CheckoutFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
-        renderizarMetodosPago(rvPaymentMethods, rootContainer, total)
-        renderizarResumenPedido(rvOrderSummary, tvTotalPagar, items, total)
+        renderizarMetodosPago(rvPaymentMethods, rootContainer, totales.total)
+        renderizarResumenPedido(rvOrderSummary, tvTotalPagar, items, totales.total)
 
         btnContinuar?.setOnClickListener {
             validarYRegistrarPago()
@@ -396,7 +397,7 @@ class CheckoutFragment : Fragment() {
         previewCard.addView(previewContent)
         form.addView(previewCard)
 
-        form.addView(crearEtiquetaCampo("Número de tarjeta (16 dígitos)"))
+        form.addView(crearEtiquetaCampo("Número de tarjeta (15 o 16 dígitos)"))
         val etNumero = crearCampoTexto(
             hint = "0000 0000 0000 0000",
             valorInicial = formatearDigitosTarjeta(numeroTarjetaRaw),
@@ -410,7 +411,9 @@ class CheckoutFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {
                 if (editando) return
                 editando = true
-                val limpio = s?.toString()?.filter { it.isDigit() }?.take(16).orEmpty()
+                val digitosCrudos = s?.toString()?.filter { it.isDigit() }.orEmpty()
+                val maxDigitos = if (ValidadorPagoAndroid.detectarMarcaTarjeta(digitosCrudos) == ValidadorPagoAndroid.MARCA_AMEX) 15 else 16
+                val limpio = digitosCrudos.take(maxDigitos)
                 numeroTarjetaRaw = limpio
                 val formateado = formatearDigitosTarjeta(limpio)
                 if (formateado != s?.toString()) {
@@ -565,7 +568,7 @@ class CheckoutFragment : Fragment() {
         )
         infoBox.addView(
             crearFilaDatoCopiable(
-                "Total a pagar",
+                "Total a pagar (incluye IVA 16%)",
                 "${formatearPrecio(totalPagar)} MXN",
                 null
             )
@@ -634,7 +637,7 @@ class CheckoutFragment : Fragment() {
 
         infoBox.addView(crearFilaDatoCopiable("Comercio", "ApexGym S.A. de C.V.", null))
         infoBox.addView(crearFilaDatoCopiable("Pasarela", "Mercado Pago Checkout (Sandbox)", null))
-        infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
+        infoBox.addView(crearFilaDatoCopiable("Total a pagar (incluye IVA 16%)", "${formatearPrecio(totalPagar)} MXN", null))
         form.addView(infoBox)
 
         val tvExplicacion = TextView(context).apply {
@@ -698,7 +701,7 @@ class CheckoutFragment : Fragment() {
         infoBox.addView(tvInfo)
         infoBox.addView(crearFilaDatoCopiable("Punto de cobro", "Recepción Sucursal ApexGym", null))
         infoBox.addView(crearFilaDatoCopiable("Vigencia del pedido", "24 horas para liquidar en caja", null))
-        infoBox.addView(crearFilaDatoCopiable("Total a pagar", "${formatearPrecio(totalPagar)} MXN", null))
+        infoBox.addView(crearFilaDatoCopiable("Total a pagar (incluye IVA 16%)", "${formatearPrecio(totalPagar)} MXN", null))
 
         form.addView(infoBox)
         return form
@@ -735,8 +738,11 @@ class CheckoutFragment : Fragment() {
                 val icon = ImageView(context).apply {
                     layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
                     setImageResource(
-                        if (esMembresia) R.drawable.ic_membership_card
-                        else R.drawable.ic_supplement_bottle
+                        when (item.tipo) {
+                            CartItemType.MEMBRESIA -> R.drawable.ic_membership_card
+                            CartItemType.SERVICIO -> R.drawable.ic_fitness_service
+                            CartItemType.PRODUCTO -> R.drawable.ic_supplement_bottle
+                        }
                     )
                     ImageViewCompat.setImageTintList(
                         this,
@@ -769,10 +775,10 @@ class CheckoutFragment : Fragment() {
             infoCol.addView(tvNombre)
 
             val tvMeta = TextView(context).apply {
-                text = if (esMembresia) {
-                    "Membresía • ${item.subtitulo}"
-                } else {
-                    "Cantidad: ${item.cantidad} × ${formatearPrecio(item.precioUnitario)} MXN"
+                text = when (item.tipo) {
+                    CartItemType.MEMBRESIA -> "Membresía • ${item.subtitulo}"
+                    CartItemType.SERVICIO -> "Servicio fitness"
+                    CartItemType.PRODUCTO -> "Cantidad: ${item.cantidad} × ${formatearPrecio(item.precioUnitario)} MXN"
                 }
                 setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
@@ -804,23 +810,43 @@ class CheckoutFragment : Fragment() {
         container.addView(sep)
 
         val subtotalProductos = CartManager.obtenerSubtotalProductos(context)
+        val subtotalServicios = CartManager.obtenerSubtotalServicios(context)
         val membresia = CartManager.obtenerMembresiaActual(context)
 
-        if (subtotalProductos > 0) {
-            container.addView(
-                crearFilaResumen("Subtotal de productos", "${formatearPrecio(subtotalProductos)} MXN")
-            )
+        val totales = CartManager.obtenerTotalesConIva(context)
+        val categoriasActivas = listOf(
+            subtotalProductos > 0,
+            subtotalServicios > 0,
+            membresia != null
+        ).count { it }
+        if (categoriasActivas > 1) {
+            if (subtotalProductos > 0) {
+                container.addView(
+                    crearFilaResumen("Subtotal de productos", "${formatearPrecio(subtotalProductos)} MXN")
+                )
+            }
+            if (subtotalServicios > 0) {
+                container.addView(
+                    crearFilaResumen("Subtotal de servicios", "${formatearPrecio(subtotalServicios)} MXN")
+                )
+            }
+            if (membresia != null) {
+                container.addView(
+                    crearFilaResumen("Plan de membresía (${membresia.nombre})", "${formatearPrecio(membresia.subtotal)} MXN")
+                )
+            }
         }
-        if (membresia != null) {
-            container.addView(
-                crearFilaResumen("Plan de membresía (${membresia.nombre})", "${formatearPrecio(membresia.subtotal)} MXN")
-            )
-        }
+        container.addView(
+            crearFilaResumen("Subtotal", "${formatearPrecio(totales.subtotal)} MXN")
+        )
+        container.addView(
+            crearFilaResumen("IVA (16%)", "${formatearPrecio(totales.iva)} MXN")
+        )
         container.addView(
             crearFilaResumen("Forma de pago", metodoSeleccionado.titulo)
         )
 
-        tvTotalPagar?.text = "${formatearPrecio(total)} MXN"
+        tvTotalPagar?.text = "${formatearPrecio(totales.total)} MXN"
     }
 
     private fun validarYRegistrarPago() {
@@ -841,51 +867,48 @@ class CheckoutFragment : Fragment() {
 
         when (metodoSeleccionado) {
             PaymentMethodType.TRANSFERENCIA -> {
-                if (bancoLimpio.isBlank()) {
-                    Toast.makeText(context, "Indica el banco desde el que realizas la transferencia", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (bancoLimpio.length !in 3..50 || !Regex("^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\\s\\.\\-]+$").matches(bancoLimpio)) {
-                    Toast.makeText(context, "El nombre del banco contiene caracteres no permitidos", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (referenciaLimpia.isBlank()) {
-                    Toast.makeText(context, "Ingresa la clave de rastreo o referencia de transferencia", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (referenciaLimpia.length !in 4..40 || !Regex("^[a-zA-Z0-9\\-\\s]+$").matches(referenciaLimpia)) {
-                    Toast.makeText(context, "La clave de rastreo solo permite números, letras y guiones", Toast.LENGTH_SHORT).show()
+                val resTransferencia = ValidadorPagoAndroid.validarTransferencia(
+                    banco = bancoLimpio,
+                    referencia = referenciaLimpia
+                )
+                if (!resTransferencia.valido) {
+                    Toast.makeText(
+                        context,
+                        resTransferencia.mensajeError ?: "Datos de transferencia inválidos",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
             }
             PaymentMethodType.TARJETA_DEBITO -> {
-                if (numTarjetaLimpio.length != 16) {
-                    Toast.makeText(context, "Ingresa los 16 dígitos de tu tarjeta", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (titularLimpio.isBlank()) {
-                    Toast.makeText(context, "Ingresa el nombre del titular de la tarjeta", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (titularLimpio.length !in 3..60 || !Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s\\.]+$").matches(titularLimpio)) {
-                    Toast.makeText(context, "El nombre del titular solo puede contener letras y espacios", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (!Regex("^(0[1-9]|1[0-2])\\/([0-9]{2})$").matches(vencLimpio)) {
-                    Toast.makeText(context, "Ingresa una fecha de vencimiento válida (MM/AA)", Toast.LENGTH_SHORT).show()
-                    return
-                }
-                if (!Regex("^[0-9]{3,4}$").matches(cvvLimpio)) {
-                    Toast.makeText(context, "Ingresa el código de seguridad (CVV) de 3 o 4 dígitos", Toast.LENGTH_SHORT).show()
+                val resTarjeta = ValidadorPagoAndroid.validarTarjeta(
+                    tipoTarjeta = tipoTarjetaSeleccionada,
+                    numeroTarjeta = numTarjetaLimpio,
+                    vencimiento = vencLimpio,
+                    cvv = cvvLimpio,
+                    titular = titularLimpio
+                )
+                if (!resTarjeta.valido) {
+                    Toast.makeText(
+                        context,
+                        resTarjeta.mensajeError ?: "Datos de tarjeta inválidos",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return
                 }
             }
             PaymentMethodType.MERCADO_PAGO -> {
-                if (correoLimpio.isNotBlank()) {
-                    if (correoLimpio.contains(" ") || correoLimpio.length > 100 || !Patterns.EMAIL_ADDRESS.matcher(correoLimpio).matches() || correoLimpio.any { it in "<>'\"/\\;`" }) {
-                        Toast.makeText(context, "Ingresa un correo electrónico válido", Toast.LENGTH_SHORT).show()
-                        return
-                    }
+                val resMp = ValidadorPagoAndroid.validarMercadoPago(
+                    correo = correoLimpio,
+                    obligatorio = false
+                )
+                if (!resMp.valido) {
+                    Toast.makeText(
+                        context,
+                        resMp.mensajeError ?: "Ingresa un correo electrónico válido",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return
                 }
             }
             PaymentMethodType.EFECTIVO -> {
@@ -896,7 +919,7 @@ class CheckoutFragment : Fragment() {
         btnContinuar?.isEnabled = false
         btnContinuar?.text = "Procesando pedido…"
 
-        val total = CartManager.obtenerTotalPrecio(context)
+        val totales = CartManager.obtenerTotalesConIva(context)
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -931,12 +954,7 @@ class CheckoutFragment : Fragment() {
                     )
                     PaymentMethodType.TARJETA_DEBITO -> PagoVentaRequest(
                         tipoTarjeta = tipoTarjetaSeleccionada,
-                        marcaTarjeta = when {
-                            numTarjetaLimpio.startsWith("4") -> "VISA"
-                            numTarjetaLimpio.startsWith("5") || numTarjetaLimpio.startsWith("2") -> "MASTERCARD"
-                            numTarjetaLimpio.startsWith("34") || numTarjetaLimpio.startsWith("37") -> "AMEX"
-                            else -> "OTRA"
-                        },
+                        marcaTarjeta = ValidadorPagoAndroid.detectarMarcaTarjeta(numTarjetaLimpio),
                         ultimosDigitos = numTarjetaLimpio.takeLast(4),
                         folioVoucher = "CARD-${numTarjetaLimpio.takeLast(4)}-${(1000..9999).random()}"
                     )
@@ -949,9 +967,9 @@ class CheckoutFragment : Fragment() {
 
                 val ventaReq = CrearVentaRequest(
                     metodoPagoId = metodoId,
-                    subtotal = total,
-                    total = total,
-                    montoRecibido = total,
+                    subtotal = totales.subtotal,
+                    total = totales.total,
+                    montoRecibido = totales.total,
                     detalleVenta = detalle,
                     uuidIdempotencia = uuidIdempotencia,
                     pago = pagoReq
@@ -977,7 +995,7 @@ class CheckoutFragment : Fragment() {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlCheckout))
                         startActivity(intent)
 
-                        val dialog = AlertDialog.Builder(context)
+                        val dialog = MaterialAlertDialogBuilder(context)
                             .setTitle("Pago con Mercado Pago")
                             .setMessage(
                                 "Se abrió el portal seguro de Mercado Pago en tu navegador.\n\n" +
@@ -989,7 +1007,7 @@ class CheckoutFragment : Fragment() {
                             .create()
 
                         dialog.setOnShowListener {
-                            val btnCheck = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                            val btnCheck = dialog.getButton(DialogInterface.BUTTON_POSITIVE)
                             btnCheck.setOnClickListener {
                                 btnCheck.isEnabled = false
                                 btnCheck.text = "Verificando…"
@@ -1043,9 +1061,13 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun abrirTicketVenta(venta: VentaDto, items: List<CartItem>) {
+        val totalesLocal = CartManager.obtenerTotalesConIva(requireContext())
+        val subtotalReal = if (venta.subtotal > 0.0) venta.subtotal else totalesLocal.subtotal
+        val totalReal = if (venta.total > 0.0) venta.total else totalesLocal.total
+        val ivaReal = (totalReal - subtotalReal).coerceAtLeast(0.0)
         val transaccion = TransaccionPagoDto(
             id = venta.id,
-            monto = venta.total,
+            monto = totalReal,
             estado = venta.estado?.uppercase() ?: "APROBADO",
             concepto = "Compra en línea #${venta.id}",
             folioVoucher = venta.folioVenta?.id?.let { "APX-$it" } ?: "APX-${venta.id}",
@@ -1061,6 +1083,7 @@ class CheckoutFragment : Fragment() {
             }
         }.toString()
 
+        parentFragmentManager.popBackStack()
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
                 android.R.anim.fade_in,
@@ -1073,7 +1096,9 @@ class CheckoutFragment : Fragment() {
                 TicketCompraFragment.newInstance(
                     transaccion = transaccion,
                     itemsJson = itemsJson,
-                    metodoPago = metodoSeleccionado.titulo
+                    metodoPago = metodoSeleccionado.titulo,
+                    subtotal = subtotalReal,
+                    iva = ivaReal
                 )
             )
             .addToBackStack(null)
@@ -1239,12 +1264,26 @@ class CheckoutFragment : Fragment() {
     }
 
     private fun formatearDigitosTarjeta(digitos: String): String {
-        return digitos.chunked(4).joinToString(" ")
+        return if (ValidadorPagoAndroid.detectarMarcaTarjeta(digitos) == ValidadorPagoAndroid.MARCA_AMEX) {
+            buildString {
+                for (i in digitos.indices) {
+                    if (i == 4 || i == 10) append(' ')
+                    append(digitos[i])
+                }
+            }
+        } else {
+            digitos.chunked(4).joinToString(" ")
+        }
     }
 
     private fun formatearNumeroTarjetaPreview(digitos: String): String {
-        val rellenado = digitos.padEnd(16, '•')
-        return rellenado.chunked(4).joinToString(" ")
+        return if (ValidadorPagoAndroid.detectarMarcaTarjeta(digitos) == ValidadorPagoAndroid.MARCA_AMEX) {
+            val rellenado = digitos.padEnd(15, '•')
+            "${rellenado.substring(0, 4)} ${rellenado.substring(4, 10)} ${rellenado.substring(10, 15)}"
+        } else {
+            val rellenado = digitos.padEnd(16, '•')
+            rellenado.chunked(4).joinToString(" ")
+        }
     }
 
     private fun cargarImagenResumen(rutaImagen: String, contenedor: FrameLayout) {

@@ -1,6 +1,10 @@
 package com.sprm.apexgym.feature.main
 
 import android.animation.ValueAnimator
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -24,6 +28,7 @@ import android.widget.LinearLayout
 import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.core.widget.NestedScrollView
@@ -33,6 +38,7 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.card.MaterialCardView
 import com.sprm.apexgym.R
+import com.sprm.apexgym.core.notifications.ApexGymMessagingService
 import com.sprm.apexgym.core.network.client.ClienteMembresiaDto
 import com.sprm.apexgym.core.network.client.MiMembresiaResponseDto
 import com.sprm.apexgym.core.network.client.ProductoClienteDto
@@ -41,6 +47,7 @@ import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
+import com.sprm.apexgym.feature.tienda.CalculoVentaPos
 import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,6 +74,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var categoriaSeleccionada: String = "Todos"
     private var textoBusqueda: String = ""
     private var cartListener: (() -> Unit)? = null
+    private var notificacionReceiverRegistrado = false
+    private val notificacionReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            view?.let { cargarContadorNotificaciones(it) }
+        }
+    }
     private val bitmapCache = LruCache<String, Bitmap>(40)
 
     private data class NavTabItem(
@@ -167,6 +180,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         etSearchMockup?.doAfterTextChanged { editable ->
             textoBusqueda = editable?.toString()?.trim().orEmpty()
+            renderizarProductosPopularesInicio(llHomePopularProductsContainer)
             renderizarGridProductos(llTiendaProductsGridContainer, tvTiendaEmptyState)
             renderizarListaServicios(llServiciosListContainer, tvServiciosEmptyState)
         }
@@ -197,14 +211,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             )
         )
 
-        fun showSectionForTab(tabIndex: Int) {
-            isQrVisible = false
-
-            val transition = AutoTransition().apply {
-                duration = 220L
-                interpolator = FastOutSlowInInterpolator()
+        var cerrarQrSiVisible: (() -> Unit)? = null
+        val qrDispatcherCallback = object : OnBackPressedCallback(isQrVisible) {
+            override fun handleOnBackPressed() {
+                cerrarQrSiVisible?.invoke()
             }
-            TransitionManager.beginDelayedTransition(llMainContentRoot, transition)
+        }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, qrDispatcherCallback)
+
+        fun showSectionForTab(tabIndex: Int, animar: Boolean = true) {
+            isQrVisible = false
+            qrDispatcherCallback.isEnabled = false
+
+            if (animar) {
+                val transition = AutoTransition().apply {
+                    duration = 220L
+                    interpolator = FastOutSlowInInterpolator()
+                }
+                TransitionManager.beginDelayedTransition(llMainContentRoot, transition)
+            }
 
             llQrAccessSection.visibility = View.GONE
             llTopHeaderAndSearch.visibility = View.VISIBLE
@@ -243,15 +268,34 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
             }
 
-            scrollHome.smoothScrollTo(0, 0)
+            if (animar) {
+                scrollHome.smoothScrollTo(0, 0)
+            }
         }
 
-        llNavTabsRow.post {
+        cerrarQrSiVisible = { showSectionForTab(selectedTabIndex) }
+
+        aplicarEstilosBottomNav(selectedTabIndex, tabs)
+        showSectionForTab(selectedTabIndex, animar = false)
+
+        fun actualizarPildoraSinAnimacion() {
+            if (!isAdded || view == null) return
             val activeTab = tabs[selectedTabIndex].container
-            viewActiveNavPill.translationX = activeTab.left.toFloat()
-            val pillParams = viewActiveNavPill.layoutParams
-            pillParams.width = activeTab.width
-            viewActiveNavPill.layoutParams = pillParams
+            if (activeTab.width > 0) {
+                viewActiveNavPill.translationX = activeTab.left.toFloat()
+                val pillParams = viewActiveNavPill.layoutParams
+                if (pillParams.width != activeTab.width) {
+                    pillParams.width = activeTab.width
+                    viewActiveNavPill.layoutParams = pillParams
+                }
+            }
+        }
+
+        llNavTabsRow.post { actualizarPildoraSinAnimacion() }
+        llNavTabsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (pillAnimator?.isRunning != true) {
+                actualizarPildoraSinAnimacion()
+            }
         }
 
         tabs.forEachIndexed { index, tabItem ->
@@ -329,8 +373,27 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 )
             }
         }
-        view.findViewById<View>(R.id.cardTienda)?.setOnClickListener(goToProductosListener)
-        view.findViewById<View>(R.id.btnComprarMockup)?.setOnClickListener(goToProductosListener)
+        val goToServiciosListener = View.OnClickListener {
+            animateBottomNavSelection(
+                targetIndex = 3,
+                tabs = tabs,
+                llNavTabsRow = llNavTabsRow,
+                viewActiveNavPill = viewActiveNavPill
+            )
+            showSectionForTab(3)
+            if (listaServicios.isEmpty()) {
+                cargarCatalogoDesdeBackend(
+                    llHomePopularProductsContainer = llHomePopularProductsContainer,
+                    llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
+                    llTiendaProductsGridContainer = llTiendaProductsGridContainer,
+                    tvTiendaEmptyState = tvTiendaEmptyState,
+                    llServiciosListContainer = llServiciosListContainer,
+                    tvServiciosEmptyState = tvServiciosEmptyState
+                )
+            }
+        }
+        view.findViewById<View>(R.id.cardTienda)?.setOnClickListener(goToServiciosListener)
+        view.findViewById<View>(R.id.btnComprarMockup)?.setOnClickListener(goToServiciosListener)
         view.findViewById<View>(R.id.btnVerCatalogoMockup)?.setOnClickListener(goToProductosListener)
         view.findViewById<View>(R.id.chipHomeInsumos)?.setOnClickListener(goToProductosListener)
 
@@ -347,6 +410,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             TransitionManager.beginDelayedTransition(llMainContentRoot, transition)
 
             isQrVisible = true
+            qrDispatcherCallback.isEnabled = true
             llTopHeaderAndSearch.visibility = View.GONE
             llHomeSection.visibility = View.GONE
             llMembresiaSection?.visibility = View.GONE
@@ -438,6 +502,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         )
         renderizarHeroMembresia(view)
         cargarMembresiaDesdeBackend(view)
+        cargarResumenComprasInicio(view)
     }
 
     private fun cargarCatalogoDesdeBackend(
@@ -489,7 +554,40 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
 
             if (!isAdded) return@launch
+            view?.let { root ->
+                val tvServSub = root.findViewById<TextView>(R.id.tvHomeServiciosSubtitulo)
+                if (listaServicios.isNotEmpty()) {
+                    tvServSub?.text = "${listaServicios.size} disponibles\nen sucursal"
+                }
+            }
             renderizarListaServicios(llServiciosListContainer, tvServiciosEmptyState)
+        }
+    }
+
+    private fun cargarResumenComprasInicio(rootView: View) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val res = RetrofitClient.empleadoService.obtenerVentas(limite = 20)
+                if (!isAdded || this@HomeFragment.view == null) return@launch
+                if (res.isSuccessful && res.body()?.responseFlag == 0) {
+                    val data = res.body()?.data
+                    val registros = data?.registros.orEmpty()
+                    val total = data?.total ?: registros.size
+                    val pendientesMp = registros.count {
+                        it.estado.equals("pendiente_pago", ignoreCase = true)
+                    }
+                    val tvLabel = rootView.findViewById<TextView>(R.id.tvHomePagosLabel)
+                    val tvValor = rootView.findViewById<TextView>(R.id.tvHomePagosValor)
+                    if (pendientesMp > 0) {
+                        tvLabel?.text = "Pagos pendientes"
+                        tvValor?.text = "$pendientesMp por pagar"
+                    } else {
+                        tvLabel?.text = "Compras realizadas"
+                        tvValor?.text = if (total == 1) "1 compra" else "$total compras"
+                    }
+                }
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -581,9 +679,22 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         if (container == null) return
         container.removeAllViews()
 
-        if (listaProductos.isEmpty()) {
+        val filtrados = listaProductos
+            .filter { prod ->
+                textoBusqueda.isEmpty() ||
+                    prod.nombre.contains(textoBusqueda, ignoreCase = true) ||
+                    prod.descripcion?.contains(textoBusqueda, ignoreCase = true) == true ||
+                    prod.categoria?.nombre?.contains(textoBusqueda, ignoreCase = true) == true
+            }
+            .sortedBy { it.stockActual <= 0 }
+
+        if (filtrados.isEmpty()) {
             val tvVacio = TextView(requireContext()).apply {
-                text = "No hay productos disponibles por el momento"
+                text = if (listaProductos.isEmpty()) {
+                    "No hay productos disponibles por el momento"
+                } else {
+                    "No se encontraron productos para \"$textoBusqueda\""
+                }
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
                 setPadding(dpToPx(4), dpToPx(16), dpToPx(4), dpToPx(16))
@@ -592,7 +703,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
-        val productosDestacados = listaProductos.take(8)
+        val productosDestacados = filtrados.take(8)
         productosDestacados.forEachIndexed { index, producto ->
             val card = crearTarjetaProductoCarruselInicio(
                 producto = producto,
@@ -619,7 +730,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 prod.categoria?.nombre?.contains(textoBusqueda, ignoreCase = true) == true
 
             coincideCategoria && coincideBusqueda
-        }
+        }.sortedBy { it.stockActual <= 0 }
 
         if (filtrados.isEmpty()) {
             emptyStateView?.visibility = View.VISIBLE
@@ -762,6 +873,10 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         inner.addView(tvNombre)
 
+        val agotado = producto.stockActual <= 0
+        val precioNeto = CalculoVentaPos.precioConDescuento(producto.precioVenta, producto.descuentoPorcentaje)
+        card.alpha = if (agotado) 0.55f else 1f
+
         val tvCategoria = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -769,7 +884,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             ).apply {
                 topMargin = dpToPx(2)
             }
-            text = producto.categoria?.nombre ?: "Producto"
+            text = if (agotado) "Agotado temporalmente" else (producto.categoria?.nombre ?: "Producto")
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
             maxLines = 1
@@ -798,8 +913,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val tvPrecio = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            text = "${formatearPrecio(producto.precioVenta)} MXN"
-            setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
+            text = "${formatearPrecio(precioNeto)} MXN"
+            setTextColor(
+                ContextCompat.getColor(
+                    context,
+                    if (agotado) R.color.apex_text_on_dark_secondary else R.color.apex_orange
+                )
+            )
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
@@ -807,15 +927,28 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val btnAdd = FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(dpToPx(26), dpToPx(26))
-            setBackgroundResource(R.drawable.bg_circle_orange)
+            setBackgroundResource(if (agotado) R.drawable.bg_chip_unselected else R.drawable.bg_circle_orange)
             val plusIcon = ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(14), dpToPx(14), Gravity.CENTER)
                 setImageResource(R.drawable.ic_plus)
+                ImageViewCompat.setImageTintList(
+                    this,
+                    ColorStateList.valueOf(
+                        ContextCompat.getColor(
+                            context,
+                            if (agotado) R.color.apex_nav_inactive else R.color.white
+                        )
+                    )
+                )
             }
             addView(plusIcon)
             setOnClickListener {
-                val res = CartManager.agregarProducto(context, producto, 1)
-                Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
+                if (agotado) {
+                    Toast.makeText(context, "${producto.nombre} está agotado temporalmente.", Toast.LENGTH_SHORT).show()
+                } else {
+                    val res = CartManager.agregarProducto(context, producto, 1)
+                    Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
+                }
             }
         }
         bottomRow.addView(btnAdd)
@@ -824,7 +957,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         card.addView(inner)
 
         card.setOnClickListener {
-            abrirDetalleProducto(producto)
+            if (agotado) {
+                Toast.makeText(context, "${producto.nombre} está agotado temporalmente.", Toast.LENGTH_SHORT).show()
+            } else {
+                abrirDetalleProducto(producto)
+            }
         }
 
         return card
@@ -891,10 +1028,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         inner.addView(tvNombre)
 
+        val agotado = producto.stockActual <= 0
+        val precioNeto = CalculoVentaPos.precioConDescuento(producto.precioVenta, producto.descuentoPorcentaje)
+        card.alpha = if (agotado) 0.55f else 1f
+
         val subtituloCategoria = buildString {
             append(producto.categoria?.nombre ?: "General")
             if (producto.stockActual > 0) {
                 append(" • Stock: ${producto.stockActual}")
+            } else {
+                append(" • Agotado")
             }
         }
 
@@ -934,8 +1077,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val tvPrecio = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            text = "${formatearPrecio(producto.precioVenta)} MXN"
-            setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
+            text = "${formatearPrecio(precioNeto)} MXN"
+            setTextColor(
+                ContextCompat.getColor(
+                    context,
+                    if (agotado) R.color.apex_text_on_dark_secondary else R.color.apex_orange
+                )
+            )
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             setTypeface(typeface, Typeface.BOLD)
         }
@@ -943,15 +1091,28 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val btnAdd = FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(dpToPx(32), dpToPx(32))
-            setBackgroundResource(R.drawable.bg_circle_orange)
+            setBackgroundResource(if (agotado) R.drawable.bg_chip_unselected else R.drawable.bg_circle_orange)
             val plusIcon = ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(16), dpToPx(16), Gravity.CENTER)
                 setImageResource(R.drawable.ic_plus)
+                ImageViewCompat.setImageTintList(
+                    this,
+                    ColorStateList.valueOf(
+                        ContextCompat.getColor(
+                            context,
+                            if (agotado) R.color.apex_nav_inactive else R.color.white
+                        )
+                    )
+                )
             }
             addView(plusIcon)
             setOnClickListener {
-                val res = CartManager.agregarProducto(context, producto, 1)
-                Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
+                if (agotado) {
+                    Toast.makeText(context, "${producto.nombre} está agotado temporalmente.", Toast.LENGTH_SHORT).show()
+                } else {
+                    val res = CartManager.agregarProducto(context, producto, 1)
+                    Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
+                }
             }
         }
         bottomRow.addView(btnAdd)
@@ -960,7 +1121,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         card.addView(inner)
 
         card.setOnClickListener {
-            abrirDetalleProducto(producto)
+            if (agotado) {
+                Toast.makeText(context, "${producto.nombre} está agotado temporalmente.", Toast.LENGTH_SHORT).show()
+            } else {
+                abrirDetalleProducto(producto)
+            }
         }
 
         return card
@@ -1618,10 +1783,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         if (targetIndex == selectedTabIndex) return
         selectedTabIndex = targetIndex
 
-        val context = requireContext()
-        val colorActive = ContextCompat.getColor(context, R.color.apex_text_primary)
-        val colorInactive = ContextCompat.getColor(context, R.color.apex_nav_inactive)
-
         val startX = viewActiveNavPill.translationX
         val startWidth = viewActiveNavPill.width
         val targetContainer = tabs[targetIndex].container
@@ -1656,6 +1817,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             interpolator = FastOutSlowInInterpolator()
         }
         TransitionManager.beginDelayedTransition(llNavTabsRow, transition)
+
+        aplicarEstilosBottomNav(targetIndex, tabs)
+    }
+
+    private fun aplicarEstilosBottomNav(targetIndex: Int, tabs: List<NavTabItem>) {
+        val context = requireContext()
+        val colorActive = ContextCompat.getColor(context, R.color.apex_text_primary)
+        val colorInactive = ContextCompat.getColor(context, R.color.apex_nav_inactive)
 
         tabs.forEachIndexed { index, item ->
             val isSelected = index == targetIndex
@@ -1807,6 +1976,35 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             dp.toFloat(),
             resources.displayMetrics
         ).toInt()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!notificacionReceiverRegistrado) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                notificacionReceiver,
+                IntentFilter(ApexGymMessagingService.ACTION_NOTIFICACION_RECIBIDA),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            notificacionReceiverRegistrado = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        view?.let { cargarContadorNotificaciones(it) }
+    }
+
+    override fun onStop() {
+        if (notificacionReceiverRegistrado) {
+            try {
+                requireContext().unregisterReceiver(notificacionReceiver)
+            } catch (_: IllegalArgumentException) {
+            }
+            notificacionReceiverRegistrado = false
+        }
+        super.onStop()
     }
 
     override fun onDestroyView() {

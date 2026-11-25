@@ -14,7 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.session.SessionManager
@@ -86,9 +86,8 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
             "Socio ApexGym"
         }
 
-        // Los clientes solo ven ventas y su perfil; notificaciones ocultas hasta tener backend.
         tvStaffSectionLabel?.visibility = if (esEmpleado) View.VISIBLE else View.GONE
-        btnOpcionNotificaciones?.visibility = View.GONE
+        btnOpcionNotificaciones?.visibility = View.VISIBLE
         btnOpcionConfigNotificaciones?.visibility = View.GONE
         listOf(
             btnOpcionEmpleados,
@@ -124,7 +123,7 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
         btnOpcionMiPerfil?.setOnClickListener {
             if (esEmpleado) {
-                AlertDialog.Builder(requireContext())
+                MaterialAlertDialogBuilder(requireContext())
                     .setTitle(SessionManager.obtenerNombre(requireContext()) ?: "Mi cuenta")
                     .setMessage(
                         buildString {
@@ -175,7 +174,7 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         btnOpcionConfigNotificaciones?.setOnClickListener {
-            AlertDialog.Builder(requireContext())
+            MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Configuración no disponible")
                 .setMessage(
                     "La API actual no permite consultar ni guardar preferencias de notificaciones."
@@ -217,6 +216,7 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                 } finally {
                     RetrofitClient.cookieJar.clear()
                     if (isAdded) {
+                        com.sprm.apexgym.core.notifications.FcmTokenManager.limpiarRegistro(requireContext())
                         SessionManager.limpiar(requireContext())
                         CartManager.vaciarCarrito(requireContext())
                     }

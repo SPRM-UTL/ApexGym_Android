@@ -24,6 +24,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.ActualizarMiPerfilRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.feature.auth.LoginFragment
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -310,6 +311,17 @@ class EditProfileBottomSheetFragment : BottomSheetDialogFragment() {
                             apellidoPaternoStr.takeIf { it.isNotBlank() }
                         ).joinToString(" ")
 
+                        val ctx = requireContext()
+                        SessionManager.guardar(
+                            context = ctx,
+                            usuarioId = SessionManager.obtenerUsuarioId(ctx),
+                            nombre = nombreCompleto.ifBlank { SessionManager.obtenerNombre(ctx) },
+                            email = correoStr.ifBlank { SessionManager.obtenerEmail(ctx) },
+                            rol = SessionManager.obtenerRol(ctx) ?: SessionManager.ROL_CLIENTE,
+                            empleadoId = SessionManager.obtenerEmpleadoId(ctx),
+                            sucursalId = SessionManager.obtenerSucursalId(ctx)
+                        )
+
                         parentFragmentManager.setFragmentResult(
                             RESULT_KEY_PERFIL_ACTUALIZADO,
                             bundleOf("nombreCompleto" to nombreCompleto)
@@ -412,6 +424,9 @@ class EditProfileBottomSheetFragment : BottomSheetDialogFragment() {
     private fun manejarSesionExpirada() {
         RetrofitClient.cookieJar.clear()
         if (!isAdded) return
+        val ctx = requireContext()
+        SessionManager.limpiar(ctx)
+        CartManager.vaciarCarrito(ctx)
         val hostFragmentManager = requireActivity().supportFragmentManager
         Toast.makeText(
             requireContext(),

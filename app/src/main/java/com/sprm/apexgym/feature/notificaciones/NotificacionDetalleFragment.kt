@@ -87,10 +87,13 @@ class NotificacionDetalleFragment : BaseFragment<FragmentNotificacionDetalleBind
 
         binding.tvNotifTitulo.text = datos.titulo.ifBlank { "Notificación" }
         binding.tvNotifMensaje.text = datos.mensaje
-        binding.tvNotifTipo.text = datos.tipo.ifBlank { "GENERAL" }
+        binding.tvNotifTipo.text = formatearTipoNotificacion(datos.tipo)
         binding.tvNotifHora.text = formatearHora(datos.createdAt)
-        binding.tvNotifRemitente.text = datos.remitenteId?.let { "Empleado #$it" }
-            ?: "Sistema ApexGym"
+        binding.tvNotifRemitente.text = if (datos.remitenteId != null) {
+            "Equipo ApexGym"
+        } else {
+            "Sistema ApexGym"
+        }
         binding.tvNotifFechaCompleta.text = formatearFecha(
             datos.createdAt,
             "dd 'de' MMMM, yyyy • HH:mm"
@@ -108,11 +111,24 @@ class NotificacionDetalleFragment : BaseFragment<FragmentNotificacionDetalleBind
             ContextCompat.getColor(requireContext(), R.color.white)
         )
 
+        binding.btnMarcarLeida.visibility = if (datos.estaLeida) View.GONE else View.VISIBLE
         binding.btnMarcarLeida.isEnabled = !datos.estaLeida
-        binding.btnMarcarLeida.text = if (datos.estaLeida) "Leída" else "Marcar como Leída"
+        binding.btnMarcarLeida.text = "Marcar como leída"
 
         binding.btnArchivar.isEnabled = !datos.estaIgnorada
         binding.btnArchivar.text = if (datos.estaIgnorada) "Ignorada" else "Ignorar"
+    }
+
+    private fun formatearTipoNotificacion(tipo: String): String {
+        val norm = tipo.trim().uppercase()
+        return when (norm) {
+            "ACCESO_QR" -> "Acceso QR"
+            "ACTIVIDAD_EMPLEADO" -> "Actividad"
+            "MEMBRESIA" -> "Membresía"
+            "PAGO", "VENTA" -> "Pagos"
+            "GENERAL", "" -> "General"
+            else -> norm.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
+        }
     }
 
     private fun marcarLeida() {

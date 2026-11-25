@@ -61,7 +61,7 @@
     <string name="notifications_empty_title">No tienes notificaciones</string>
     <string name="notifications_empty_subtitle">Aquí aparecerán los avisos sobre tu membresía, pagos y novedades de ApexGym.</string>
 
-    <string name="home_search_hint">Buscar productos, membresías o pagos…</string>
+    <string name="home_search_hint">Buscar productos o servicios…</string>
     <string name="tienda_search_hint">Buscar productos o categorías…</string>
     <string name="servicios_search_hint">Buscar servicios disponibles…</string>
     <string name="chip_membresia">Membresía</string>
@@ -97,14 +97,14 @@
     <string name="hero_title">Vigencia de Membresía</string>
     <string name="hero_subtitle">Activa hasta 30 Nov 2026 - Días restantes: 42</string>
 
-    <string name="card_pagos_title">Pagos y\nRenovaciones</string>
-    <string name="card_pagos_label">Saldo pendiente</string>
-    <string name="card_pagos_amount">$0.00 MXN</string>
-    <string name="card_pagos_action">Pagar</string>
+    <string name="card_pagos_title">Historial de\nCompras</string>
+    <string name="card_pagos_label">Compras registradas</string>
+    <string name="card_pagos_amount">Ver tickets</string>
+    <string name="card_pagos_action">Ver historial</string>
 
-    <string name="card_tienda_title">Catálogo de Productos</string>
-    <string name="card_tienda_subtitle">Suplementos, proteínas\ny bebidas</string>
-    <string name="card_tienda_action">Ver productos</string>
+    <string name="card_tienda_title">Servicios\nFitness</string>
+    <string name="card_tienda_subtitle">Entrenamiento personal\ny clases</string>
+    <string name="card_tienda_action">Explorar</string>
 
     <string name="section_tienda_overline">CATÁLOGO APEX</string>
     <string name="section_insumos_title">Productos Populares</string>

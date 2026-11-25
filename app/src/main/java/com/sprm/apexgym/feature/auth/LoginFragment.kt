@@ -150,7 +150,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
                     CartManager.vaciarCarrito(requireContext())
                     NotificacionPermiso.solicitarSiHaceFalta(requireActivity())
-                    FcmTokenManager.registrarAsync(requireContext())
+                    FcmTokenManager.registrarAsync(requireContext(), forzar = true)
 
                     val destino: Fragment = if (esCliente) {
                         HomeFragment()

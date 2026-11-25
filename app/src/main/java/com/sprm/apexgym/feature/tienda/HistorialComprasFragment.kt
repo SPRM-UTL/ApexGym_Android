@@ -48,7 +48,7 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         super.onViewCreated(view, savedInstanceState)
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.flFilter.visibility = View.GONE
+        binding.flFilter.visibility = View.INVISIBLE
         binding.rvHistorialCompras.layoutManager = LinearLayoutManager(requireContext())
         binding.rvHistorialCompras.adapter = adapter
 
@@ -153,7 +153,8 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         binding.llFilterChips.removeAllViews()
         chips.clear()
 
-        listOf("Todas", "Efectivo", "Terminal", "Aprobadas", "Pendientes").forEachIndexed {
+        val tarjetaLabel = if (SessionManager.esEmpleado(requireContext())) "Terminal" else "Tarjeta"
+        listOf("Todas", "Efectivo", tarjetaLabel, "Transferencia", "Mercado Pago", "Aprobadas", "Pendientes").forEachIndexed {
                 indice,
                 filtro ->
             val chip = TextView(requireContext()).apply {
@@ -201,7 +202,10 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         val filtradas = transacciones.filter { transaccion ->
             val coincideFiltro = when (filtroSeleccionado) {
                 "Efectivo" -> transaccion.proveedor.equals("EFECTIVO", ignoreCase = true)
-                "Terminal" -> transaccion.proveedor.equals("TERMINAL_MANUAL", ignoreCase = true)
+                "Terminal", "Tarjeta" -> transaccion.proveedor.equals("TERMINAL_MANUAL", ignoreCase = true) ||
+                    transaccion.proveedor.equals("TARJETA", ignoreCase = true)
+                "Transferencia" -> transaccion.proveedor.equals("TRANSFERENCIA", ignoreCase = true)
+                "Mercado Pago" -> transaccion.proveedor.equals("MERCADO_PAGO", ignoreCase = true)
                 "Aprobadas" -> transaccion.estado.equals("APROBADO", ignoreCase = true)
                 "Pendientes" -> transaccion.estado.equals("PENDIENTE", ignoreCase = true)
                 else -> true
@@ -275,7 +279,11 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
                 TicketCompraFragment.newInstance(
                     transaccion = transaccion,
                     itemsJson = itemsJson,
-                    metodoPago = metodoTexto
+                    metodoPago = metodoTexto,
+                    subtotal = ventaAsociada?.subtotal?.takeIf { it > 0.0 },
+                    iva = ventaAsociada?.let { v ->
+                        if (v.subtotal > 0.0) (v.total - v.subtotal).coerceAtLeast(0.0) else null
+                    }
                 )
             )
             .addToBackStack(null)

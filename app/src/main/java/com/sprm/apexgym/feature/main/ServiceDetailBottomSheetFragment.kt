@@ -20,6 +20,8 @@ import com.google.android.material.button.MaterialButton
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
+import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.feature.tienda.CarritoBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -71,10 +73,13 @@ class ServiceDetailBottomSheetFragment : BottomSheetDialogFragment() {
         val tvDetailServDescripcion = view.findViewById<TextView>(R.id.tvDetailServDescripcion)
         val btnConfirmarServicio = view.findViewById<MaterialButton>(R.id.btnConfirmarServicio)
 
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
         tvDetailServNombre?.text = nombre
         tvDetailServPrecioUnitario?.text = "${formatearPrecio(precio)} MXN"
         tvDetailServDescripcion?.text = if (!descripcion.isNullOrBlank()) {
             descripcion
+        } else if (esEmpleado) {
+            "Servicio disponible para cobro en recepción o venta directa en sucursal."
         } else {
             "Servicio especializado disponible para socios en sucursal ApexGym. Acércate a recepción para agendar tu horario."
         }
@@ -84,7 +89,7 @@ class ServiceDetailBottomSheetFragment : BottomSheetDialogFragment() {
             cargarImagenServicio(imagenUrl, flDetailServImageContainer)
         }
 
-        btnConfirmarServicio?.text = "Adquirir ${formatearPrecio(precio)} MXN"
+        btnConfirmarServicio?.text = "Agregar"
 
         btnCerrarServiceDetail?.setOnClickListener {
             dismiss()
@@ -99,20 +104,29 @@ class ServiceDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 imagenUrl = imagenUrl
             )
 
-            CartManager.agregarServicio(requireContext(), servicioDto)
+            val resultado = CartManager.agregarServicio(requireContext(), servicioDto)
 
             Toast.makeText(
                 requireContext(),
-                "Agregado al carrito: $nombre (${formatearPrecio(precio)} MXN)",
+                resultado.mensaje,
                 Toast.LENGTH_SHORT
             ).show()
+
+            if (!resultado.exito) return@setOnClickListener
 
             dismiss()
 
             val fm = try { requireActivity().supportFragmentManager } catch (_: Exception) { parentFragmentManager }
-            val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
-            if (existing == null) {
-                CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)
+            if (SessionManager.esEmpleado(requireContext())) {
+                val existing = fm.findFragmentByTag(CarritoBottomSheetFragment.TAG)
+                if (existing == null) {
+                    CarritoBottomSheetFragment().show(fm, CarritoBottomSheetFragment.TAG)
+                }
+            } else {
+                val existing = fm.findFragmentByTag(CartBottomSheetFragment.TAG)
+                if (existing == null) {
+                    CartBottomSheetFragment().show(fm, CartBottomSheetFragment.TAG)
+                }
             }
         }
     }

@@ -84,10 +84,14 @@
                     android:id="@+id/ivEmpNominaAvatar"
                     android:layout_width="56dp"
                     android:layout_height="56dp"
+                    android:padding="2dp"
+                    app:contentPadding="8dp"
                     android:background="@drawable/bg_circle_white_elevated"
-                    android:scaleType="centerCrop"
+                    android:scaleType="centerInside"
                     android:src="@drawable/ic_user_profile"
-                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"                    app:strokeColor="@color/apex_orange"
+                    app:tint="@color/apex_text_secondary"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                    app:strokeColor="@color/apex_orange"
                     app:strokeWidth="2dp" />
 
                 <LinearLayout

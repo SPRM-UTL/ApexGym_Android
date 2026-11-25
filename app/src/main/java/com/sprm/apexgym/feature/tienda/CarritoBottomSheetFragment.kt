@@ -120,6 +120,8 @@ class CarritoBottomSheetFragment : BottomSheetDialogFragment() {
         val llEmptyCart = rootView.findViewById<View>(R.id.llEmptyCart)
         val llCartItemsContainer = rootView.findViewWithTag<LinearLayout>("cart_items_container")
         val llCartSummarySection = rootView.findViewWithTag<View>("cart_summary_section")
+        val tvCartSubtotal = rootView.findViewById<TextView>(R.id.tvCartSubtotal)
+        val tvCartIva = rootView.findViewById<TextView>(R.id.tvCartIva)
         val tvTotal = rootView.findViewById<TextView>(R.id.tvTotal)
         val btnProcederPago = rootView.findViewById<MaterialButton>(R.id.btnProcederPago)
 
@@ -148,8 +150,10 @@ class CarritoBottomSheetFragment : BottomSheetDialogFragment() {
             llCartItemsContainer?.addView(crearTarjetaItemCarrito(item))
         }
 
-        val total = CartManager.obtenerTotalPrecio(context)
-        tvTotal?.text = "${total.formatearMonedaSinSufijo()} MXN"
+        val totales = CartManager.obtenerTotalesConIva(context)
+        tvCartSubtotal?.text = "${totales.subtotal.formatearMonedaSinSufijo()} MXN"
+        tvCartIva?.text = "${totales.iva.formatearMonedaSinSufijo()} MXN"
+        tvTotal?.text = "${totales.total.formatearMonedaSinSufijo()} MXN"
         btnProcederPago?.text = "Continuar al cobro"
     }
 

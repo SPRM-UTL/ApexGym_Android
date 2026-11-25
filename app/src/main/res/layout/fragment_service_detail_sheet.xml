@@ -52,7 +52,8 @@
                 android:layout_height="18dp"
                 android:layout_gravity="center"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_close" />
+                android:src="@drawable/ic_close"
+                app:tint="@color/apex_text_primary" />
         </FrameLayout>
     </LinearLayout>
 
@@ -283,14 +284,18 @@
             android:id="@+id/btnConfirmarServicio"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="Adquirir $0 MXN"
+            android:text="Agregar"
             android:textAllCaps="false"
             android:textColor="@color/white"
             android:textSize="15sp"
             android:textStyle="bold"
             app:backgroundTint="@color/apex_orange"
             app:cornerRadius="26dp"
-            app:elevation="2dp" />
+            app:elevation="2dp"
+            app:icon="@drawable/ic_add_shopping_cart"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp"
+            app:iconTint="@color/white" />
     </LinearLayout>
 
 </LinearLayout>

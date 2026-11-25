@@ -123,7 +123,10 @@
             app:tabBackground="@drawable/bg_tab_selector"
             app:tabGravity="fill"
             app:tabIndicator="@null"
-            app:tabMode="fixed"
+            app:tabMinWidth="76dp"
+            app:tabMode="scrollable"
+            app:tabPaddingEnd="14dp"
+            app:tabPaddingStart="14dp"
             app:tabSelectedTextColor="@color/white"
             app:tabTextAppearance="@style/TextAppearance.Apex.TabSmall"
             app:tabTextColor="@color/apex_text_secondary" />

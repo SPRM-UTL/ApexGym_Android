@@ -111,6 +111,8 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
         val llEmptyCart = rootView.findViewById<View>(R.id.llEmptyCart)
         val llCartItemsContainer = rootView.findViewWithTag<LinearLayout>("cart_items_container")
         val llCartSummarySection = rootView.findViewWithTag<View>("cart_summary_section")
+        val tvCartSubtotal = rootView.findViewById<TextView>(R.id.tvCartSubtotal)
+        val tvCartIva = rootView.findViewById<TextView>(R.id.tvCartIva)
         val tvTotal = rootView.findViewById<TextView>(R.id.tvTotal)
         val btnProcederPago = rootView.findViewById<MaterialButton>(R.id.btnProcederPago)
 
@@ -139,14 +141,17 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
             llCartItemsContainer?.addView(crearTarjetaItemCarrito(item))
         }
 
-        val total = CartManager.obtenerTotalPrecio(context)
-        tvTotal?.text = "${formatearPrecio(total)} MXN"
+        val totales = CartManager.obtenerTotalesConIva(context)
+        tvCartSubtotal?.text = "${formatearPrecio(totales.subtotal)} MXN"
+        tvCartIva?.text = "${formatearPrecio(totales.iva)} MXN"
+        tvTotal?.text = "${formatearPrecio(totales.total)} MXN"
         btnProcederPago?.text = "Continuar"
     }
 
     private fun crearTarjetaItemCarrito(item: CartItem): View {
         val context = requireContext()
         val esMembresia = item.tipo == CartItemType.MEMBRESIA
+        val esServicio = item.tipo == CartItemType.SERVICIO
 
         val card = MaterialCardView(context).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -176,8 +181,11 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
             val icon = ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(22), dpToPx(22), Gravity.CENTER)
                 setImageResource(
-                    if (esMembresia) R.drawable.ic_membership_card
-                    else R.drawable.ic_supplement_bottle
+                    when (item.tipo) {
+                        CartItemType.MEMBRESIA -> R.drawable.ic_membership_card
+                        CartItemType.SERVICIO -> R.drawable.ic_fitness_service
+                        CartItemType.PRODUCTO -> R.drawable.ic_supplement_bottle
+                    }
                 )
                 ImageViewCompat.setImageTintList(
                     this,
@@ -201,10 +209,10 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
         }
 
         val tvCategoria = TextView(context).apply {
-            text = if (esMembresia) {
-                "Membresía • ${item.subtitulo}"
-            } else {
-                "Producto • ${formatearPrecio(item.precioUnitario)} c/u"
+            text = when (item.tipo) {
+                CartItemType.MEMBRESIA -> "Membresía • ${item.subtitulo}"
+                CartItemType.SERVICIO -> "Servicio • ${formatearPrecio(item.precioUnitario)} MXN"
+                CartItemType.PRODUCTO -> "Producto • ${formatearPrecio(item.precioUnitario)} c/u"
             }
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
@@ -250,7 +258,7 @@ class CartBottomSheetFragment : BottomSheetDialogFragment() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        if (!esMembresia) {
+        if (!esMembresia && !esServicio) {
             val stepperLayout = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL

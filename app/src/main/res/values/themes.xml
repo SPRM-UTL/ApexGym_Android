@@ -28,6 +28,7 @@
         <item name="colorSurfaceContainerHighest">@color/apex_bg_screen</item>
         <item name="colorOutline">@color/apex_stroke_light</item>
         <item name="colorOutlineVariant">@color/apex_stroke_light</item>
+        <item name="elevationOverlayEnabled">false</item>
 
         <item name="alertDialogTheme">@style/ThemeOverlay.Apex.AlertDialog</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.Apex.AlertDialog</item>
@@ -38,12 +39,45 @@
 
     <style name="Theme.ApexGym" parent="Base.Theme.ApexGym" />
 
-    <style name="ThemeOverlay.Apex.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+    <style name="ThemeOverlay.Apex.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog.Centered">
+        <item name="elevationOverlayEnabled">false</item>
         <item name="colorSurface">@color/white</item>
         <item name="colorSurfaceContainerHigh">@color/white</item>
         <item name="colorPrimary">@color/apex_orange</item>
         <item name="colorOnSurface">@color/apex_text_primary</item>
         <item name="colorOnSurfaceVariant">@color/apex_text_secondary</item>
+        <item name="android:windowBackground">@drawable/bg_dialog_apex</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/TextAppearance.Apex.DialogTitle</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/TextAppearance.Apex.DialogBody</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Apex.DialogButton.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Apex.DialogButton.Negative</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Apex.DialogButton.Negative</item>
+    </style>
+
+    <style name="TextAppearance.Apex.DialogTitle" parent="MaterialAlertDialog.Material3.Title.Text.CenterStacked">
+        <item name="android:textColor">@color/apex_text_primary</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="TextAppearance.Apex.DialogBody" parent="MaterialAlertDialog.Material3.Body.Text.CenterStacked">
+        <item name="android:textColor">@color/apex_text_secondary</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+    </style>
+
+    <style name="Widget.Apex.DialogButton.Positive" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/apex_orange</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.Apex.DialogButton.Negative" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/apex_text_secondary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <style name="ShapeAppearanceOverlay.Apex.Circle" parent="">

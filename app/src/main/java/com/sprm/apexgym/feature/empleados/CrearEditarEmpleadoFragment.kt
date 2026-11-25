@@ -147,6 +147,7 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
 
             if (!isAdded) return@launch
             if (resultado != null) {
+                binding.ivEmpleadoAvatar.imageTintList = null
                 binding.ivEmpleadoAvatar.setImageBitmap(resultado.first)
                 imagenBase64Seleccionada = resultado.second
                 binding.tvChangeAvatarHint.text = "Foto lista para guardar"
@@ -167,6 +168,7 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
                 }
             }
             if (isAdded && bitmap != null && imagenBase64Seleccionada == null) {
+                binding.ivEmpleadoAvatar.imageTintList = null
                 binding.ivEmpleadoAvatar.setImageBitmap(bitmap)
             }
         }

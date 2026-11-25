@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
-    android:clipToPadding="false"
-    android:overScrollMode="never"
-    android:paddingBottom="40dp">
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,13 +12,12 @@
         android:orientation="vertical"
         android:paddingHorizontal="18dp"
         android:paddingTop="16dp"
-        android:paddingBottom="24dp">
+        android:paddingBottom="10dp">
 
-        <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:layout_marginBottom="14dp"
+            android:layout_marginBottom="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -71,18 +68,16 @@
             </FrameLayout>
         </LinearLayout>
 
-        <!-- Selector de pestaña -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
             android:orientation="horizontal"
             android:weightSum="2">
 
             <TextView
                 android:id="@+id/btnTabNuevoPedido"
                 android:layout_width="0dp"
-                android:layout_height="42dp"
+                android:layout_height="40dp"
                 android:layout_marginEnd="5dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_chip_selected"
@@ -97,7 +92,7 @@
             <TextView
                 android:id="@+id/btnTabHistorialPedidos"
                 android:layout_width="0dp"
-                android:layout_height="42dp"
+                android:layout_height="40dp"
                 android:layout_marginStart="5dp"
                 android:layout_weight="1"
                 android:background="@drawable/bg_chip_unselected"
@@ -109,251 +104,462 @@
                 android:textSize="13.5sp"
                 android:textStyle="bold" />
         </LinearLayout>
+    </LinearLayout>
 
-        <!-- Pestaña: Nuevo pedido -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingHorizontal="18dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="20dp">
+
         <LinearLayout
-            android:id="@+id/llNuevoPedido"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
+                android:id="@+id/llNuevoPedido"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/apex_stroke_light"
-                app:strokeWidth="1dp">
+                android:orientation="vertical">
 
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/apex_stroke_light"
+                    app:strokeWidth="1dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:text="Datos del pedido"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Apex.TextInputLayout.Dropdown"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Almacén destino">
+
+                            <AutoCompleteTextView
+                                android:id="@+id/actvAlmacenDestinoPedido"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:text="Automático (Principal)"
+                                android:textColor="@color/apex_text_primary"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Apex.TextInputLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:hint="Proveedor (opcional)">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etProveedorPedido"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textCapWords"
+                                android:maxLength="150"
+                                android:maxLines="1"
+                                android:textColor="@color/apex_text_primary"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Apex.TextInputLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:hint="Notas u observaciones (opcional)">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etObservacionesPedido"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="top"
+                                android:inputType="textMultiLine|textCapSentences"
+                                android:maxLength="500"
+                                android:maxLines="3"
+                                android:minLines="2"
+                                android:textColor="@color/apex_text_primary"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Productos a solicitar"
+                        android:textColor="@color/apex_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvLimpiarPedido"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="Limpiar todo"
+                        android:textColor="@color/apex_orange"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bg_search_bar"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="12dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_search"
+                        app:tint="@color/apex_nav_inactive" />
+
+                    <EditText
+                        android:id="@+id/etBuscarProductoPedido"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:hint="Buscar por nombre, categoría o código..."
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textColor="@color/apex_text_primary"
+                        android:textColorHint="@color/apex_nav_inactive"
+                        android:textSize="13.5sp" />
+
+                    <ImageView
+                        android:id="@+id/ivLimpiarBusquedaPedido"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:clickable="true"
+                        android:contentDescription="Limpiar búsqueda"
+                        android:focusable="true"
+                        android:padding="4dp"
+                        android:src="@drawable/ic_close"
+                        android:visibility="gone"
+                        app:tint="@color/apex_text_secondary" />
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
                         <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Selecciona productos a reabastecer"
-                            android:textColor="@color/apex_text_primary"
-                            android:textSize="14.5sp"
+                            android:id="@+id/chipPedidoTodos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_chip_selected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Todos"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/tvLimpiarPedido"
+                            android:id="@+id/chipPedidoStockBajo"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_chip_unselected"
                             android:clickable="true"
                             android:focusable="true"
-                            android:paddingHorizontal="8dp"
-                            android:paddingVertical="4dp"
-                            android:text="Limpiar"
-                            android:textColor="@color/apex_orange"
-                            android:textSize="13sp"
-                            android:textStyle="bold"
-                            android:visibility="gone" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="46dp"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_search_bar"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="12dp">
-
-                        <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_search"
-                            app:tint="@color/apex_nav_inactive" />
-
-                        <EditText
-                            android:id="@+id/etBuscarProductoPedido"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@null"
-                            android:hint="Buscar producto o código..."
-                            android:imeOptions="actionSearch"
-                            android:inputType="text"
-                            android:maxLines="1"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Stock bajo"
                             android:textColor="@color/apex_text_primary"
-                            android:textColorHint="@color/apex_nav_inactive"
-                            android:textSize="13.5sp" />
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/chipPedidoSeleccionados"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Seleccionados (0)"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
+                </HorizontalScrollView>
 
-                    <TextView
-                        android:id="@+id/tvProductosPedidoVacio"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:paddingVertical="20dp"
-                        android:text="Cargando catálogo de productos…"
-                        android:textColor="@color/apex_text_secondary"
-                        android:textSize="13sp"
-                        android:visibility="visible" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rvProductosPedido"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:visibility="gone" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/apex_stroke_light"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvProductosPedidoVacio"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:gravity="center"
+                    android:paddingVertical="28dp"
+                    android:text="Cargando catálogo de productos…"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="13.5sp"
+                    android:visibility="visible" />
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Apex.TextInputLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Proveedor (opcional)">
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvProductosPedido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone" />
+            </LinearLayout>
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etProveedorPedido"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textCapWords"
-                            android:maxLength="150"
-                            android:maxLines="1"
-                            android:textColor="@color/apex_text_primary"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.Apex.TextInputLayout"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Observaciones (opcional)">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etObservacionesPedido"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="top"
-                            android:inputType="textMultiLine|textCapSentences"
-                            android:maxLength="500"
-                            android:maxLines="4"
-                            android:minLines="2"
-                            android:textColor="@color/apex_text_primary"
-                            android:textSize="14sp" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
+                android:id="@+id/llHistorialPedidos"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/apex_card_dark"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/chipHistTodos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_chip_selected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Todos"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/chipHistPendientes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Pendientes"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/chipHistAprobados"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Aprobados"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/chipHistRechazados"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_chip_unselected"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingHorizontal="14dp"
+                            android:text="Rechazados"
+                            android:textColor="@color/apex_text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </HorizontalScrollView>
 
                 <LinearLayout
+                    android:id="@+id/llHistorialVacio"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="18dp">
+                    android:paddingVertical="36dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="52dp"
+                        android:layout_height="52dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_shopping_cart"
+                        app:tint="@color/apex_nav_inactive" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:id="@+id/tvHistorialVacio"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="TOTAL ESTIMADO DEL PEDIDO"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="No hay pedidos registrados en esta sucursal."
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="13.5sp" />
 
-                    <TextView
-                        android:id="@+id/tvTotalEstimadoPedido"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnIrNuevoPedidoVacio"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="$0.00 MXN"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="14dp"
+                        android:text="Crear pedido"
+                        android:textAllCaps="false"
                         android:textColor="@color/apex_orange"
-                        android:textSize="28sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvResumenPiezasPedido"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="0 productos • 0 piezas • Pendiente de validar en web"
-                        android:textColor="@color/apex_text_on_dark_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="20dp"
+                        app:strokeColor="@color/apex_orange"
+                        app:strokeWidth="1.2dp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvHistorialPedidos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <LinearLayout
+        android:id="@+id/llBarraInferiorPedido"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:elevation="6dp"
+        android:orientation="vertical">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/apex_stroke_light" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="18dp"
+            android:paddingVertical="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.04"
+                    android:text="TOTAL ESTIMADO"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTotalEstimadoPedido"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="$0.00 MXN"
+                    android:textColor="@color/apex_orange"
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvResumenPiezasPedido"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 productos • 0 piezas"
+                    android:textColor="@color/apex_text_secondary"
+                    android:textSize="11.5sp" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEnviarPedido"
-                android:layout_width="match_parent"
-                android:layout_height="54dp"
-                android:text="Enviar Pedido a Validación"
+                android:layout_width="wrap_content"
+                android:layout_height="46dp"
+                android:minWidth="148dp"
+                android:paddingHorizontal="20dp"
+                android:text="Enviar pedido"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
-                android:textSize="15.5sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 app:backgroundTint="@color/apex_orange"
-                app:cornerRadius="27dp"
-                app:elevation="2dp" />
-        </LinearLayout>
-
-        <!-- Pestaña: Historial -->
-        <LinearLayout
-            android:id="@+id/llHistorialPedidos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvHistorialVacio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:paddingVertical="32dp"
-                android:text="No hay pedidos de compra registrados en esta sucursal."
-                android:textColor="@color/apex_text_secondary"
-                android:textSize="13.5sp"
-                android:visibility="gone" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvHistorialPedidos"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
+                app:cornerRadius="23dp"
+                app:elevation="0dp" />
         </LinearLayout>
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</LinearLayout>

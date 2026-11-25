@@ -233,7 +233,7 @@ object RetrofitClient {
                 chain.proceed(original)
             } catch (e: java.io.IOException) {
                 val currentHost = original.url.host
-                val fallbackHost = if (currentHost == "127.0.0.1" || currentHost == "localhost") "10.16.2.19" else "127.0.0.1"
+                val fallbackHost = if (currentHost == "127.0.0.1" || currentHost == "localhost") "10.0.2.2" else "127.0.0.1"
                 val newUrl = original.url.newBuilder().host(fallbackHost).build()
                 val fallbackRequest = original.newBuilder().url(newUrl).build()
                 try {

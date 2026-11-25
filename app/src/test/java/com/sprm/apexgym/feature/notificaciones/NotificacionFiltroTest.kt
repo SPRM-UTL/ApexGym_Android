@@ -69,4 +69,34 @@ class NotificacionFiltroTest {
             filtrarNotificaciones(notificaciones, "LEIDA", "bienvenido")
         )
     }
+
+    @Test
+    fun `filtra por tipo ACTIVIDAD_EMPLEADO sin romper filtros existentes`() {
+        val actividad = NotificacionDto(
+            id = 4,
+            titulo = "Actividad de empleado",
+            mensaje = "Registró una venta en tienda.",
+            tipo = NotificacionDto.TIPO_ACTIVIDAD_EMPLEADO,
+            estado = NotificacionDto.ESTADO_PENDIENTE
+        )
+        val listaConActividad = notificaciones + actividad
+
+        assertEquals(
+            listOf(actividad),
+            filtrarNotificaciones(
+                notificaciones = listaConActividad,
+                estado = null,
+                texto = "",
+                tipo = NotificacionDto.TIPO_ACTIVIDAD_EMPLEADO
+            )
+        )
+        assertTrue(
+            filtrarNotificaciones(
+                notificaciones = listaConActividad,
+                estado = NotificacionDto.ESTADO_LEIDA,
+                texto = "",
+                tipo = NotificacionDto.TIPO_ACTIVIDAD_EMPLEADO
+            ).isEmpty()
+        )
+    }
 }

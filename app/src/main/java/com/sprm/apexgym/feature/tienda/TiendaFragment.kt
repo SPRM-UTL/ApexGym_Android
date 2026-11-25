@@ -1,11 +1,13 @@
 package com.sprm.apexgym.feature.tienda
 
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Base64
+import android.util.LruCache
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
@@ -16,6 +18,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.widget.ImageViewCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,10 +32,10 @@ import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
-import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentTiendaBinding
 import com.sprm.apexgym.feature.main.CartManager
 import com.sprm.apexgym.feature.main.ProductDetailBottomSheetFragment
+import com.sprm.apexgym.feature.main.ServiceDetailBottomSheetFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -39,15 +43,18 @@ import kotlinx.coroutines.withContext
 import java.net.URL
 
 /**
- * Punto de venta para empleados. Carga el catálogo público de productos y servicios
- * y reutiliza [CartManager] para armar la venta.
+ * Punto de venta para empleados. Carga el catálogo de productos y servicios,
+ * separa ambas secciones por pestañas y reutiliza [CartManager] para armar la venta.
  */
 class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
 
     private var productos: List<ProductoClienteDto> = emptyList()
     private var servicios: List<ServicioClienteDto> = emptyList()
     private var categoriaSeleccionada: String = "Todos"
+    private var textoBusqueda: String = ""
+    private var mostrandoServicios: Boolean = false
     private val chips = mutableListOf<TextView>()
+    private val bitmapCache = LruCache<String, Bitmap>(40)
 
     private val productoAdapter = ProductoAdapter()
     private val servicioAdapter = ServicioAdapter()
@@ -64,8 +71,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         binding.rvProducts.adapter = productoAdapter
         binding.rvProducts.isNestedScrollingEnabled = false
 
-        binding.rvServices.layoutManager =
-            LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        binding.rvServices.layoutManager = LinearLayoutManager(requireContext())
         binding.rvServices.adapter = servicioAdapter
         binding.rvServices.isNestedScrollingEnabled = false
 
@@ -87,11 +93,26 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 .commit()
         }
 
+        binding.btnTabPosProductos.setOnClickListener { seleccionarSeccion(serviciosTab = false) }
+        binding.btnTabPosServicios.setOnClickListener { seleccionarSeccion(serviciosTab = true) }
+
+        binding.ivClearSearchTiendaPos.setOnClickListener {
+            binding.etSearchTiendaPos.setText("")
+        }
+        binding.etSearchTiendaPos.doAfterTextChanged { editable ->
+            textoBusqueda = editable?.toString()?.trim().orEmpty()
+            binding.ivClearSearchTiendaPos.visibility =
+                if (textoBusqueda.isNotEmpty()) View.VISIBLE else View.GONE
+            renderizarProductos()
+            renderizarServicios()
+        }
+
         val listener: () -> Unit = { actualizarBadgeCarrito() }
         cartListener = listener
         CartManager.addListener(listener)
         actualizarBadgeCarrito()
 
+        seleccionarSeccion(serviciosTab = mostrandoServicios)
         omitirPrimerResume = true
         cargarCatalogo()
     }
@@ -109,6 +130,28 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         cartListener?.let { CartManager.removeListener(it) }
         cartListener = null
         super.onDestroyView()
+    }
+
+    private fun seleccionarSeccion(serviciosTab: Boolean) {
+        mostrandoServicios = serviciosTab
+        val ctx = requireContext()
+
+        binding.llPosProductsSection.visibility = if (serviciosTab) View.GONE else View.VISIBLE
+        binding.llPosServicesSection.visibility = if (serviciosTab) View.VISIBLE else View.GONE
+
+        if (serviciosTab) {
+            binding.btnTabPosServicios.setBackgroundResource(R.drawable.bg_chip_selected)
+            binding.btnTabPosServicios.setTextColor(ContextCompat.getColor(ctx, R.color.white))
+            binding.btnTabPosProductos.setBackgroundResource(R.drawable.bg_chip_unselected)
+            binding.btnTabPosProductos.setTextColor(ContextCompat.getColor(ctx, R.color.apex_text_primary))
+            binding.etSearchTiendaPos.hint = "Buscar servicio por nombre o descripción..."
+        } else {
+            binding.btnTabPosProductos.setBackgroundResource(R.drawable.bg_chip_selected)
+            binding.btnTabPosProductos.setTextColor(ContextCompat.getColor(ctx, R.color.white))
+            binding.btnTabPosServicios.setBackgroundResource(R.drawable.bg_chip_unselected)
+            binding.btnTabPosServicios.setTextColor(ContextCompat.getColor(ctx, R.color.apex_text_primary))
+            binding.etSearchTiendaPos.hint = "Buscar producto o código de barras..."
+        }
     }
 
     private fun cargarCatalogo() {
@@ -232,10 +275,15 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
     }
 
     private fun renderizarProductos() {
-        val filtrados = productos.filter {
-            categoriaSeleccionada == "Todos" ||
-                it.categoria?.nombre?.equals(categoriaSeleccionada, ignoreCase = true) == true
-        }
+        val filtrados = productos.filter { prod ->
+            val coincideCategoria = categoriaSeleccionada == "Todos" ||
+                prod.categoria?.nombre?.equals(categoriaSeleccionada, ignoreCase = true) == true
+            val coincideBusqueda = textoBusqueda.isEmpty() ||
+                prod.nombre.contains(textoBusqueda, ignoreCase = true) ||
+                prod.codigoBarras.orEmpty().contains(textoBusqueda, ignoreCase = true) ||
+                prod.categoria?.nombre.orEmpty().contains(textoBusqueda, ignoreCase = true)
+            coincideCategoria && coincideBusqueda
+        }.sortedBy { it.stockActual <= 0 }
 
         productoAdapter.actualizar(filtrados)
         binding.tvProductCount.text = if (filtrados.size == 1) {
@@ -247,24 +295,35 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         val vacio = filtrados.isEmpty()
         binding.llEmptyProducts.visibility = if (vacio) View.VISIBLE else View.GONE
         binding.rvProducts.visibility = if (vacio) View.GONE else View.VISIBLE
-        textoEstado(binding.llEmptyProducts)?.text = if (productos.isEmpty()) {
-            "No hay productos disponibles para venta en este momento."
-        } else {
-            "No hay productos en esta categoría."
+        textoEstado(binding.llEmptyProducts)?.text = when {
+            productos.isEmpty() -> "No hay productos disponibles para venta en este momento."
+            textoBusqueda.isNotEmpty() -> "No hay productos que coincidan con \"$textoBusqueda\"."
+            else -> "No hay productos en esta categoría."
         }
     }
 
     private fun renderizarServicios() {
-        servicioAdapter.actualizar(servicios)
-        binding.tvServiceCount.text = if (servicios.size == 1) {
-            "1 servicio"
-        } else {
-            "${servicios.size} servicios"
+        val filtrados = servicios.filter { serv ->
+            textoBusqueda.isEmpty() ||
+                serv.nombre.contains(textoBusqueda, ignoreCase = true) ||
+                serv.descripcion.orEmpty().contains(textoBusqueda, ignoreCase = true)
         }
 
-        val vacio = servicios.isEmpty()
+        servicioAdapter.actualizar(filtrados)
+        binding.tvServiceCount.text = if (filtrados.size == 1) {
+            "1 servicio"
+        } else {
+            "${filtrados.size} servicios"
+        }
+
+        val vacio = filtrados.isEmpty()
         binding.llEmptyServices.visibility = if (vacio) View.VISIBLE else View.GONE
         binding.rvServices.visibility = if (vacio) View.GONE else View.VISIBLE
+        textoEstado(binding.llEmptyServices)?.text = if (servicios.isEmpty()) {
+            "No hay servicios disponibles"
+        } else {
+            "No hay servicios que coincidan con \"$textoBusqueda\"."
+        }
     }
 
     private fun abrirCarrito() {
@@ -274,6 +333,22 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 childFragmentManager,
                 CarritoBottomSheetFragment.TAG
             )
+        }
+    }
+
+    private fun abrirDetalleProducto(producto: ProductoClienteDto) {
+        val existente = childFragmentManager.findFragmentByTag(ProductDetailBottomSheetFragment.TAG)
+        if (existente == null) {
+            ProductDetailBottomSheetFragment.newInstance(producto)
+                .show(childFragmentManager, ProductDetailBottomSheetFragment.TAG)
+        }
+    }
+
+    private fun abrirDetalleServicio(servicio: ServicioClienteDto) {
+        val existente = childFragmentManager.findFragmentByTag(ServiceDetailBottomSheetFragment.TAG)
+        if (existente == null) {
+            ServiceDetailBottomSheetFragment.newInstance(servicio)
+                .show(childFragmentManager, ServiceDetailBottomSheetFragment.TAG)
         }
     }
 
@@ -311,7 +386,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             val card = MaterialCardView(context).apply {
                 layoutParams = RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    dp(226)
+                    dp(228)
                 ).apply {
                     setMargins(dp(5), dp(5), dp(5), dp(5))
                 }
@@ -361,9 +436,7 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = dp(2) }
-                setTextColor(
-                    ContextCompat.getColor(context, R.color.apex_text_secondary)
-                )
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
@@ -393,37 +466,78 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             }
             bottomRow.addView(tvPrecio)
 
+            val plusIcon = ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER)
+                setImageResource(R.drawable.ic_plus)
+                ImageViewCompat.setImageTintList(
+                    this,
+                    ColorStateList.valueOf(ContextCompat.getColor(context, R.color.white))
+                )
+            }
             val btnAdd = FrameLayout(context).apply {
                 layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
                 setBackgroundResource(R.drawable.bg_circle_orange)
-                addView(
-                    ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER)
-                        setImageResource(R.drawable.ic_plus)
-                    }
-                )
+                addView(plusIcon)
             }
             bottomRow.addView(btnAdd)
 
             inner.addView(bottomRow)
             card.addView(inner)
 
-            return ProductoViewHolder(card, imgBox, tvNombre, tvMeta, tvPrecio, btnAdd)
+            return ProductoViewHolder(card, imgBox, tvNombre, tvMeta, tvPrecio, btnAdd, plusIcon)
         }
 
         override fun onBindViewHolder(holder: ProductoViewHolder, position: Int) {
             val producto = items[position]
+            val context = holder.itemView.context
+            val agotado = producto.stockActual <= 0
+            val precioNeto = CalculoVentaPos.precioConDescuento(
+                producto.precioVenta,
+                producto.descuentoPorcentaje
+            )
+
             holder.producto = producto
+            holder.card.alpha = if (agotado) 0.55f else 1f
             holder.tvNombre.text = producto.nombre
             holder.tvMeta.text = buildString {
                 append(producto.categoria?.nombre ?: "Producto")
-                if (producto.stockActual > 0) append(" • Stock: ${producto.stockActual}")
+                if (agotado) {
+                    append(" • Agotado")
+                } else {
+                    append(" • Stock: ${producto.stockActual}")
+                }
             }
-            holder.tvPrecio.text = "${producto.precioVenta.formatearMonedaSinSufijo()} MXN"
+            holder.tvMeta.setTextColor(
+                ContextCompat.getColor(
+                    context,
+                    if (agotado) R.color.apex_nav_inactive else R.color.apex_text_secondary
+                )
+            )
+            holder.tvPrecio.text = "${precioNeto.formatearMonedaSinSufijo()} MXN"
+            holder.tvPrecio.setTextColor(
+                ContextCompat.getColor(
+                    context,
+                    if (agotado) R.color.apex_text_secondary else R.color.apex_orange
+                )
+            )
 
+            holder.btnAdd.setBackgroundResource(
+                if (agotado) R.drawable.bg_chip_unselected else R.drawable.bg_circle_orange
+            )
+            ImageViewCompat.setImageTintList(
+                holder.plusIcon,
+                ColorStateList.valueOf(
+                    ContextCompat.getColor(
+                        context,
+                        if (agotado) R.color.apex_nav_inactive else R.color.white
+                    )
+                )
+            )
+
+            holder.imgBox.tag = null
             holder.imgBox.removeAllViews()
             holder.imgBox.addView(
-                ImageView(requireContext()).apply {
+                ImageView(context).apply {
                     layoutParams = FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER)
                     setImageResource(R.drawable.ic_supplement_bottle)
                 }
@@ -431,16 +545,26 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             cargarImagen(producto.imagenUrl, holder.imgBox)
 
             holder.card.setOnClickListener {
-                val existente = childFragmentManager.findFragmentByTag(
-                    ProductDetailBottomSheetFragment.TAG
-                )
-                if (existente == null) {
-                    ProductDetailBottomSheetFragment.newInstance(producto)
-                        .show(childFragmentManager, ProductDetailBottomSheetFragment.TAG)
+                if (agotado) {
+                    Toast.makeText(
+                        context,
+                        "${producto.nombre} está agotado temporalmente.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    abrirDetalleProducto(producto)
                 }
             }
             holder.btnAdd.setOnClickListener {
-                agregarProducto(holder.producto ?: producto)
+                if (agotado) {
+                    Toast.makeText(
+                        context,
+                        "${producto.nombre} está agotado temporalmente.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    agregarProducto(holder.producto ?: producto)
+                }
             }
         }
 
@@ -459,8 +583,10 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ServicioViewHolder {
             val context = parent.context
             val card = MaterialCardView(context).apply {
-                layoutParams = RecyclerView.LayoutParams(dp(238), ViewGroup.LayoutParams.WRAP_CONTENT)
-                    .apply { marginEnd = dp(10) }
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = dp(10) }
                 setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
                 radius = dp(18).toFloat()
                 cardElevation = 0f
@@ -468,109 +594,116 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
             }
 
-            val inner = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(14), dp(14), dp(14), dp(14))
             }
 
-            val topRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-            }
-
             val iconBox = FrameLayout(context).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
-                setBackgroundResource(R.drawable.bg_chip_unselected)
+                layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+                setBackgroundResource(R.drawable.bg_circle_orange_light)
                 clipToOutline = true
                 addView(
                     ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+                        layoutParams = FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER)
                         setImageResource(R.drawable.ic_fitness_service)
+                        ImageViewCompat.setImageTintList(
+                            this,
+                            ColorStateList.valueOf(ContextCompat.getColor(context, R.color.apex_orange))
+                        )
                     }
                 )
             }
-            topRow.addView(iconBox)
+            row.addView(iconBox)
+
+            val infoCol = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply {
+                        marginStart = dp(12)
+                        marginEnd = dp(10)
+                    }
+            }
 
             val tvNombre = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    0,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    1f
-                ).apply { marginStart = dp(10) }
                 setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
                 setTypeface(typeface, Typeface.BOLD)
                 maxLines = 2
                 ellipsize = TextUtils.TruncateAt.END
             }
-            topRow.addView(tvNombre)
-            inner.addView(topRow)
+            infoCol.addView(tvNombre)
 
             val tvDescripcion = TextView(context).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    topMargin = dp(8)
-                    bottomMargin = dp(10)
-                }
-                setTextColor(
-                    ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary)
-                )
+                ).apply { topMargin = dp(3) }
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
                 maxLines = 2
                 ellipsize = TextUtils.TruncateAt.END
             }
-            inner.addView(tvDescripcion)
-
-            val bottomRow = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-            }
+            infoCol.addView(tvDescripcion)
 
             val tvPrecio = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(5) }
                 setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 setTypeface(typeface, Typeface.BOLD)
             }
-            bottomRow.addView(tvPrecio)
+            infoCol.addView(tvPrecio)
+
+            row.addView(infoCol)
 
             val btnAdd = FrameLayout(context).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(32), dp(32))
+                layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
                 setBackgroundResource(R.drawable.bg_circle_orange)
                 addView(
                     ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(dp(16), dp(16), Gravity.CENTER)
+                        layoutParams = FrameLayout.LayoutParams(dp(18), dp(18), Gravity.CENTER)
                         setImageResource(R.drawable.ic_plus)
+                        ImageViewCompat.setImageTintList(
+                            this,
+                            ColorStateList.valueOf(ContextCompat.getColor(context, R.color.white))
+                        )
                     }
                 )
             }
-            bottomRow.addView(btnAdd)
-            inner.addView(bottomRow)
+            row.addView(btnAdd)
 
-            card.addView(inner)
+            card.addView(row)
             return ServicioViewHolder(card, iconBox, tvNombre, tvDescripcion, tvPrecio, btnAdd)
         }
 
         override fun onBindViewHolder(holder: ServicioViewHolder, position: Int) {
             val servicio = items[position]
+            val context = holder.itemView.context
             holder.servicio = servicio
             holder.tvNombre.text = servicio.nombre
             holder.tvDescripcion.text = servicio.descripcion?.takeIf { it.isNotBlank() }
                 ?: "Servicio disponible en sucursal ApexGym"
             holder.tvPrecio.text = "${servicio.precio.formatearMonedaSinSufijo()} MXN"
 
+            holder.iconBox.tag = null
             holder.iconBox.removeAllViews()
             holder.iconBox.addView(
-                ImageView(requireContext()).apply {
-                    layoutParams = FrameLayout.LayoutParams(dp(20), dp(20), Gravity.CENTER)
+                ImageView(context).apply {
+                    layoutParams = FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER)
                     setImageResource(R.drawable.ic_fitness_service)
+                    ImageViewCompat.setImageTintList(
+                        this,
+                        ColorStateList.valueOf(ContextCompat.getColor(context, R.color.apex_orange))
+                    )
                 }
             )
             cargarImagen(servicio.imagenUrl, holder.iconBox)
 
-            holder.card.setOnClickListener { agregarServicio(servicio) }
+            holder.card.setOnClickListener { abrirDetalleServicio(servicio) }
             holder.btnAdd.setOnClickListener {
                 agregarServicio(holder.servicio ?: servicio)
             }
@@ -585,7 +718,8 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         val tvNombre: TextView,
         val tvMeta: TextView,
         val tvPrecio: TextView,
-        val btnAdd: FrameLayout
+        val btnAdd: FrameLayout,
+        val plusIcon: ImageView
     ) : RecyclerView.ViewHolder(card) {
         var producto: ProductoClienteDto? = null
     }
@@ -605,25 +739,35 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         val url = RetrofitClient.resolverUrlImagen(ruta) ?: return
         contenedor.tag = url
 
+        val cached = bitmapCache.get(url)
+        if (cached != null) {
+            mostrarBitmapEnContenedor(contenedor, cached)
+            return
+        }
+
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val bitmap = decodificarImagen(url)
-            if (bitmap == null) return@launch
+            val bitmap = decodificarImagen(url) ?: return@launch
+            bitmapCache.put(url, bitmap)
 
             withContext(Dispatchers.Main) {
                 if (!isAdded || contenedor.tag != url) return@withContext
-                contenedor.removeAllViews()
-                contenedor.addView(
-                    ImageView(requireContext()).apply {
-                        layoutParams = FrameLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT
-                        )
-                        scaleType = ImageView.ScaleType.CENTER_CROP
-                        setImageBitmap(bitmap)
-                    }
-                )
+                mostrarBitmapEnContenedor(contenedor, bitmap)
             }
         }
+    }
+
+    private fun mostrarBitmapEnContenedor(contenedor: FrameLayout, bitmap: Bitmap) {
+        contenedor.removeAllViews()
+        contenedor.addView(
+            ImageView(requireContext()).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                setImageBitmap(bitmap)
+            }
+        )
     }
 
     private fun decodificarImagen(url: String): Bitmap? = try {

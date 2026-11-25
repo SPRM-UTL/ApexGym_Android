@@ -37,24 +37,33 @@ object FcmTokenManager {
      * Registra el token en segundo plano. Pensado para llamarse después del
      * login sin bloquear la navegación ni depender del ciclo de vida de la vista.
      */
-    fun registrarAsync(context: Context) {
+    fun registrarAsync(context: Context, forzar: Boolean = false) {
         val appContext = context.applicationContext
-        scope.launch { registrar(appContext) }
+        scope.launch { registrar(appContext, forzar = forzar) }
+    }
+
+    /** Limpia la marca del último registro al cerrar sesión. */
+    fun limpiarRegistro(context: Context) {
+        prefs(context).edit().remove(KEY_ULTIMO_REGISTRO).apply()
     }
 
     /** Obtiene el token actual de Firebase y lo registra si hay sesión. */
-    suspend fun registrar(context: Context): Boolean {
+    suspend fun registrar(context: Context, forzar: Boolean = false): Boolean {
         val token = obtenerTokenActual()
             ?: prefs(context).getString(KEY_TOKEN, null)
             ?: return false
-        return registrarToken(context, token)
+        return registrarToken(context, token, forzar = forzar)
     }
 
     /**
      * Envía el token al backend. No falla si no hay sesión activa o si el
      * backend rechaza la cuenta; se reintenta en el próximo login o refresh.
      */
-    suspend fun registrarToken(context: Context, token: String): Boolean {
+    suspend fun registrarToken(
+        context: Context,
+        token: String,
+        forzar: Boolean = false
+    ): Boolean {
         if (token.isBlank()) return false
         val appContext = context.applicationContext
         RetrofitClient.initialize(appContext)
@@ -64,7 +73,7 @@ object FcmTokenManager {
         if (!RetrofitClient.cookieJar.tieneToken()) return false
 
         val marca = "$usuarioId:$token"
-        if (prefs(appContext).getString(KEY_ULTIMO_REGISTRO, null) == marca) return true
+        if (!forzar && prefs(appContext).getString(KEY_ULTIMO_REGISTRO, null) == marca) return true
 
         return try {
             val respuesta = RetrofitClient.dispositivoService.registrarToken(

@@ -129,6 +129,10 @@ class SucursalSelectorBottomSheetFragment : BottomSheetDialogFragment() {
             val closeIcon = ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
                 setImageResource(R.drawable.ic_close)
+                ImageViewCompat.setImageTintList(
+                    this,
+                    ColorStateList.valueOf(ContextCompat.getColor(context, R.color.apex_text_primary))
+                )
             }
             addView(closeIcon)
             setOnClickListener { dismiss() }

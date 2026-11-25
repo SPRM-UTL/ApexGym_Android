@@ -6,7 +6,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.sprm.apexgym.R
@@ -126,6 +126,7 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
                         }
                     }
                     if (isAdded && bitmap != null) {
+                        binding.ivEmpleadoAvatar.imageTintList = null
                         binding.ivEmpleadoAvatar.setImageBitmap(bitmap)
                     }
                 }
@@ -143,7 +144,7 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
 
     private fun confirmarEliminacion() {
         if (empleadoId <= 0) return
-        AlertDialog.Builder(requireContext())
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle("Eliminar empleado")
             .setMessage("¿Deseas eliminar a $nombreActual? Esta acción lo dará de baja del listado activo.")
             .setNegativeButton("Cancelar", null)

@@ -43,32 +43,52 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
         val fecha = args.getString(ARG_FECHA)
         val itemsJson = args.getString(ARG_ITEMS_JSON)
 
+        val subtotalArg = if (args.containsKey(ARG_SUBTOTAL)) args.getDouble(ARG_SUBTOTAL) else Double.NaN
+        val ivaArg = if (args.containsKey(ARG_IVA)) args.getDouble(ARG_IVA) else Double.NaN
+
         val tvTicketNumber = view.findViewById<TextView>(R.id.tvTicketNumber)
         val tvTicketDate = view.findViewById<TextView>(R.id.tvTicketDate)
         val tvTicketClient = view.findViewById<TextView>(R.id.tvTicketClient)
         val tvTicketMembership = view.findViewById<TextView>(R.id.tvTicketMembership)
         val tvTicketTotal = view.findViewById<TextView>(R.id.tvTicketTotal)
         val tvTicketSubtotal = view.findViewById<TextView>(R.id.tvTicketSubtotal)
+        val tvTicketIgv = view.findViewById<TextView>(R.id.tvTicketIgv)
         val tvTicketDescuento = view.findViewById<TextView>(R.id.tvTicketDescuento)
         val rvTicketItems = view.findViewById<RecyclerView>(R.id.rvTicketItems)
         val rvTicketPayments = view.findViewById<RecyclerView>(R.id.rvTicketPayments)
 
-        tvTicketNumber?.text = "#APX-${id.toString().padStart(5, '0')}"
-        tvTicketDate?.text = formatearFecha(fecha)
-        tvTicketClient?.text = "Venta en mostrador"
-        tvTicketMembership?.text = buildString {
-            append("Atendido por: ")
-            append(SessionManager.obtenerNombre(requireContext()) ?: "Empleado ApexGym")
-        }
-        tvTicketSubtotal?.text = "${monto.formatearMonedaSinSufijo()} MXN"
-        tvTicketTotal?.text = "${monto.formatearMonedaSinSufijo()} MXN"
-        tvTicketDescuento?.text = "- $0.00"
-        view.findViewById<View>(R.id.llTicketIgvRow)?.visibility = View.GONE
-        view.findViewById<View>(R.id.llQrVerificationSection)?.visibility = View.GONE
-
         val items = parseItems(itemsJson).ifEmpty {
             listOf(ItemTicket(concepto, 1, monto))
         }
+        val sumaItems = items.sumOf { it.subtotal }
+        val subtotalFinal = when {
+            subtotalArg.isFinite() && subtotalArg > 0.0 -> subtotalArg
+            sumaItems > 0.0 && sumaItems <= monto + 0.01 -> sumaItems
+            else -> CalculoVentaPos.redondearDosDecimales(monto / (1.0 + CalculoVentaPos.TASA_IVA))
+        }
+        val ivaFinal = when {
+            ivaArg.isFinite() && ivaArg >= 0.0 -> ivaArg
+            else -> CalculoVentaPos.redondearDosDecimales((monto - subtotalFinal).coerceAtLeast(0.0))
+        }
+
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
+        val nombreUsuario = SessionManager.obtenerNombre(requireContext())
+        tvTicketNumber?.text = "#APX-${id.toString().padStart(5, '0')}"
+        tvTicketDate?.text = formatearFecha(fecha)
+        tvTicketClient?.text = if (esEmpleado) "Venta en mostrador" else "Compra en aplicación"
+        tvTicketMembership?.text = if (esEmpleado) {
+            "Atendido por: ${nombreUsuario ?: "Empleado ApexGym"}"
+        } else {
+            "Cliente: ${nombreUsuario ?: "Socio ApexGym"}"
+        }
+        tvTicketSubtotal?.text = "${subtotalFinal.formatearMonedaSinSufijo()} MXN"
+        tvTicketIgv?.text = "${ivaFinal.formatearMonedaSinSufijo()} MXN"
+        tvTicketTotal?.text = "${monto.formatearMonedaSinSufijo()} MXN"
+        tvTicketDescuento?.text = "- $0.00"
+        view.findViewById<View>(R.id.llTicketIgvRow)?.visibility =
+            if (ivaFinal > 0.0) View.VISIBLE else View.GONE
+        view.findViewById<View>(R.id.llTicketDescuentoRow)?.visibility = View.GONE
+        view.findViewById<View>(R.id.llQrVerificationSection)?.visibility = View.GONE
 
         rvTicketItems?.layoutManager = LinearLayoutManager(requireContext())
         rvTicketItems?.adapter = ItemsAdapter(items)
@@ -99,6 +119,10 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
                 appendLine("Método: ${etiquetaProveedor(proveedor)}")
                 appendLine("Estado: $estado")
                 folio?.takeIf { it.isNotBlank() }?.let { appendLine("Folio: $it") }
+                appendLine("Subtotal: ${subtotalFinal.formatearMonedaSinSufijo()} MXN")
+                if (ivaFinal > 0.0) {
+                    appendLine("IVA (16%): ${ivaFinal.formatearMonedaSinSufijo()} MXN")
+                }
                 append("Total: ${monto.formatearMonedaSinSufijo()} MXN")
             }
             val intent = Intent(Intent.ACTION_SEND).apply {
@@ -108,15 +132,8 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
             startActivity(Intent.createChooser(intent, "Compartir ticket"))
         }
 
-        val noDisponible = View.OnClickListener {
-            Toast.makeText(
-                requireContext(),
-                "La API actual no permite descargar ni imprimir tickets.",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-        view.findViewById<View>(R.id.btnDownloadTicket)?.setOnClickListener(noDisponible)
-        view.findViewById<View>(R.id.btnPrintTicket)?.setOnClickListener(noDisponible)
+        view.findViewById<View>(R.id.btnDownloadTicket)?.visibility = View.GONE
+        view.findViewById<View>(R.id.btnPrintTicket)?.visibility = View.GONE
     }
 
     private fun parseItems(itemsJson: String?): List<ItemTicket> {
@@ -269,11 +286,15 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
         private const val ARG_FOLIO = "arg_folio"
         private const val ARG_FECHA = "arg_fecha"
         private const val ARG_ITEMS_JSON = "arg_items_json"
+        private const val ARG_SUBTOTAL = "arg_subtotal"
+        private const val ARG_IVA = "arg_iva"
 
         fun newInstance(
             transaccion: TransaccionPagoDto,
             itemsJson: String? = null,
-            metodoPago: String? = null
+            metodoPago: String? = null,
+            subtotal: Double? = null,
+            iva: Double? = null
         ): TicketCompraFragment {
             return TicketCompraFragment().apply {
                 arguments = Bundle().apply {
@@ -285,6 +306,8 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
                     putString(ARG_FOLIO, transaccion.folioVoucher)
                     putString(ARG_FECHA, transaccion.createdAt)
                     putString(ARG_ITEMS_JSON, itemsJson)
+                    if (subtotal != null) putDouble(ARG_SUBTOTAL, subtotal)
+                    if (iva != null) putDouble(ARG_IVA, iva)
                 }
             }
         }

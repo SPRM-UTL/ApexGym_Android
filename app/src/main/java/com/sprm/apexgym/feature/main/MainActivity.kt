@@ -1,11 +1,21 @@
 package com.sprm.apexgym.feature.main
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
+import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.google.android.material.textfield.TextInputLayout
+import kotlin.math.hypot
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.notifications.FcmTokenManager
@@ -16,6 +26,11 @@ import com.sprm.apexgym.feature.auth.LoginFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 
 class MainActivity : AppCompatActivity() {
+
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var esArrastre = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -50,9 +65,62 @@ class MainActivity : AppCompatActivity() {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(
+                systemBars.left,
+                systemBars.top,
+                systemBars.right,
+                maxOf(systemBars.bottom, ime.bottom)
+            )
             insets
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                touchDownX = ev.rawX
+                touchDownY = ev.rawY
+                esArrastre = false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val slop = ViewConfiguration.get(this).scaledTouchSlop
+                if (hypot((ev.rawX - touchDownX).toDouble(), (ev.rawY - touchDownY).toDouble()) > slop) {
+                    esArrastre = true
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                if (!esArrastre) {
+                    val focused = currentFocus
+                    if (focused is EditText) {
+                        val rx = ev.rawX.toInt()
+                        val ry = ev.rawY.toInt()
+                        val root = window.decorView
+                        if (!tocoCampoDeTexto(root, rx, ry)) {
+                            focused.clearFocus()
+                            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                            imm?.hideSoftInputFromWindow(focused.windowToken, 0)
+                        }
+                    }
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun tocoCampoDeTexto(view: View, rawX: Int, rawY: Int): Boolean {
+        if (!view.isShown) return false
+        if (view is EditText || view is TextInputLayout) {
+            val rect = Rect()
+            view.getGlobalVisibleRect(rect)
+            if (rect.contains(rawX, rawY)) return true
+        }
+        if (view is ViewGroup) {
+            for (i in view.childCount - 1 downTo 0) {
+                if (tocoCampoDeTexto(view.getChildAt(i), rawX, rawY)) return true
+            }
+        }
+        return false
     }
 
     override fun onNewIntent(intent: Intent) {

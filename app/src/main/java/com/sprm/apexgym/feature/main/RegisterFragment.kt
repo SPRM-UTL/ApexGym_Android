@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import androidx.core.widget.doAfterTextChanged
@@ -115,14 +116,16 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
             }
         }
 
-        fun actualizarVistaPaso(step: Int) {
+        fun actualizarVistaPaso(step: Int, animar: Boolean = true) {
             currentStep = step
 
-            val transition = AutoTransition().apply {
-                duration = 260L
-                interpolator = FastOutSlowInInterpolator()
+            if (animar) {
+                val transition = AutoTransition().apply {
+                    duration = 260L
+                    interpolator = FastOutSlowInInterpolator()
+                }
+                TransitionManager.beginDelayedTransition(llRegisterRoot, transition)
             }
-            TransitionManager.beginDelayedTransition(llRegisterRoot, transition)
 
             viewStep1.setBackgroundResource(R.drawable.bg_step_active)
             viewStep2.setBackgroundResource(
@@ -157,8 +160,12 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
                 }
             }
 
-            scrollRegister.smoothScrollTo(0, 0)
+            if (animar) {
+                scrollRegister.smoothScrollTo(0, 0)
+            }
         }
+
+        actualizarVistaPaso(currentStep, animar = false)
 
         val irALoginDirecto = View.OnClickListener {
             if (parentFragmentManager.backStackEntryCount > 0) {
@@ -378,6 +385,20 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
 
         tvIrALogin.setOnClickListener(irALoginDirecto)
         llIrALogin.setOnClickListener(irALoginDirecto)
+
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (procesandoPeticion) return
+                    if (currentStep > 1) {
+                        actualizarVistaPaso(currentStep - 1)
+                    } else {
+                        irALoginDirecto.onClick(view)
+                    }
+                }
+            }
+        )
     }
 
     private fun mostrarSelectorFecha(targetInput: TextInputEditText) {

@@ -124,6 +124,7 @@
                             android:id="@+id/ivNotifIcon"
                             android:layout_width="24dp"
                             android:layout_height="24dp"
+                            android:layout_gravity="center"
                             android:src="@drawable/ic_notification_bell"
                             app:tint="@color/apex_orange" />
                     </FrameLayout>
@@ -139,7 +140,7 @@
                             android:id="@+id/tvNotifTitulo"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="¡Nueva Membresía Disponible!"
+                            android:text="Notificación"
                             android:textColor="@color/apex_text_primary"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -158,7 +159,7 @@
                                 android:background="@drawable/bg_chip_orange"
                                 android:gravity="center"
                                 android:paddingHorizontal="8dp"
-                                android:text="Promoción"
+                                android:text="General"
                                 android:textColor="@color/white"
                                 android:textSize="9sp"
                                 android:textStyle="bold" />
@@ -181,19 +182,18 @@
                         android:id="@+id/tvNotifHora"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Hace 2h"
+                        android:text="—"
                         android:textColor="@color/apex_nav_inactive"
                         android:textSize="12sp" />
                 </LinearLayout>
 
-                <!-- Message Content -->
                 <TextView
                     android:id="@+id/tvNotifMensaje"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
                     android:lineHeight="22dp"
-                    android:text="Tenemos una nueva membresía Gold disponible con 20% de descuento para los primeros 50 inscritos. Incluye acceso ilimitado, clases grupales y entrenador personal."
+                    android:text=""
                     android:textColor="@color/apex_text_primary"
                     android:textSize="14sp" />
 
@@ -290,7 +290,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="05/11/2024 14:30:25"
+                            android:text="—"
                             android:textColor="@color/apex_text_primary"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -329,6 +329,7 @@
                         android:id="@+id/ivEntidadIcon"
                         android:layout_width="24dp"
                         android:layout_height="24dp"
+                        android:layout_gravity="center"
                         android:src="@drawable/ic_membership"
                         app:tint="@color/apex_orange" />
                 </FrameLayout>
@@ -344,7 +345,7 @@
                         android:id="@+id/tvEntidadTitulo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Membresía Gold - 20% OFF"
+                        android:text="Detalle"
                         android:textColor="@color/apex_text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -354,7 +355,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Oferta válida hasta 30/11/2024"
+                        android:text="—"
                         android:textColor="@color/apex_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -412,7 +413,7 @@
                         android:textStyle="bold"
                         app:cornerRadius="22dp"
                         app:icon="@drawable/ic_check_circle"
-                        app:iconGravity="start"
+                        app:iconGravity="textStart"
                         app:iconPadding="8dp"
                         app:strokeColor="@color/apex_orange"
                         app:strokeWidth="1.5dp" />
@@ -465,7 +466,6 @@
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
                         android:layout_height="44dp"
-                        android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         android:text="Archivar"
                         android:textAllCaps="false"
@@ -474,8 +474,9 @@
                         android:textStyle="bold"
                         app:cornerRadius="22dp"
                         app:icon="@drawable/ic_archive"
-                        app:iconGravity="start"
+                        app:iconGravity="textStart"
                         app:iconPadding="8dp"
+                        app:iconTint="#FFF44336"
                         app:strokeColor="#FFF44336"
                         app:strokeWidth="1.5dp" />
                 </LinearLayout>

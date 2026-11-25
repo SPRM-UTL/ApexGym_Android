@@ -1,8 +1,13 @@
 package com.sprm.apexgym.feature.main
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
@@ -12,11 +17,14 @@ import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
+import com.sprm.apexgym.core.notifications.ApexGymMessagingService
+import com.sprm.apexgym.core.notifications.FcmTokenManager
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.databinding.FragmentEmpleadoDashboardBinding
 import com.sprm.apexgym.feature.auth.LoginFragment
 import com.sprm.apexgym.feature.caja.ResumenAperturaFragment
 import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
+import com.sprm.apexgym.feature.inventario.AlmacenesFragment
 import com.sprm.apexgym.feature.inventario.PedidosCompraFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
 import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
@@ -30,6 +38,17 @@ import kotlinx.coroutines.launch
  * acceder a los módulos operativos del gimnasio.
  */
 class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>() {
+
+    private var receiverRegistrado: Boolean = false
+    private var primerResume: Boolean = true
+
+    private val notificacionReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (isAdded && view != null) {
+                cargarContadorNotificaciones()
+            }
+        }
+    }
 
     override fun getLayoutRes(): Int = R.layout.fragment_empleado_dashboard
 
@@ -50,6 +69,7 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
 
         actualizarBannerSucursal(view)
         sincronizarSucursalActiva(view)
+        FcmTokenManager.registrarAsync(requireContext())
 
         val cardSucursal = view.findViewWithTag<View>("card_sucursal_activa")
         cardSucursal?.setOnClickListener {
@@ -83,6 +103,7 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
         binding.flEmpleadoNotificaciones.setOnClickListener {
             navegar(NotificacionesListFragment())
         }
+        primerResume = true
         cargarContadorNotificaciones()
 
         binding.cvRecepcion.setOnClickListener { navegar(RecepcionDashboardFragment()) }
@@ -91,6 +112,7 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
         binding.cvVisitas.setOnClickListener { navegar(VisitasListFragment()) }
         binding.cvTienda.setOnClickListener { navegar(TiendaFragment()) }
         binding.cvPedidosCompra.setOnClickListener { navegar(PedidosCompraFragment()) }
+        binding.cvAlmacenes.setOnClickListener { navegar(AlmacenesFragment()) }
         binding.cvNotificaciones.setOnClickListener { navegar(NotificacionesListFragment()) }
 
         binding.btnLogout.setOnClickListener {
@@ -103,6 +125,7 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
                 } catch (_: Exception) {
                 } finally {
                     RetrofitClient.cookieJar.clear()
+                    FcmTokenManager.limpiarRegistro(requireContext())
                     SessionManager.limpiar(requireContext())
                     CartManager.vaciarCarrito(requireContext())
 
@@ -120,6 +143,41 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!receiverRegistrado) {
+            ContextCompat.registerReceiver(
+                requireContext(),
+                notificacionReceiver,
+                IntentFilter(ApexGymMessagingService.ACTION_NOTIFICACION_RECIBIDA),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            receiverRegistrado = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        view?.let { actualizarBannerSucursal(it) }
+        FcmTokenManager.registrarAsync(requireContext())
+        if (primerResume) {
+            primerResume = false
+        } else if (view != null) {
+            cargarContadorNotificaciones()
+        }
+    }
+
+    override fun onStop() {
+        if (receiverRegistrado) {
+            try {
+                requireContext().unregisterReceiver(notificacionReceiver)
+            } catch (_: IllegalArgumentException) {
+            }
+            receiverRegistrado = false
+        }
+        super.onStop()
     }
 
     private fun actualizarBannerSucursal(rootView: View) {

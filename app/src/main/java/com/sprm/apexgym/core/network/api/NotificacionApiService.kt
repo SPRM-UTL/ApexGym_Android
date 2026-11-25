@@ -32,6 +32,7 @@ data class NotificacionDto(
         const val ESTADO_PENDIENTE = "PENDIENTE"
         const val ESTADO_LEIDA = "LEIDA"
         const val ESTADO_IGNORADA = "IGNORADA"
+        const val TIPO_ACTIVIDAD_EMPLEADO = "ACTIVIDAD_EMPLEADO"
     }
 }
 
