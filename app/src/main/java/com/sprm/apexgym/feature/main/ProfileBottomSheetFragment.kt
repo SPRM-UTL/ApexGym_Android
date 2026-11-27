@@ -64,6 +64,9 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
         val tvCerrarSesionTitulo = view.findViewById<TextView>(R.id.tvCerrarSesionTitulo)
         val tvProfileSheetName = view.findViewById<TextView>(R.id.tvProfileSheetName)
         val tvProfileSheetSubtitle = view.findViewById<TextView>(R.id.tvProfileSheetSubtitle)
+        val tvMiPerfilSubtitulo = view.findViewById<TextView>(R.id.tvMiPerfilSubtitulo)
+        val tvHistorialComprasTitulo = view.findViewById<TextView>(R.id.tvHistorialComprasTitulo)
+        val tvHistorialComprasSubtitulo = view.findViewById<TextView>(R.id.tvHistorialComprasSubtitulo)
 
         val esEmpleado = SessionManager.esEmpleado(requireContext())
         val rolSesion = SessionManager.obtenerRol(requireContext())
@@ -77,6 +80,12 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
             "Empleado • ${rolSesion ?: "ApexGym"}"
         } else {
             "Socio ApexGym"
+        }
+
+        if (esEmpleado) {
+            tvMiPerfilSubtitulo?.text = "Ver la información de tu perfil"
+            tvHistorialComprasTitulo?.text = "Historial de Ventas"
+            tvHistorialComprasSubtitulo?.text = "Consultar ventas, tickets y cobros"
         }
 
         btnOpcionNotificaciones?.visibility = View.VISIBLE
