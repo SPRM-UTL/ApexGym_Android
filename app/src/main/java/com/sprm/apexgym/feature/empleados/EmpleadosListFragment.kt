@@ -30,6 +30,8 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
     private var empleados: List<EmpleadoDto> = emptyList()
     private var filtrados: List<EmpleadoDto> = emptyList()
     private var textoBusqueda: String = ""
+    private var filtroEstado: String = FILTRO_TODOS
+    private val chipsEstado = mutableListOf<Pair<String, TextView>>()
 
     override fun getLayoutRes(): Int = R.layout.fragment_empleados_list
 
@@ -38,6 +40,8 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
 
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flAddEmpleado.setOnClickListener { navegar(CrearEditarEmpleadoFragment()) }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarEmpleados() }
 
         binding.etSearchEmpleados.doAfterTextChanged { editable ->
             textoBusqueda = editable?.toString()?.trim().orEmpty()
@@ -45,22 +49,21 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
         }
 
         binding.rvEmpleados.layoutManager = LinearLayoutManager(requireContext())
+        construirChipsEstado()
         cargarEmpleados()
     }
 
     private fun cargarEmpleados() {
-        binding.tvTotalEmpleados.text = "…"
-        binding.tvEmpleadosActivos.text = "…"
-
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitClient.empleadoService.obtenerEmpleados()
+                if (!isAdded || view == null) return@launch
                 val data = response.dataExitosa()
 
                 if (data == null) {
                     empleados = emptyList()
-                    binding.tvTotalEmpleados.text = "—"
-                    binding.tvEmpleadosActivos.text = "—"
+                    construirChipsEstado()
+                    binding.rvEmpleados.visibility = View.GONE
                     binding.llEmptyEmpleados.visibility = View.VISIBLE
                     mostrarMensajeVacio(
                         response.mensajeDeError() ?: "No se pudieron cargar los empleados"
@@ -69,40 +72,109 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
                 }
 
                 empleados = data
-                binding.tvTotalEmpleados.text = data.size.toString()
-                binding.tvEmpleadosActivos.text = data.count { esActivo(it) }.toString()
-
+                construirChipsEstado()
                 aplicarFiltros()
             } catch (_: Exception) {
-                binding.tvTotalEmpleados.text = "—"
-                binding.tvEmpleadosActivos.text = "—"
+                if (!isAdded || view == null) return@launch
+                empleados = emptyList()
+                construirChipsEstado()
+                binding.rvEmpleados.visibility = View.GONE
                 binding.llEmptyEmpleados.visibility = View.VISIBLE
                 mostrarMensajeVacio("No se pudo conectar con el servidor")
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
     }
 
-    private fun esActivo(empleado: EmpleadoDto): Boolean {
+    private fun categoriaEstado(empleado: EmpleadoDto): String {
         val estado = empleado.estadoEmpleado?.nombre.orEmpty().uppercase()
-        return estado.contains("ACTIV") || estado.contains("TURNO")
+        return when {
+            estado.contains("VACACION") || estado.contains("PERMISO") || estado.contains("INCAPAC") ->
+                FILTRO_VACACIONES
+            estado.contains("INACTIV") || estado.contains("BAJA") || estado.contains("SUSPEND") ->
+                FILTRO_INACTIVOS
+            else -> FILTRO_ACTIVOS
+        }
+    }
+
+    private fun construirChipsEstado() {
+        val context = requireContext()
+        val container = binding.llFilterChipsEmpleados
+        container.removeAllViews()
+        chipsEstado.clear()
+
+        val total = empleados.size
+        val activos = empleados.count { categoriaEstado(it) == FILTRO_ACTIVOS }
+        val vacaciones = empleados.count { categoriaEstado(it) == FILTRO_VACACIONES }
+        val inactivos = empleados.count { categoriaEstado(it) == FILTRO_INACTIVOS }
+
+        val opciones = listOf(
+            FILTRO_TODOS to "Todos ($total)",
+            FILTRO_ACTIVOS to "Activos ($activos)",
+            FILTRO_VACACIONES to "Vacaciones ($vacaciones)",
+            FILTRO_INACTIVOS to "Inactivos ($inactivos)"
+        )
+
+        opciones.forEachIndexed { indice, (clave, etiqueta) ->
+            val chip = TextView(context).apply {
+                text = etiqueta
+                gravity = Gravity.CENTER
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dpToPx(16), 0, dpToPx(16), 0)
+                isClickable = true
+                isFocusable = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    dpToPx(38)
+                ).apply {
+                    if (indice > 0) marginStart = dpToPx(8)
+                }
+                setOnClickListener {
+                    filtroEstado = clave
+                    actualizarEstiloChips()
+                    aplicarFiltros()
+                }
+            }
+            chipsEstado.add(clave to chip)
+            container.addView(chip)
+        }
+
+        actualizarEstiloChips()
+    }
+
+    private fun actualizarEstiloChips() {
+        val blanco = ContextCompat.getColor(requireContext(), R.color.white)
+        val primario = ContextCompat.getColor(requireContext(), R.color.apex_text_primary)
+        chipsEstado.forEach { (clave, chip) ->
+            val activo = clave == filtroEstado
+            chip.setBackgroundResource(if (activo) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+            chip.setTextColor(if (activo) blanco else primario)
+        }
     }
 
     private fun aplicarFiltros() {
         filtrados = empleados.filter { empleado ->
-            textoBusqueda.isBlank() ||
+            val coincideEstado = filtroEstado == FILTRO_TODOS || categoriaEstado(empleado) == filtroEstado
+            val coincideTexto = textoBusqueda.isBlank() ||
                 empleado.nombreCompleto.contains(textoBusqueda, ignoreCase = true) ||
                 empleado.correo?.contains(textoBusqueda, ignoreCase = true) == true ||
-                empleado.telefono?.contains(textoBusqueda, ignoreCase = true) == true
+                empleado.telefono?.contains(textoBusqueda, ignoreCase = true) == true ||
+                empleado.puesto?.nombre?.contains(textoBusqueda, ignoreCase = true) == true
+            coincideEstado && coincideTexto
         }
 
         if (filtrados.isEmpty()) {
             binding.llEmptyEmpleados.visibility = View.VISIBLE
             binding.rvEmpleados.visibility = View.GONE
             mostrarMensajeVacio(
-                if (empleados.isEmpty()) {
-                    "No hay empleados registrados"
-                } else {
-                    "No hay empleados que coincidan con la búsqueda"
+                when {
+                    empleados.isEmpty() -> "No hay empleados registrados"
+                    textoBusqueda.isNotBlank() -> "No hay empleados que coincidan con la búsqueda"
+                    else -> "No hay empleados en esta categoría"
                 }
             )
             return
@@ -250,4 +322,11 @@ class EmpleadosListFragment : BaseFragment<FragmentEmpleadosListBinding>() {
         dp.toFloat(),
         resources.displayMetrics
     ).toInt()
+
+    companion object {
+        private const val FILTRO_TODOS = "TODOS"
+        private const val FILTRO_ACTIVOS = "ACTIVOS"
+        private const val FILTRO_VACACIONES = "VACACIONES"
+        private const val FILTRO_INACTIVOS = "INACTIVOS"
+    }
 }

@@ -39,6 +39,7 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
     private var transacciones: List<TransaccionPagoDto> = emptyList()
     private var filtroSeleccionado: String = "Todas"
     private var textoBusqueda: String = ""
+    private var paginaActual: Int = 1
     private val chips = mutableListOf<TextView>()
     private val adapter = TransaccionesAdapter()
 
@@ -47,13 +48,36 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
+        binding.tvHistorialTitle.text = if (esEmpleado) "Historial de Ventas" else "Historial de Compras"
+        binding.etSearchPurchases.hint = if (esEmpleado) {
+            "Buscar venta, cliente, producto o ticket..."
+        } else {
+            "Buscar compra, producto o ticket..."
+        }
+
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.flFilter.visibility = View.INVISIBLE
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarTransacciones() }
+
         binding.rvHistorialCompras.layoutManager = LinearLayoutManager(requireContext())
         binding.rvHistorialCompras.adapter = adapter
 
+        binding.btnPaginaAnterior.setOnClickListener {
+            if (paginaActual > 1) {
+                paginaActual -= 1
+                aplicarFiltros()
+            }
+        }
+        binding.btnPaginaSiguiente.setOnClickListener {
+            paginaActual += 1
+            aplicarFiltros()
+        }
+
         binding.etSearchPurchases.doAfterTextChanged { texto ->
             textoBusqueda = texto?.toString()?.trim().orEmpty()
+            paginaActual = 1
             aplicarFiltros()
         }
 
@@ -61,38 +85,25 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         cargarTransacciones()
     }
 
-    private fun mostrarNoDisponible() {
-        binding.tvTotalGastado.text = "—"
-        binding.tvTotalCompras.text = "—"
-        binding.tvEsteMesGasto.text = "—"
-        binding.llFilterChips.visibility = View.GONE
-        binding.rvHistorialCompras.visibility = View.GONE
-        binding.llEmptyCompras.visibility = View.VISIBLE
-        binding.etSearchPurchases.isEnabled = false
-        binding.etSearchPurchases.hint = "No disponible para tu rol"
-        textoEstado(binding.llEmptyCompras, 1)?.text = "Historial no disponible"
-        textoEstado(binding.llEmptyCompras, 2)?.text =
-            "El historial de ventas está disponible solo para empleados."
-    }
-
     private fun cargarTransacciones() {
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
         binding.rvHistorialCompras.visibility = View.GONE
+        binding.llPaginacionHistorial.visibility = View.GONE
         binding.llEmptyCompras.visibility = View.VISIBLE
-        textoEstado(binding.llEmptyCompras, 1)?.text = "Cargando compras…"
-        textoEstado(binding.llEmptyCompras, 2)?.text = "Consultando las transacciones del servidor."
-        binding.tvTotalGastado.text = "…"
-        binding.tvTotalCompras.text = "…"
-        binding.tvEsteMesGasto.text = "…"
+        textoEstado(binding.llEmptyCompras, 1)?.text =
+            if (esEmpleado) "Cargando ventas…" else "Cargando compras…"
+        textoEstado(binding.llEmptyCompras, 2)?.text = "Consultando los registros del servidor."
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.empleadoService.obtenerVentas(limite = 50)
+                val response = RetrofitClient.empleadoService.obtenerVentas(limite = 100)
+                if (!isAdded || view == null) return@launch
                 ventas = response.dataExitosa()?.registros.orEmpty()
                 transacciones = ventas.map { v ->
                     val primerDetalle = v.detalleVenta?.firstOrNull()
                     val nombreConcepto = primerDetalle?.let {
                         it.descripcion ?: it.producto?.nombre ?: it.servicio?.nombre ?: it.tipoMembresia?.nombre
-                    } ?: "Compra #${v.id}"
+                    } ?: "Venta #${v.id}"
                     val conceptoFinal = if ((v.detalleVenta?.size ?: 0) > 1) {
                         "$nombreConcepto (+${v.detalleVenta!!.size - 1} más)"
                     } else {
@@ -107,46 +118,36 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
                             4 -> "MERCADO_PAGO"
                             else -> "EFECTIVO"
                         }
+                    val folioNum = v.folioVenta?.id ?: v.id
                     TransaccionPagoDto(
                         id = v.id,
                         monto = v.total,
                         estado = when (v.estado?.lowercase()) {
-                            "completada", "completado" -> "APROBADO"
-                            "pendiente_pago" -> "PENDIENTE"
+                            "completada", "completado", "pagado" -> "APROBADO"
+                            "pendiente_pago", "pendiente" -> "PENDIENTE"
                             "cancelada", "cancelado" -> "CANCELADO"
                             else -> v.estado?.uppercase() ?: "APROBADO"
                         },
                         concepto = conceptoFinal,
-                        folioVoucher = v.folioVenta?.id?.let { "APX-$it" } ?: "APX-${v.id}",
+                        folioVoucher = "APX-${folioNum.toString().padStart(5, '0')}",
                         proveedor = proveedor,
                         createdAt = v.createdAt
                     )
                 }
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
                 ventas = emptyList()
                 transacciones = emptyList()
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
 
-            if (!isAdded) return@launch
-
-            actualizarResumen()
+            if (!isAdded || view == null) return@launch
+            paginaActual = 1
             aplicarFiltros()
         }
-    }
-
-    private fun actualizarResumen() {
-        val aprobadas = transacciones.filter {
-            it.estado.equals("APROBADO", ignoreCase = true)
-        }
-        val totalAprobado = aprobadas.sumOf { it.monto }
-        val mesActual = SimpleDateFormat("yyyy-MM", Locale.US).format(System.currentTimeMillis())
-        val totalMes = aprobadas
-            .filter { it.createdAt?.startsWith(mesActual) == true }
-            .sumOf { it.monto }
-
-        binding.tvTotalGastado.text = totalAprobado.formatearMonedaSinSufijo()
-        binding.tvTotalCompras.text = transacciones.size.toString()
-        binding.tvEsteMesGasto.text = totalMes.formatearMonedaSinSufijo()
     }
 
     private fun construirChips() {
@@ -154,32 +155,32 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         chips.clear()
 
         val tarjetaLabel = if (SessionManager.esEmpleado(requireContext())) "Terminal" else "Tarjeta"
-        listOf("Todas", "Efectivo", tarjetaLabel, "Transferencia", "Mercado Pago", "Aprobadas", "Pendientes").forEachIndexed {
-                indice,
-                filtro ->
-            val chip = TextView(requireContext()).apply {
-                text = filtro
-                gravity = Gravity.CENTER
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(dp(18), 0, dp(18), 0)
-                isClickable = true
-                isFocusable = true
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    dp(38)
-                ).apply {
-                    if (indice > 0) marginStart = dp(8)
+        listOf("Todas", "Efectivo", tarjetaLabel, "Transferencia", "Mercado Pago", "Aprobadas", "Pendientes")
+            .forEachIndexed { indice, filtro ->
+                val chip = TextView(requireContext()).apply {
+                    text = filtro
+                    gravity = Gravity.CENTER
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+                    setTypeface(typeface, Typeface.BOLD)
+                    setPadding(dp(18), 0, dp(18), 0)
+                    isClickable = true
+                    isFocusable = true
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        dp(38)
+                    ).apply {
+                        if (indice > 0) marginStart = dp(8)
+                    }
+                    setOnClickListener {
+                        filtroSeleccionado = filtro
+                        paginaActual = 1
+                        actualizarEstiloChips()
+                        aplicarFiltros()
+                    }
                 }
-                setOnClickListener {
-                    filtroSeleccionado = filtro
-                    actualizarEstiloChips()
-                    aplicarFiltros()
-                }
+                chips.add(chip)
+                binding.llFilterChips.addView(chip)
             }
-            chips.add(chip)
-            binding.llFilterChips.addView(chip)
-        }
 
         actualizarEstiloChips()
     }
@@ -199,7 +200,9 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
     }
 
     private fun aplicarFiltros() {
+        val ventasPorId = ventas.associateBy { it.id }
         val filtradas = transacciones.filter { transaccion ->
+            val ventaAsociada = ventasPorId[transaccion.id]
             val coincideFiltro = when (filtroSeleccionado) {
                 "Efectivo" -> transaccion.proveedor.equals("EFECTIVO", ignoreCase = true)
                 "Terminal", "Tarjeta" -> transaccion.proveedor.equals("TERMINAL_MANUAL", ignoreCase = true) ||
@@ -215,27 +218,48 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
                 transaccion.concepto?.contains(textoBusqueda, ignoreCase = true) == true ||
                 transaccion.id.toString().contains(textoBusqueda, ignoreCase = true) ||
                 transaccion.folioVoucher?.contains(textoBusqueda, ignoreCase = true) == true ||
-                transaccion.proveedor?.contains(textoBusqueda, ignoreCase = true) == true
+                transaccion.proveedor?.contains(textoBusqueda, ignoreCase = true) == true ||
+                ventaAsociada?.cliente?.nombreCompleto?.contains(textoBusqueda, ignoreCase = true) == true
 
             coincideFiltro && coincideBusqueda
         }
 
-        adapter.actualizar(filtradas)
+        val totalPaginas = ((filtradas.size + TAMANO_PAGINA - 1) / TAMANO_PAGINA).coerceAtLeast(1)
+        paginaActual = paginaActual.coerceIn(1, totalPaginas)
+        val paginaItems = filtradas.drop((paginaActual - 1) * TAMANO_PAGINA).take(TAMANO_PAGINA)
+
+        adapter.actualizar(paginaItems)
 
         val vacio = filtradas.isEmpty()
         binding.rvHistorialCompras.visibility = if (vacio) View.GONE else View.VISIBLE
         binding.llEmptyCompras.visibility = if (vacio) View.VISIBLE else View.GONE
 
+        if (!vacio && filtradas.size > TAMANO_PAGINA) {
+            binding.llPaginacionHistorial.visibility = View.VISIBLE
+            binding.tvInfoPaginacion.text = "Página $paginaActual de $totalPaginas"
+            binding.btnPaginaAnterior.isEnabled = paginaActual > 1
+            binding.btnPaginaAnterior.alpha = if (paginaActual > 1) 1f else 0.45f
+            binding.btnPaginaSiguiente.isEnabled = paginaActual < totalPaginas
+            binding.btnPaginaSiguiente.alpha = if (paginaActual < totalPaginas) 1f else 0.45f
+        } else {
+            binding.llPaginacionHistorial.visibility = View.GONE
+        }
+
         if (!vacio) return
 
+        val esEmpleado = SessionManager.esEmpleado(requireContext())
         if (transacciones.isEmpty()) {
-            textoEstado(binding.llEmptyCompras, 1)?.text = "No hay compras registradas"
-            textoEstado(binding.llEmptyCompras, 2)?.text =
+            textoEstado(binding.llEmptyCompras, 1)?.text =
+                if (esEmpleado) "No hay ventas registradas" else "No hay compras registradas"
+            textoEstado(binding.llEmptyCompras, 2)?.text = if (esEmpleado) {
                 "Las ventas cobradas desde la tienda aparecerán aquí."
+            } else {
+                "Tus compras en tienda aparecerán aquí."
+            }
         } else {
             textoEstado(binding.llEmptyCompras, 1)?.text = "Sin resultados"
             textoEstado(binding.llEmptyCompras, 2)?.text =
-                "No hay compras que coincidan con el filtro o la búsqueda."
+                "No hay registros que coincidan con el filtro o la búsqueda."
         }
     }
 
@@ -259,13 +283,14 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
             }.toString()
         } else null
 
-        val metodoTexto = when (transaccion.proveedor?.uppercase()) {
-            "EFECTIVO" -> "Pago en recepción / Efectivo"
-            "MERCADO_PAGO" -> "Mercado Pago / Pago en línea"
-            "TERMINAL_MANUAL", "TARJETA" -> "Tarjeta de débito"
-            "TRANSFERENCIA" -> "Transferencia bancaria"
-            else -> transaccion.proveedor ?: "Efectivo"
-        }
+        val metodoTexto = ventaAsociada?.metodoPago?.nombre?.takeIf { it.isNotBlank() }
+            ?: when (transaccion.proveedor?.uppercase()) {
+                "EFECTIVO" -> "Efectivo"
+                "MERCADO_PAGO" -> "Mercado Pago"
+                "TERMINAL_MANUAL", "TARJETA" -> "Terminal / Tarjeta"
+                "TRANSFERENCIA" -> "Transferencia bancaria"
+                else -> transaccion.proveedor ?: "Efectivo"
+            }
 
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
@@ -283,7 +308,9 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
                     subtotal = ventaAsociada?.subtotal?.takeIf { it > 0.0 },
                     iva = ventaAsociada?.let { v ->
                         if (v.subtotal > 0.0) (v.total - v.subtotal).coerceAtLeast(0.0) else null
-                    }
+                    },
+                    clienteNombre = ventaAsociada?.cliente?.nombreCompleto?.takeIf { it.isNotBlank() },
+                    empleadoNombre = ventaAsociada?.empleado?.nombreCompleto?.takeIf { it.isNotBlank() }
                 )
             )
             .addToBackStack(null)
@@ -292,8 +319,9 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
 
     private fun etiquetaProveedor(proveedor: String?): String = when (proveedor?.uppercase()) {
         "EFECTIVO" -> "Efectivo"
-        "TERMINAL_MANUAL" -> "Terminal manual"
+        "TERMINAL_MANUAL", "TARJETA" -> "Terminal / Tarjeta"
         "MERCADO_PAGO" -> "Mercado Pago"
+        "TRANSFERENCIA" -> "Transferencia"
         null -> "Sin método"
         else -> proveedor.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
     }
@@ -404,15 +432,27 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
 
         override fun onBindViewHolder(holder: TransaccionViewHolder, position: Int) {
             val transaccion = items[position]
+            val venta = ventas.firstOrNull { it.id == transaccion.id }
+            val clienteNombre = venta?.cliente?.nombreCompleto?.takeIf { it.isNotBlank() }
+
             holder.tvConcepto.text = transaccion.concepto?.takeIf { it.isNotBlank() }
                 ?: "Venta #${transaccion.id}"
             holder.tvDetalle.text = buildString {
+                if (clienteNombre != null) {
+                    append(clienteNombre)
+                    append(" • ")
+                }
                 append(formatearFecha(transaccion.createdAt))
                 append(" • ")
                 append(etiquetaProveedor(transaccion.proveedor))
             }
             holder.tvMonto.text = transaccion.monto.formatearMonedaSinSufijo()
-            holder.tvEstado.text = transaccion.estado ?: "—"
+            holder.tvEstado.text = when (transaccion.estado?.uppercase()) {
+                "APROBADO" -> "Aprobado"
+                "PENDIENTE" -> "Pendiente"
+                "CANCELADO" -> "Cancelado"
+                else -> transaccion.estado ?: "—"
+            }
             holder.tvEstado.setTextColor(
                 ContextCompat.getColor(
                     requireContext(),
@@ -442,4 +482,8 @@ class HistorialComprasFragment : BaseFragment<FragmentHistorialComprasBinding>()
         valor.toFloat(),
         resources.displayMetrics
     ).toInt()
+
+    companion object {
+        private const val TAMANO_PAGINA = 10
+    }
 }

@@ -42,6 +42,7 @@ import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.network.mensajeUsuario
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.core.network.api.CrearVentaRequest
 import com.sprm.apexgym.core.network.api.DetalleVentaRequest
 import com.sprm.apexgym.core.network.api.PagoVentaRequest
@@ -432,7 +433,9 @@ class CheckoutFragment : Fragment() {
             valorInicial = nombreTitular,
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS,
             maxLength = 60
-        )
+        ).apply {
+            filters = InputFilters.personName(60)
+        }
         etTitular.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -502,7 +505,9 @@ class CheckoutFragment : Fragment() {
             valorInicial = cvvTarjeta,
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD,
             maxLength = 4
-        )
+        ).apply {
+            filters = InputFilters.digitsOnly(4)
+        }
         etCvv.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -582,7 +587,9 @@ class CheckoutFragment : Fragment() {
             valorInicial = bancoEmisorSpei,
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS,
             maxLength = 40
-        )
+        ).apply {
+            filters = InputFilters.bankName(40)
+        }
         etBanco.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -598,7 +605,9 @@ class CheckoutFragment : Fragment() {
             valorInicial = referenciaSpei,
             inputType = InputType.TYPE_CLASS_TEXT,
             maxLength = 35
-        )
+        ).apply {
+            filters = InputFilters.voucherFolio(35)
+        }
         etReferencia.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -657,7 +666,9 @@ class CheckoutFragment : Fragment() {
             valorInicial = correoPaypal,
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
             maxLength = 80
-        )
+        ).apply {
+            filters = InputFilters.noWhitespace(80)
+        }
         etCorreoPaypal.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}

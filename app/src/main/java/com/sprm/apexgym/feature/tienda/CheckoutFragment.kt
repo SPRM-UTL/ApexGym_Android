@@ -31,6 +31,7 @@ import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.network.mensajeUsuario
 import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.databinding.FragmentCheckoutPosBinding
 import com.sprm.apexgym.feature.main.CartItem
 import com.sprm.apexgym.feature.main.CartItemType
@@ -49,6 +50,8 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
     private var metodosSistema: List<MetodoPagoDto> = emptyList()
     private var metodoSeleccionado: MetodoPagoDto? = null
     private var clientesDisponibles: List<ClienteAsistenciaDto> = emptyList()
+    private var clienteSeleccionado: ClienteAsistenciaDto? = null
+    private var buscadorClienteAbierto: Boolean = false
     private var totales: TotalesVentaPos = TotalesVentaPos(0.0, 0.0, 0.0)
     private var aperturaCajaId: Int? = null
     private var cobrando = false
@@ -68,6 +71,8 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         totales = CalculoVentaPos.calcularTotales(items.map { it.precioUnitario to it.cantidad })
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.etEfectivoRecibido.filters = InputFilters.decimalAmount(maxIntegers = 7, maxDecimals = 2)
+        binding.etFolioVoucher.filters = InputFilters.voucherFolio(60)
         binding.etEfectivoRecibido.doAfterTextChanged { actualizarCambio() }
         binding.btnCobrar.setOnClickListener { validarYCobrar() }
 
@@ -81,6 +86,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         binding.cardTerminal.visibility = View.GONE
 
         renderizarResumen(items)
+        configurarSelectorCliente()
         cargarClientes()
         cargarMetodosPagoDelSistema(view)
         cargarAperturaActiva()
@@ -96,12 +102,37 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
         }
     }
 
+    private fun configurarSelectorCliente() {
+        binding.rvResultadosClienteVenta.layoutManager =
+            androidx.recyclerview.widget.LinearLayoutManager(requireContext())
+        binding.rvResultadosClienteVenta.visibility = View.GONE
+
+        val toggleBuscador = View.OnClickListener {
+            if (clienteSeleccionado == null) {
+                buscadorClienteAbierto = true
+                binding.llBuscadorCliente.visibility = View.VISIBLE
+                return@OnClickListener
+            }
+            buscadorClienteAbierto = !buscadorClienteAbierto
+            binding.llBuscadorCliente.visibility =
+                if (buscadorClienteAbierto) View.VISIBLE else View.GONE
+            binding.tvCambiarCliente.text = if (buscadorClienteAbierto) "Cerrar" else "Cambiar"
+            if (buscadorClienteAbierto) {
+                renderizarResultadosClientes(binding.etBuscarClienteVenta.text?.toString().orEmpty())
+            }
+        }
+        binding.tvCambiarCliente.setOnClickListener(toggleBuscador)
+        binding.llClienteSeleccionado.setOnClickListener(toggleBuscador)
+
+        binding.etBuscarClienteVenta.doAfterTextChanged { editable ->
+            renderizarResultadosClientes(editable?.toString().orEmpty())
+        }
+    }
+
     private fun cargarClientes() {
-        binding.spClienteVenta.adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
-            listOf("Cargando clientes…")
-        )
+        clienteSeleccionado = null
+        buscadorClienteAbierto = true
+        actualizarClienteSeleccionadoUi()
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -111,27 +142,134 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                 if (!isAdded || view == null) return@launch
 
                 clientesDisponibles = lista
-                val etiquetas = if (lista.isEmpty()) {
-                    listOf("Sin clientes registrados en la sucursal")
-                } else {
-                    lista.map { cliente ->
-                        cliente.nombreCompleto.ifBlank { "Cliente #${cliente.id}" }
-                    }
-                }
-                binding.spClienteVenta.adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_dropdown_item,
-                    etiquetas
-                )
+                actualizarClienteSeleccionadoUi()
+                renderizarResultadosClientes(binding.etBuscarClienteVenta.text?.toString().orEmpty())
             } catch (_: Exception) {
                 if (!isAdded || view == null) return@launch
                 clientesDisponibles = emptyList()
-                binding.spClienteVenta.adapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_dropdown_item,
-                    listOf("Error al cargar clientes")
-                )
+                clienteSeleccionado = null
+                actualizarClienteSeleccionadoUi()
+                binding.rvResultadosClienteVenta.visibility = View.GONE
             }
+        }
+    }
+
+    private fun actualizarClienteSeleccionadoUi() {
+        val seleccionado = clienteSeleccionado
+        if (seleccionado == null) {
+            buscadorClienteAbierto = true
+            binding.llClienteSeleccionado.visibility = View.GONE
+            binding.tvCambiarCliente.visibility = View.GONE
+            binding.llBuscadorCliente.visibility = View.VISIBLE
+            return
+        }
+
+        binding.llClienteSeleccionado.visibility = View.VISIBLE
+        binding.tvClienteSeleccionadoNombre.text =
+            seleccionado.nombreCompleto.ifBlank { "Cliente" }
+        val meta = listOfNotNull(
+            seleccionado.correo?.takeIf { it.isNotBlank() },
+            seleccionado.telefono?.takeIf { it.isNotBlank() }
+        ).joinToString(" • ").ifBlank { "Socio seleccionado" }
+        binding.tvClienteSeleccionadoMeta.text = meta
+        binding.tvCambiarCliente.visibility = View.VISIBLE
+        binding.tvCambiarCliente.text = if (buscadorClienteAbierto) "Cerrar" else "Cambiar"
+        binding.llBuscadorCliente.visibility =
+            if (buscadorClienteAbierto) View.VISIBLE else View.GONE
+    }
+
+    private fun renderizarResultadosClientes(consulta: String) {
+        val filtro = consulta.trim()
+        if (filtro.length < 2) {
+            binding.rvResultadosClienteVenta.visibility = View.GONE
+            binding.rvResultadosClienteVenta.adapter = null
+            return
+        }
+        binding.rvResultadosClienteVenta.visibility = View.VISIBLE
+        val coincidencias = clientesDisponibles.filter { c ->
+            c.nombreCompleto.contains(filtro, ignoreCase = true) ||
+                c.correo?.contains(filtro, ignoreCase = true) == true ||
+                c.telefono?.contains(filtro, ignoreCase = true) == true
+        }.take(8)
+
+        binding.rvResultadosClienteVenta.adapter = object :
+            androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
+
+            override fun onCreateViewHolder(
+                parent: ViewGroup,
+                viewType: Int
+            ): androidx.recyclerview.widget.RecyclerView.ViewHolder {
+                val context = parent.context
+                val card = MaterialCardView(context).apply {
+                    layoutParams = androidx.recyclerview.widget.RecyclerView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = dp(6) }
+                    setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
+                    radius = dp(12).toFloat()
+                    cardElevation = 0f
+                    strokeWidth = dp(1)
+                    strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
+                    isClickable = true
+                    isFocusable = true
+                }
+                val col = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(10), dp(12), dp(10))
+                }
+                val tvNombre = TextView(context).apply {
+                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+                    setTypeface(typeface, Typeface.BOLD)
+                }
+                val tvMeta = TextView(context).apply {
+                    setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                }
+                col.addView(tvNombre)
+                col.addView(tvMeta)
+                card.addView(col)
+                return object : androidx.recyclerview.widget.RecyclerView.ViewHolder(card) {}
+            }
+
+            override fun onBindViewHolder(
+                holder: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                position: Int
+            ) {
+                val card = holder.itemView as MaterialCardView
+                val col = card.getChildAt(0) as LinearLayout
+                val tvNombre = col.getChildAt(0) as TextView
+                val tvMeta = col.getChildAt(1) as TextView
+
+                if (coincidencias.isEmpty()) {
+                    tvNombre.text = "Sin coincidencias"
+                    tvMeta.text = "Prueba con otro nombre, correo o teléfono"
+                    card.setOnClickListener(null)
+                    return
+                }
+
+                val c = coincidencias[position]
+                val actual = c.id == clienteSeleccionado?.id
+                card.strokeColor = ContextCompat.getColor(
+                    requireContext(),
+                    if (actual) R.color.apex_orange else R.color.apex_stroke_light
+                )
+                tvNombre.text = c.nombreCompleto.ifBlank { "Cliente" }
+                tvMeta.text = listOfNotNull(
+                    c.correo?.takeIf { it.isNotBlank() },
+                    c.telefono?.takeIf { it.isNotBlank() }
+                ).joinToString(" • ").ifBlank { "Socio registrado" }
+
+                card.setOnClickListener {
+                    clienteSeleccionado = c
+                    buscadorClienteAbierto = false
+                    binding.etBuscarClienteVenta.setText("")
+                    binding.rvResultadosClienteVenta.visibility = View.GONE
+                    actualizarClienteSeleccionadoUi()
+                }
+            }
+
+            override fun getItemCount(): Int = coincidencias.size.coerceAtLeast(1)
         }
     }
 
@@ -391,7 +529,7 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
             return
         }
 
-        val cliente = clientesDisponibles.getOrNull(binding.spClienteVenta.selectedItemPosition)
+        val cliente = clienteSeleccionado
         if (cliente == null) {
             mostrarError("Selecciona el cliente para registrar la venta.")
             return
@@ -569,7 +707,12 @@ class CheckoutFragment : BaseFragment<FragmentCheckoutPosBinding>() {
                             itemsJson = itemsJson,
                             metodoPago = nombreMetodo,
                             subtotal = if (venta.subtotal > 0.0) venta.subtotal else totales.subtotal,
-                            iva = if (venta.subtotal > 0.0) (venta.total - venta.subtotal).coerceAtLeast(0.0) else totales.iva
+                            iva = if (venta.subtotal > 0.0) (venta.total - venta.subtotal).coerceAtLeast(0.0) else totales.iva,
+                            clienteNombre = clienteSeleccionado?.let { c ->
+                                c.nombreCompleto.takeIf { nombre -> nombre.isNotBlank() }
+                                    ?: "Cliente #${c.id}"
+                            },
+                            empleadoNombre = SessionManager.obtenerNombre(requireContext())
                         )
                     )
                     .addToBackStack(null)

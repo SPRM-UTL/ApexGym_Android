@@ -14,9 +14,21 @@ fun filtrarNotificaciones(
     return notificaciones.filter { notificacion ->
         val coincideEstado = estado == null || notificacion.estado == estado
         val coincideTipo = tipoFiltro == null || notificacion.tipo.equals(tipoFiltro, ignoreCase = true)
+        val tituloFormateado = NotificacionFormatter.formatearTitulo(
+            titulo = notificacion.titulo,
+            mensaje = notificacion.mensaje,
+            tipo = notificacion.tipo
+        )
+        val mensajeFormateado = NotificacionFormatter.formatearMensaje(
+            mensaje = notificacion.mensaje,
+            titulo = notificacion.titulo,
+            tipo = notificacion.tipo
+        )
         val coincideTexto = termino.isEmpty() ||
             notificacion.titulo.contains(termino, ignoreCase = true) ||
             notificacion.mensaje.contains(termino, ignoreCase = true) ||
+            tituloFormateado.contains(termino, ignoreCase = true) ||
+            mensajeFormateado.contains(termino, ignoreCase = true) ||
             notificacion.tipo.contains(termino, ignoreCase = true)
         coincideEstado && coincideTipo && coincideTexto
     }

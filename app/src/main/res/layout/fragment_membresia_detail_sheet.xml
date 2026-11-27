@@ -159,19 +159,6 @@
                             android:textColor="@color/apex_orange"
                             android:textSize="10.5sp"
                             android:textStyle="bold" />
-
-                        <Space
-                            android:layout_width="0dp"
-                            android:layout_height="1dp"
-                            android:layout_weight="1" />
-
-                        <TextView
-                            android:id="@+id/tvDetailMembresiaRenovacionBadge"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Renovación manual"
-                            android:textColor="@color/apex_text_on_dark_secondary"
-                            android:textSize="11.5sp" />
                     </LinearLayout>
 
                     <TextView
@@ -211,16 +198,6 @@
                             android:text="días restantes de vigencia"
                             android:textColor="@color/apex_text_on_dark_secondary"
                             android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvDetailMembresiaProgresoTexto"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="6dp"
-                            android:text="0% transcurrido"
-                            android:textColor="@color/white"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <ProgressBar

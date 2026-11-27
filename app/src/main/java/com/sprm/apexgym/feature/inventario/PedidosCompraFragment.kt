@@ -35,6 +35,7 @@ import com.sprm.apexgym.core.network.formatearMoneda
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.network.mensajeUsuario
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.databinding.FragmentPedidosCompraBinding
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -67,7 +68,8 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.flRefresh.setOnClickListener { cargarDatos() }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarDatos() }
 
         productoAdapter = ProductoPedidoAdapter(
             cantidades = cantidadesSeleccionadas,
@@ -90,6 +92,8 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
         binding.btnIrNuevoPedidoVacio.setOnClickListener { mostrarTabNuevoPedido() }
         binding.tvLimpiarPedido.setOnClickListener { limpiarCantidades() }
         binding.btnEnviarPedido.setOnClickListener { confirmarYEnviarPedido() }
+        binding.etProveedorPedido.filters = InputFilters.plainText(150)
+        binding.etObservacionesPedido.filters = InputFilters.plainText(500, allowNewLines = true)
 
         binding.ivLimpiarBusquedaPedido.setOnClickListener {
             binding.etBuscarProductoPedido.setText("")
@@ -216,6 +220,10 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
                 binding.tvProductosPedidoVacio.visibility = View.VISIBLE
                 binding.tvProductosPedidoVacio.text = e.mensajeUsuario()
                 binding.rvProductosPedido.visibility = View.GONE
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
     }
@@ -527,6 +535,7 @@ class PedidosCompraFragment : BaseFragment<FragmentPedidosCompraBinding>() {
             actualizarVisualSeleccion(holder, prod, cantidadActual)
 
             holder.watcher?.let { holder.etCantidad.removeTextChangedListener(it) }
+            holder.etCantidad.filters = InputFilters.digitsOnly(5)
             holder.actualizandoTexto = true
             holder.etCantidad.setText(if (cantidadActual > 0) cantidadActual.toString() else "")
             holder.actualizandoTexto = false

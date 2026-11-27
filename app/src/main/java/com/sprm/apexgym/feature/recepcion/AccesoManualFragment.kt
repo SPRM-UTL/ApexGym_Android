@@ -1,9 +1,14 @@
 package com.sprm.apexgym.feature.recepcion
 
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
@@ -15,14 +20,18 @@ import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.databinding.FragmentAccesoManualBinding
+import com.sprm.apexgym.databinding.ItemClienteCoincidenciaBinding
+import com.sprm.apexgym.feature.main.MembresiaVigenciaHelper
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
 
     private var clienteActual: ClienteAsistenciaDto? = null
     private var membresiaActual: ClienteMembresiaAsistenciaDto? = null
+    private var coincidencias: List<ClienteAsistenciaDto> = emptyList()
+    private val coincidenciasAdapter = CoincidenciasAdapter { seleccionado ->
+        mostrarCliente(seleccionado)
+    }
 
     override fun getLayoutRes(): Int = R.layout.fragment_acceso_manual
 
@@ -30,9 +39,13 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.llResultadosBusqueda.visibility = View.GONE
         binding.cvClientFound.visibility = View.GONE
         binding.cvClientNotFound.visibility = View.GONE
         binding.llLoading.visibility = View.GONE
+
+        binding.rvResultadosClientes.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvResultadosClientes.adapter = coincidenciasAdapter
 
         val dispararBusqueda = {
             val query = binding.etManualSearch.text?.toString()?.trim().orEmpty()
@@ -54,7 +67,6 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
         }
 
         binding.btnGrantAccess.setOnClickListener { confirmarPermitirAcceso() }
-        binding.btnDenyAccess.setOnClickListener { confirmarDenegarAcceso() }
 
         val clienteId = arguments?.getInt(ARG_CLIENTE_ID, 0) ?: 0
         if (clienteId > 0) {
@@ -68,14 +80,28 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
             try {
                 val response = RetrofitClient.empleadoService.buscarCliente(termino)
                 val encontrados = response.dataExitosa()
-                if (!isAdded) return@launch
+                if (!isAdded || view == null) return@launch
 
                 if (encontrados.isNullOrEmpty()) {
+                    coincidencias = emptyList()
+                    binding.llResultadosBusqueda.visibility = View.GONE
                     mostrarNoEncontrado()
                     return@launch
                 }
 
-                mostrarCliente(encontrados.first())
+                coincidencias = encontrados
+                if (encontrados.size == 1) {
+                    binding.llResultadosBusqueda.visibility = View.GONE
+                    mostrarCliente(encontrados.first())
+                } else {
+                    binding.llLoading.visibility = View.GONE
+                    binding.cvClientNotFound.visibility = View.GONE
+                    binding.cvClientFound.visibility = View.GONE
+                    binding.llResultadosBusqueda.visibility = View.VISIBLE
+                    binding.tvTituloCoincidencias.text =
+                        "Coincidencias encontradas (${encontrados.size}) — Toca para revisar"
+                    coincidenciasAdapter.submitList(encontrados, null)
+                }
             } catch (_: Exception) {
                 if (isAdded) mostrarNoEncontrado()
             }
@@ -110,14 +136,19 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
 
     private fun mostrarCliente(cliente: ClienteAsistenciaDto) {
         clienteActual = cliente
+        if (coincidencias.size > 1) {
+            coincidenciasAdapter.submitList(coincidencias, cliente.id)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             cargarMembresia(cliente.id)
-            if (!isAdded) return@launch
+            if (!isAdded || view == null) return@launch
 
             val membresia = membresiaActual
+            val diasRestantes = MembresiaVigenciaHelper.calcularDiasRestantes(membresia?.fechaFin)
             val vigente = membresia != null &&
-                membresia.estadoMembresia?.nombre.equals("Vigente", ignoreCase = true)
+                membresia.estadoMembresia?.nombre.equals("Vigente", ignoreCase = true) &&
+                (diasRestantes == null || diasRestantes >= 0L)
 
             binding.cvClientFound.visibility = View.VISIBLE
             binding.cvClientNotFound.visibility = View.GONE
@@ -127,8 +158,8 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
             val contacto = listOfNotNull(
                 cliente.correo?.takeIf { it.isNotBlank() },
                 cliente.telefono?.takeIf { it.isNotBlank() }
-            ).joinToString(" • ")
-            binding.tvClientCode.text = contacto.ifBlank { "Sin datos de contacto" }
+            ).joinToString(" • ").ifBlank { "Sin correo ni teléfono registrados" }
+            binding.tvClientCode.text = contacto
 
             binding.tvClientStatus.text = if (vigente) "VIGENTE" else "SIN PLAN"
             binding.tvClientStatus.setBackgroundResource(
@@ -148,16 +179,14 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
 
             binding.btnGrantAccess.isEnabled = vigente
             binding.btnGrantAccess.alpha = if (vigente) 1f else 0.45f
-            binding.btnDenyAccess.isEnabled = true
         }
     }
 
     private fun confirmarPermitirAcceso() {
         val cliente = clienteActual ?: return
-        val plan = membresiaActual?.tipoMembresia?.nombre ?: "Membresía vigente"
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Confirmar entrada")
-            .setMessage("¿Registrar asistencia para ${cliente.nombreCompleto}?\nPlan: $plan")
+            .setMessage("¿Registrar asistencia para ${cliente.nombreCompleto}?")
             .setNegativeButton("Cancelar", null)
             .setPositiveButton("Confirmar") { _, _ ->
                 registrarAcceso()
@@ -165,26 +194,11 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
             .show()
     }
 
-    private fun confirmarDenegarAcceso() {
-        val cliente = clienteActual ?: return
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Denegar entrada")
-            .setMessage("¿Deseas cancelar el acceso para ${cliente.nombreCompleto}?")
-            .setNegativeButton("Volver", null)
-            .setPositiveButton("Denegar") { _, _ ->
-                limpiarResultado()
-                Toast.makeText(
-                    requireContext(),
-                    "Acceso denegado para ${cliente.nombreCompleto}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            .show()
-    }
-
     private fun limpiarResultado() {
         clienteActual = null
         membresiaActual = null
+        coincidencias = emptyList()
+        binding.llResultadosBusqueda.visibility = View.GONE
         binding.cvClientFound.visibility = View.GONE
         binding.cvClientNotFound.visibility = View.GONE
         binding.etManualSearch.setText("")
@@ -193,6 +207,8 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
     private fun mostrarNoEncontrado() {
         clienteActual = null
         membresiaActual = null
+        coincidencias = emptyList()
+        binding.llResultadosBusqueda.visibility = View.GONE
         binding.cvClientFound.visibility = View.GONE
         binding.cvClientNotFound.visibility = View.VISIBLE
         binding.llLoading.visibility = View.GONE
@@ -201,6 +217,7 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
     private fun mostrarCargando(cargando: Boolean) {
         binding.llLoading.visibility = if (cargando) View.VISIBLE else View.GONE
         if (cargando) {
+            binding.llResultadosBusqueda.visibility = View.GONE
             binding.cvClientFound.visibility = View.GONE
             binding.cvClientNotFound.visibility = View.GONE
         }
@@ -271,19 +288,83 @@ class AccesoManualFragment : BaseFragment<FragmentAccesoManualBinding>() {
     }
 
     private fun calcularDiasRestantes(fechaFin: String?): String {
-        if (fechaFin.isNullOrBlank()) return "—"
-        return try {
-            val fecha = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(fechaFin.take(10))
-                ?: return "—"
-            val dias = ((fecha.time - System.currentTimeMillis()) / 86_400_000L).toInt()
-            when {
-                dias < 0 -> "Vencida"
-                dias == 0 -> "Vence hoy"
-                dias == 1 -> "1 día"
-                else -> "$dias días"
+        val dias = MembresiaVigenciaHelper.calcularDiasRestantes(fechaFin) ?: return "—"
+        return when {
+            dias < 0L -> "Vencida"
+            dias == 0L -> "Vence hoy"
+            dias == 1L -> "1 día"
+            else -> "$dias días"
+        }
+    }
+
+    private class CoincidenciasAdapter(
+        private val onSelect: (ClienteAsistenciaDto) -> Unit
+    ) : RecyclerView.Adapter<CoincidenciasAdapter.ViewHolder>() {
+
+        private var items: List<ClienteAsistenciaDto> = emptyList()
+        private var seleccionadoId: Int? = null
+
+        fun submitList(nuevos: List<ClienteAsistenciaDto>, seleccionado: Int?) {
+            items = nuevos
+            seleccionadoId = seleccionado
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val binding = ItemClienteCoincidenciaBinding.inflate(
+                LayoutInflater.from(parent.context),
+                parent,
+                false
+            )
+            return ViewHolder(binding, onSelect)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            val item = items[position]
+            holder.bind(item, item.id == seleccionadoId)
+        }
+
+        override fun getItemCount(): Int = items.size
+
+        class ViewHolder(
+            private val itemBinding: ItemClienteCoincidenciaBinding,
+            private val onSelect: (ClienteAsistenciaDto) -> Unit
+        ) : RecyclerView.ViewHolder(itemBinding.root) {
+
+            fun bind(cliente: ClienteAsistenciaDto, seleccionado: Boolean) {
+                val context = itemBinding.root.context
+                itemBinding.tvCoincidenciaNombre.text = cliente.nombreCompleto.ifBlank { "Socio" }
+
+                val contacto = listOfNotNull(
+                    cliente.correo?.takeIf { it.isNotBlank() },
+                    cliente.telefono?.takeIf { it.isNotBlank() }
+                ).joinToString(" • ").ifBlank { "Sin correo ni teléfono registrados" }
+                itemBinding.tvCoincidenciaIdentificador.text = contacto
+
+                val estadoNombre = cliente.estadoCliente?.nombre?.takeIf { it.isNotBlank() } ?: "Socio"
+                itemBinding.tvCoincidenciaEstado.text = estadoNombre
+                val activo = estadoNombre.contains("ACTIV", ignoreCase = true)
+                itemBinding.tvCoincidenciaEstado.setBackgroundResource(
+                    if (activo) R.drawable.bg_badge_green else R.drawable.bg_badge_soft_neutral
+                )
+                itemBinding.tvCoincidenciaEstado.setTextColor(
+                    ContextCompat.getColor(
+                        context,
+                        if (activo) R.color.white else R.color.apex_text_secondary
+                    )
+                )
+
+                val strokePx = ((if (seleccionado) 2f else 1f) * context.resources.displayMetrics.density).toInt()
+                itemBinding.cardCoincidenciaCliente.strokeWidth = strokePx
+                itemBinding.cardCoincidenciaCliente.strokeColor = ContextCompat.getColor(
+                    context,
+                    if (seleccionado) R.color.apex_orange else R.color.apex_stroke_light
+                )
+
+                itemBinding.cardCoincidenciaCliente.setOnClickListener {
+                    onSelect(cliente)
+                }
             }
-        } catch (_: Exception) {
-            "—"
         }
     }
 

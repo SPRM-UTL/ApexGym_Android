@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/apex_bg_screen">
+
+<androidx.core.widget.NestedScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
@@ -51,23 +57,9 @@
                 android:textSize="19sp"
                 android:textStyle="bold" />
 
-            <FrameLayout
-                android:id="@+id/flRefresh"
+            <View
                 android:layout_width="42dp"
-                android:layout_height="42dp"
-                android:background="@drawable/bg_circle_white_elevated"
-                android:clickable="true"
-                android:elevation="2dp"
-                android:focusable="true">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="Actualizar"
-                    android:src="@drawable/ic_refresh_cw"
-                    app:tint="@color/apex_text_primary" />
-            </FrameLayout>
+                android:layout_height="42dp" />
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
@@ -139,7 +131,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:orientation="horizontal"
-                    android:weightSum="3">
+                    android:weightSum="2">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -164,33 +156,6 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Productos"
-                            android:textColor="@color/apex_text_on_dark_secondary"
-                            android:textSize="10.5sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="3dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_dark_kpi_tile"
-                        android:gravity="center"
-                        android:orientation="vertical"
-                        android:paddingVertical="10dp">
-
-                        <TextView
-                            android:id="@+id/tvKpiAlmacenUnidades"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textColor="@color/white"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Unidades"
                             android:textColor="@color/apex_text_on_dark_secondary"
                             android:textSize="10.5sp" />
                     </LinearLayout>
@@ -251,7 +216,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Almacenes disponibles"
+                        android:text="Cambiar almacén"
                         android:textColor="@color/apex_text_primary"
                         android:textSize="14.5sp"
                         android:textStyle="bold" />
@@ -318,6 +283,22 @@
                         app:cornerRadius="22dp"
                         app:elevation="0dp" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvIrPedidosCompraAlmacen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_profile_option_card"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:text="El ingreso de stock se realiza desde Pedidos de compra"
+                    android:textColor="@color/apex_orange"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -381,7 +362,8 @@
                 android:maxLines="1"
                 android:textColor="@color/apex_text_primary"
                 android:textColorHint="@color/apex_nav_inactive"
-                android:textSize="13.5sp" />
+                android:textSize="13.5sp"
+                android:maxLength="80" />
 
             <ImageView
                 android:id="@+id/ivLimpiarBusquedaAlmacen"
@@ -413,5 +395,56 @@
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
             android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/llPaginacionAlmacen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btnPaginaAnteriorAlmacen"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingHorizontal="16dp"
+                android:text="Anterior"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvInfoPaginacionAlmacen"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Página 1 de 1"
+                android:textColor="@color/apex_text_secondary"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnPaginaSiguienteAlmacen"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_chip_selected"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingHorizontal="16dp"
+                android:text="Siguiente"
+                android:textColor="@color/white"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

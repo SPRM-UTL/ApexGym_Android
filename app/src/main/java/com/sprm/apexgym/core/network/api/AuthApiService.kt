@@ -30,6 +30,14 @@ data class MiQrResponseDto(
     val membresia: ClienteMembresiaAsistenciaDto? = null
 )
 
+data class EmpresaTicketInfoDto(
+    val nombreComercial: String? = null,
+    val razonSocial: String? = null,
+    val ciudad: String? = null,
+    val estado: String? = null,
+    val mensajeTicket: String? = null
+)
+
 interface AuthApiService {
     @POST("api/clientes/verificarCredenciales")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
@@ -73,4 +81,10 @@ interface AuthApiService {
 
     @POST("api/asistencias/mi-qr/regenerar")
     suspend fun regenerarMiQr(): Response<ApiResponse<MiQrResponseDto>>
+
+    @GET("api/empresa/info-ticket")
+    suspend fun obtenerInfoTicketEmpresa(): Response<ApiResponse<EmpresaTicketInfoDto>>
+
+    @GET("api/empresa/actual")
+    suspend fun obtenerEmpresaActual(): Response<ApiResponse<EmpresaTicketInfoDto>>
 }

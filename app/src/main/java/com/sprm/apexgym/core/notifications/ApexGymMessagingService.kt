@@ -11,6 +11,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.api.NotificacionDto
 import com.sprm.apexgym.feature.main.MainActivity
+import com.sprm.apexgym.feature.notificaciones.NotificacionFormatter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,12 +37,15 @@ class ApexGymMessagingService : FirebaseMessagingService() {
 
         val tipo = mensaje.data[CLAVE_TIPO]?.trim()?.takeIf { it.isNotEmpty() } ?: TIPO_GENERAL
         val notificacionId = mensaje.data[CLAVE_NOTIFICACION_ID]?.toIntOrNull()?.takeIf { it > 0 }
-        val titulo = mensaje.notification?.title
+        val tituloRaw = mensaje.notification?.title
             ?: mensaje.data[CLAVE_TITULO]
             ?: getString(R.string.app_name)
-        val cuerpo = mensaje.notification?.body
+        val cuerpoRaw = mensaje.notification?.body
             ?: mensaje.data[CLAVE_MENSAJE]
             ?: mensaje.data[CLAVE_BODY]
+
+        val titulo = NotificacionFormatter.formatearTitulo(tituloRaw, cuerpoRaw, tipo)
+        val cuerpo = cuerpoRaw?.let { NotificacionFormatter.formatearMensaje(it, tituloRaw, tipo) }
 
         emitirBroadcastNotificacion(
             notificacionId = notificacionId,

@@ -129,7 +129,8 @@
                 android:maxLines="1"
                 android:textColor="@color/apex_text_primary"
                 android:textColorHint="@color/apex_nav_inactive"
-                android:textSize="13.5sp" />
+                android:textSize="13.5sp"
+                android:maxLength="80" />
 
             <ImageView
                 android:id="@+id/ivClearSearchTiendaPos"
@@ -182,10 +183,15 @@
         </LinearLayout>
     </LinearLayout>
 
-    <androidx.core.widget.NestedScrollView
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_weight="1">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:clipToPadding="false"
         android:overScrollMode="never"
         android:paddingHorizontal="18dp"
@@ -344,4 +350,5 @@
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </LinearLayout>

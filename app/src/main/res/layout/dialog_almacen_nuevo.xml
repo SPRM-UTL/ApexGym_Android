@@ -64,7 +64,8 @@
             android:inputType="textCapWords"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="120" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -82,7 +83,8 @@
             android:inputType="textCapCharacters"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="40" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -100,7 +102,8 @@
             android:inputType="textCapSentences"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="200" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout

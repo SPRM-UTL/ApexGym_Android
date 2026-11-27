@@ -8,6 +8,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.sprm.apexgym.core.network.api.AsistenciaDto
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.databinding.FragmentAsistenciaDetalleSheetBinding
+import com.sprm.apexgym.feature.main.MembresiaVigenciaHelper
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -66,19 +67,13 @@ class AsistenciaDetalleSheetFragment : BottomSheetDialogFragment() {
     }
 
     private fun calcularDiasRestantes(fechaFin: String): String {
-        if (fechaFin.isBlank()) return "—"
-        return try {
-            val formato = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-            val fin = formato.parse(fechaFin.take(10)) ?: return fechaFin
-            val dias = ((fin.time - System.currentTimeMillis()) / 86_400_000L).toInt()
-            when {
-                dias < 0 -> "Vencida"
-                dias == 0 -> "Vence hoy"
-                dias == 1 -> "1 día"
-                else -> "$dias días"
-            }
-        } catch (_: Exception) {
-            fechaFin
+        val dias = MembresiaVigenciaHelper.calcularDiasRestantes(fechaFin)
+            ?: return fechaFin.ifBlank { "—" }
+        return when {
+            dias < 0L -> "Vencida"
+            dias == 0L -> "Vence hoy"
+            dias == 1L -> "1 día"
+            else -> "$dias días"
         }
     }
 

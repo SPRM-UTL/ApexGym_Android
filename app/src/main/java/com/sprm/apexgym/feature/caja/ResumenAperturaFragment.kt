@@ -1,5 +1,6 @@
 package com.sprm.apexgym.feature.caja
 
+import android.graphics.Typeface
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.Gravity
@@ -29,19 +30,24 @@ import kotlinx.coroutines.launch
 
 class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
 
+    private var aperturasAbiertas: List<AperturaCajaDto> = emptyList()
+    private var aperturaSeleccionadaId: Int? = null
     private var aperturaActiva: AperturaCajaDto? = null
+    private var primerResume = true
 
     override fun getLayoutRes(): Int = R.layout.fragment_resumen_apertura
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        primerResume = true
         binding.rvResumenVentasMetodo.layoutManager = LinearLayoutManager(requireContext())
         binding.rvResumenUltimosMovimientos.layoutManager = LinearLayoutManager(requireContext())
         binding.rvResumenAlertas.layoutManager = LinearLayoutManager(requireContext())
 
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.flRefresh.setOnClickListener { cargarResumen() }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarResumen() }
 
         binding.tvVerTodosMovimientos.setOnClickListener {
             val apertura = aperturaActiva
@@ -76,52 +82,131 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
         binding.tvResumenVentasHoy.text = "…"
         binding.tvResumenTransacciones.text = "…"
         binding.tvResumenEfectivoEsperado.text = "…"
-        binding.tvAlertCount.text = "—"
+        binding.tvAlertCount.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val aperturas = RetrofitClient.empleadoService.obtenerAperturas().dataExitosa()
-                aperturaActiva = aperturas
-                    ?.filter { it.estado?.uppercase() != "CERRADA" }
-                    ?.maxByOrNull { it.id }
+                val aperturas = RetrofitClient.empleadoService.obtenerAperturas().dataExitosa().orEmpty()
+                if (!isAdded || view == null) return@launch
 
-                val apertura = aperturaActiva
-                if (apertura == null) {
+                aperturasAbiertas = aperturas
+                    .filter { CajaValidacionLogic.esAperturaAbierta(it.estado) }
+                    .sortedByDescending { it.id }
+
+                val elegida = aperturasAbiertas.firstOrNull { it.id == aperturaSeleccionadaId }
+                    ?: aperturasAbiertas.firstOrNull()
+                aperturaActiva = elegida
+                aperturaSeleccionadaId = elegida?.id
+
+                renderizarSelectorCajasAbiertas()
+
+                if (elegida == null) {
                     mostrarSinApertura()
                     return@launch
                 }
 
-                val resumen = RetrofitClient.empleadoService
-                    .obtenerResumenApertura(apertura.id)
-                    .dataExitosa()
-
-                if (resumen == null) {
-                    binding.tvResumenCajaNombre.text = "Caja abierta #${apertura.id}"
-                    binding.tvResumenAperturaInfo.text = "No se pudo cargar el resumen"
-                    binding.tvResumenSaldoActual.text = "—"
-                    binding.tvResumenVentasHoy.text = "—"
-                    binding.tvResumenTransacciones.text = "—"
-                    binding.tvResumenEfectivoEsperado.text = "—"
-                    renderizarMovimientos(emptyList())
-                    renderizarVentasMetodo(resumen)
-                    renderizarAlertas(0)
-                    return@launch
-                }
-
-                mostrarResumen(apertura, resumen)
+                cargarResumenDeApertura(elegida)
             } catch (_: Exception) {
-                binding.tvResumenCajaNombre.text = "Sin conexión"
-                binding.tvResumenAperturaInfo.text = "No se pudo conectar con el servidor"
-                binding.tvResumenSaldoActual.text = "—"
-                binding.tvResumenVentasHoy.text = "—"
-                binding.tvResumenTransacciones.text = "—"
-                binding.tvResumenEfectivoEsperado.text = "—"
-                binding.tvAlertCount.text = "—"
-                renderizarMovimientos(emptyList())
-                renderizarVentasMetodo(null)
-                renderizarAlertas(0)
+                if (!isAdded || view == null) return@launch
+                mostrarErrorConexion()
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
+    }
+
+    private suspend fun cargarResumenDeApertura(apertura: AperturaCajaDto) {
+        val responseResumen = RetrofitClient.empleadoService.obtenerResumenApertura(apertura.id)
+        if (!isAdded || view == null) return
+
+        val resumen = responseResumen.dataExitosa()
+        if (resumen == null) {
+            binding.tvResumenCajaNombre.text = apertura.caja?.nombre?.let { "Caja: $it" }
+                ?: "Caja abierta #${apertura.id}"
+            binding.tvResumenAperturaInfo.text =
+                responseResumen.mensajeDeError() ?: "No se pudo cargar el resumen"
+            binding.tvResumenSaldoActual.text = "—"
+            binding.tvResumenVentasHoy.text = "—"
+            binding.tvResumenTransacciones.text = "—"
+            binding.tvResumenEfectivoEsperado.text = apertura.montoInicial.formatearMonedaSinSufijo()
+            binding.tvAlertCount.visibility = View.GONE
+            renderizarMovimientos(emptyList())
+            renderizarVentasMetodo(null)
+            renderizarAlertas(0)
+            return
+        }
+
+        mostrarResumen(apertura, resumen)
+    }
+
+    private fun renderizarSelectorCajasAbiertas() {
+        val container = binding.llOpenCajaChips
+        container.removeAllViews()
+        if (aperturasAbiertas.size <= 1) {
+            binding.hsvOpenCajaChips.visibility = View.GONE
+            return
+        }
+
+        binding.hsvOpenCajaChips.visibility = View.VISIBLE
+        val context = requireContext()
+        val blanco = ContextCompat.getColor(context, R.color.white)
+        val primario = ContextCompat.getColor(context, R.color.apex_text_primary)
+
+        aperturasAbiertas.forEachIndexed { index, item ->
+            val seleccionada = item.id == aperturaActiva?.id
+            val chip = TextView(context).apply {
+                text = item.caja?.nombre?.takeIf { it.isNotBlank() } ?: "Caja #${item.cajaId}"
+                gravity = Gravity.CENTER
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
+                setTypeface(typeface, Typeface.BOLD)
+                setPadding(dpToPx(16), 0, dpToPx(16), 0)
+                setBackgroundResource(
+                    if (seleccionada) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected
+                )
+                setTextColor(if (seleccionada) blanco else primario)
+                isClickable = true
+                isFocusable = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    dpToPx(36)
+                ).apply {
+                    if (index > 0) marginStart = dpToPx(8)
+                }
+                setOnClickListener {
+                    if (aperturaActiva?.id != item.id) {
+                        aperturaActiva = item
+                        aperturaSeleccionadaId = item.id
+                        renderizarSelectorCajasAbiertas()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            try {
+                                binding.swipeRefresh.isRefreshing = true
+                                cargarResumenDeApertura(item)
+                            } catch (_: Exception) {
+                                if (isAdded && view != null) mostrarErrorConexion()
+                            } finally {
+                                if (isAdded && view != null) binding.swipeRefresh.isRefreshing = false
+                            }
+                        }
+                    }
+                }
+            }
+            container.addView(chip)
+        }
+    }
+
+    private fun mostrarErrorConexion() {
+        binding.tvResumenCajaNombre.text = "Sin conexión"
+        binding.tvResumenAperturaInfo.text = "No se pudo conectar con el servidor"
+        binding.tvResumenSaldoActual.text = "—"
+        binding.tvResumenVentasHoy.text = "—"
+        binding.tvResumenTransacciones.text = "—"
+        binding.tvResumenEfectivoEsperado.text = "—"
+        binding.tvAlertCount.visibility = View.GONE
+        renderizarMovimientos(emptyList())
+        renderizarVentasMetodo(null)
+        renderizarAlertas(0)
     }
 
     private fun mostrarSinApertura() {
@@ -131,7 +216,7 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
         binding.tvResumenVentasHoy.text = 0.0.formatearMonedaSinSufijo()
         binding.tvResumenTransacciones.text = "0"
         binding.tvResumenEfectivoEsperado.text = 0.0.formatearMonedaSinSufijo()
-        binding.tvAlertCount.text = "0"
+        binding.tvAlertCount.visibility = View.GONE
         renderizarMovimientos(emptyList())
         renderizarVentasMetodo(null)
         renderizarAlertas(0)
@@ -144,20 +229,22 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
         binding.tvResumenAperturaInfo.text = buildString {
             append("Abierta: ")
             append(formatearFecha(apertura.fechaApertura, "dd/MM/yyyy HH:mm"))
-            append(" • Fondo: ")
+            append(" • Saldo inicial: ")
             append(resumen.montoInicial.formatearMonedaSinSufijo())
         }
 
         val ventas = resumen.totales
-        binding.tvResumenSaldoActual.text =
-            resumen.saldoDisponible.formatearMonedaSinSufijo()
-        binding.tvResumenVentasHoy.text =
-            (ventas?.totalVentas ?: 0.0).formatearMonedaSinSufijo()
-        binding.tvResumenTransacciones.text =
-            (ventas?.transaccionesVentas ?: 0).toString()
-        binding.tvResumenEfectivoEsperado.text =
-            resumen.saldoDisponible.formatearMonedaSinSufijo()
-        binding.tvAlertCount.text = resumen.movimientosPendientes.toString()
+        binding.tvResumenSaldoActual.text = resumen.saldoDisponible.formatearMonedaSinSufijo()
+        binding.tvResumenVentasHoy.text = (ventas?.totalVentas ?: 0.0).formatearMonedaSinSufijo()
+        binding.tvResumenTransacciones.text = (ventas?.transaccionesVentas ?: 0).toString()
+        binding.tvResumenEfectivoEsperado.text = resumen.montoInicial.formatearMonedaSinSufijo()
+
+        if (resumen.movimientosPendientes > 0) {
+            binding.tvAlertCount.visibility = View.VISIBLE
+            binding.tvAlertCount.text = resumen.movimientosPendientes.toString()
+        } else {
+            binding.tvAlertCount.visibility = View.GONE
+        }
 
         renderizarVentasMetodo(resumen)
         renderizarMovimientos(resumen.movimientos.orEmpty().takeLast(5).reversed())
@@ -190,35 +277,35 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
     }
 
     private fun renderizarMovimientos(movimientos: List<MovimientoCajaDto>) {
-        binding.rvResumenUltimosMovimientos.adapter =
-            object : RecyclerView.Adapter<SimpleRowHolder>() {
-                override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SimpleRowHolder {
-                    return crearFila(parent.context)
-                }
+        binding.rvResumenUltimosMovimientos.adapter = object : RecyclerView.Adapter<SimpleRowHolder>() {
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SimpleRowHolder {
+                return crearFila(parent.context)
+            }
 
-                override fun onBindViewHolder(holder: SimpleRowHolder, position: Int) {
-                    if (movimientos.isEmpty()) {
-                        holder.tvTitulo.text = "Sin movimientos registrados"
-                        holder.tvDetalle.text = ""
-                        holder.tvMonto.text = ""
-                    } else {
-                        val movimiento = movimientos[position]
-                        holder.tvTitulo.text = movimiento.concepto ?: "Movimiento"
-                        holder.tvDetalle.text = buildString {
-                            append(movimiento.tipo ?: "")
-                            append(" • ")
-                            append(movimiento.estado ?: "")
-                        }.trim(' ', '•')
-                        holder.tvMonto.text = (if (movimiento.tipo?.uppercase() == "SALIDA") {
-                            "-"
-                        } else {
-                            "+"
-                        }) + movimiento.monto.formatearMonedaSinSufijo()
+            override fun onBindViewHolder(holder: SimpleRowHolder, position: Int) {
+                if (movimientos.isEmpty()) {
+                    holder.tvTitulo.text = "Sin movimientos en esta apertura"
+                    holder.tvDetalle.text = ""
+                    holder.tvMonto.text = ""
+                } else {
+                    val mov = movimientos[position]
+                    val esSalida = mov.tipo?.uppercase() == "SALIDA"
+                    holder.tvTitulo.text = mov.concepto ?: "Movimiento #${mov.id}"
+                    holder.tvDetalle.text = listOfNotNull(
+                        mov.tipo?.uppercase(),
+                        mov.estado?.uppercase(),
+                        mov.createdAt?.takeIf { it.isNotBlank() }?.let { formatearFecha(it, "dd/MM HH:mm") }
+                    ).joinToString(" • ")
+                    holder.tvMonto.text =
+                        (if (esSalida) "-" else "+") + mov.monto.formatearMonedaSinSufijo()
+                    holder.itemView.setOnClickListener {
+                        aperturaActiva?.let { navegar(MovimientosCajaFragment.newInstance(it.id)) }
                     }
                 }
-
-                override fun getItemCount(): Int = movimientos.size.coerceAtLeast(1)
             }
+
+            override fun getItemCount(): Int = movimientos.size.coerceAtLeast(1)
+        }
     }
 
     private fun renderizarAlertas(pendientes: Int) {
@@ -234,11 +321,20 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
                     "Sin movimientos pendientes"
                 }
                 holder.tvDetalle.text = if (pendientes > 0) {
-                    "Valida los movimientos pendientes antes de realizar el corte"
+                    "Toca para revisar y validar antes de realizar el corte"
                 } else {
                     "Todos los movimientos de la apertura están validados"
                 }
-                holder.tvMonto.text = ""
+                holder.tvMonto.text = if (pendientes > 0) "Revisar" else ""
+                if (pendientes > 0) {
+                    holder.itemView.isClickable = true
+                    holder.itemView.setOnClickListener {
+                        aperturaActiva?.let { navegar(MovimientosCajaFragment.newInstance(it.id)) }
+                    }
+                } else {
+                    holder.itemView.isClickable = false
+                    holder.itemView.setOnClickListener(null)
+                }
             }
 
             override fun getItemCount(): Int = 1
@@ -273,18 +369,15 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
 
         val col = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                1f
-            )
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
         }
         val tvTitulo = TextView(context).apply {
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTypeface(typeface, Typeface.BOLD)
         }
         col.addView(tvTitulo)
+
         val tvDetalle = TextView(context).apply {
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
@@ -295,12 +388,19 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
         val tvMonto = TextView(context).apply {
             setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTypeface(typeface, Typeface.BOLD)
         }
         row.addView(tvMonto)
+
         card.addView(row)
         return SimpleRowHolder(card, tvTitulo, tvDetalle, tvMonto)
     }
+
+    private fun dpToPx(dp: Int): Int = TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP,
+        dp.toFloat(),
+        resources.displayMetrics
+    ).toInt()
 
     private fun navegar(fragment: androidx.fragment.app.Fragment) {
         parentFragmentManager.beginTransaction()
@@ -315,14 +415,12 @@ class ResumenAperturaFragment : BaseFragment<FragmentResumenAperturaBinding>() {
             .commit()
     }
 
-    private fun dpToPx(dp: Int): Int = TypedValue.applyDimension(
-        TypedValue.COMPLEX_UNIT_DIP,
-        dp.toFloat(),
-        resources.displayMetrics
-    ).toInt()
-
     override fun onResume() {
         super.onResume()
-        if (view != null) cargarResumen()
+        if (primerResume) {
+            primerResume = false
+        } else if (view != null) {
+            cargarResumen()
+        }
     }
 }

@@ -79,20 +79,22 @@ class VisitaDetalleFragment : BaseFragment<FragmentVisitaDetalleBinding>() {
 
     private fun mostrarVisita(visita: VisitaDto) {
         val tipoNombre = visita.tipoVisita?.nombre ?: "Tipo #${visita.tipoVisitaId}"
+        val fechaFormateada = formatearFecha(visita.fechaHora, "dd/MM/yyyy HH:mm")
+        binding.tvVisitaFechaHero.text = fechaFormateada.uppercase()
         binding.tvVisitaNombre.text = visita.nombreVisitante ?: "Visitante #${visita.id}"
-        binding.tvVisitaEstado.text = tipoNombre.uppercase()
+        binding.tvVisitaEstado.text = tipoNombre
         binding.tvVisitaOrigen.text = if (visita.costo > 0) {
-            visita.costo.formatearMonedaSinSufijo()
+            "${visita.costo.formatearMonedaSinSufijo()} MXN"
         } else {
             "Gratis"
         }
         binding.tvVisitaOrigen.setBackgroundResource(
             if (visita.costo > 0) R.drawable.bg_badge_orange else R.drawable.bg_badge_green
         )
-        binding.tvVisitaTelDetalle.text = formatearFecha(visita.fechaHora, "dd/MM/yyyy HH:mm")
+        binding.tvVisitaTelDetalle.text = fechaFormateada
         binding.tvVisitaEmailDetalle.text = tipoNombre
         binding.tvVisitaDireccionDetalle.text = if (visita.costo > 0) {
-            visita.costo.formatearMonedaSinSufijo()
+            "${visita.costo.formatearMonedaSinSufijo()} MXN"
         } else {
             "Sin costo"
         }

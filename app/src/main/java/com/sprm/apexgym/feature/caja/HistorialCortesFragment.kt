@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,6 +22,7 @@ import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.databinding.FragmentHistorialCortesBinding
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -40,23 +42,19 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
 
         binding.rvHistorialCortes.layoutManager = LinearLayoutManager(requireContext())
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.flFilter.setOnClickListener {
-            filtroSeleccionado = "Todos"
-            textoBusqueda = ""
-            binding.etSearchCortes.setText("")
-            actualizarEstilos()
-            aplicarFiltros()
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarCortes() }
+
+        parentFragmentManager.setFragmentResultListener(
+            CorteDetalleFragment.RESULT_KEY_CORTE_VALIDADO,
+            viewLifecycleOwner
+        ) { _, _ ->
+            cargarCortes()
         }
-        binding.etSearchCortes.setOnEditorActionListener { _, _, _ ->
-            textoBusqueda = binding.etSearchCortes.text?.toString()?.trim().orEmpty()
+
+        binding.etSearchCortes.doAfterTextChanged { editable ->
+            textoBusqueda = editable?.toString()?.trim().orEmpty()
             aplicarFiltros()
-            true
-        }
-        binding.etSearchCortes.setOnFocusChangeListener { _, hasFocus ->
-            if (!hasFocus) {
-                textoBusqueda = binding.etSearchCortes.text?.toString()?.trim().orEmpty()
-                aplicarFiltros()
-            }
         }
 
         construirChips()
@@ -69,19 +67,28 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val respuestaCortes = RetrofitClient.empleadoService.obtenerCortes()
-                cortes = respuestaCortes.dataExitosa().orEmpty()
+                val cortesDef = async { RetrofitClient.empleadoService.obtenerCortes() }
+                val aperturasDef = async { RetrofitClient.empleadoService.obtenerAperturas() }
 
-                val aperturas = RetrofitClient.empleadoService.obtenerAperturas().dataExitosa().orEmpty()
+                val respuestaCortes = cortesDef.await()
+                val aperturas = aperturasDef.await().dataExitosa().orEmpty()
+                if (!isAdded || view == null) return@launch
+
+                cortes = respuestaCortes.dataExitosa().orEmpty()
                 aperturasPorId = aperturas.associateBy { it.id }
 
                 aplicarFiltros()
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
                 cortes = emptyList()
                 aperturasPorId = emptyMap()
                 aplicarFiltros()
                 binding.llEmptyCortes.getChildAt(1)?.let {
                     (it as? TextView)?.text = "No se pudo conectar con el servidor"
+                }
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
                 }
             }
         }
@@ -149,10 +156,14 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
             if (!cumpleFiltro) return@filter false
             if (textoBusqueda.isBlank()) return@filter true
 
-            val caja = aperturasPorId[corte.aperturaCajaId]?.caja?.nombre.orEmpty()
+            val aperturaRel = corte.aperturaCaja ?: aperturasPorId[corte.aperturaCajaId]
+            val caja = aperturaRel?.caja?.nombre.orEmpty()
+            val responsable = corte.empleado?.nombreCompleto
+                ?: aperturaRel?.empleado?.nombreCompleto.orEmpty()
             val fecha = formatearFecha(corte.fechaCorte, "dd/MM/yyyy HH:mm")
             listOf(
                 caja,
+                responsable,
                 fecha,
                 corte.estado.orEmpty(),
                 corte.id.toString(),
@@ -182,21 +193,50 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
 
             override fun onBindViewHolder(holder: CorteHolder, position: Int) {
                 val corte = filtrados[position]
-                val caja = aperturasPorId[corte.aperturaCajaId]?.caja?.nombre
-                    ?: "Apertura #${corte.aperturaCajaId}"
+                val aperturaRel = corte.aperturaCaja ?: aperturasPorId[corte.aperturaCajaId]
+                val caja = aperturaRel?.caja?.nombre ?: "Apertura #${corte.aperturaCajaId}"
                 holder.tvTitulo.text = "Corte #${corte.id} • $caja"
                 holder.tvDetalle.text = buildString {
                     append(formatearFecha(corte.fechaCorte, "dd/MM/yyyy HH:mm"))
                     append(" • ")
                     append(corte.estado ?: "—")
-                    append(" • Diferencia: ")
+                    append(" • Dif.: ")
                     append(corte.diferencia.formatearMonedaSinSufijo())
                 }
                 holder.tvMonto.text = corte.efectivoContado.formatearMonedaSinSufijo()
+                holder.itemView.setOnClickListener { mostrarDetalleCorte(corte, caja, aperturaRel) }
             }
 
             override fun getItemCount(): Int = filtrados.size
         }
+    }
+
+    private fun mostrarDetalleCorte(
+        corte: CorteCajaDto,
+        cajaNombre: String,
+        aperturaRel: AperturaCajaDto?
+    ) {
+        val responsable = corte.empleado?.nombreCompleto?.takeIf { it.isNotBlank() }
+            ?: aperturaRel?.empleado?.nombreCompleto?.takeIf { it.isNotBlank() }
+            ?: "Empleado"
+
+        parentFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.fade_in,
+                android.R.anim.fade_out,
+                android.R.anim.fade_in,
+                android.R.anim.fade_out
+            )
+            .replace(
+                R.id.fragment_container,
+                CorteDetalleFragment.newInstance(
+                    corte = corte,
+                    cajaNombre = cajaNombre,
+                    responsable = responsable
+                )
+            )
+            .addToBackStack(null)
+            .commit()
     }
 
     private class CorteHolder(
@@ -217,6 +257,8 @@ class HistorialCortesFragment : BaseFragment<FragmentHistorialCortesBinding>() {
             cardElevation = 0f
             strokeWidth = dpToPx(1)
             strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
+            isClickable = true
+            isFocusable = true
         }
 
         val row = LinearLayout(context).apply {

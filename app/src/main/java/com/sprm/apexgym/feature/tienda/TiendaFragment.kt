@@ -3,6 +3,9 @@ package com.sprm.apexgym.feature.tienda
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
@@ -74,6 +77,9 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         binding.rvServices.layoutManager = LinearLayoutManager(requireContext())
         binding.rvServices.adapter = servicioAdapter
         binding.rvServices.isNestedScrollingEnabled = false
+
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarCatalogo() }
 
         view.findViewWithTag<View>("fl_back_tienda")?.setOnClickListener {
             parentFragmentManager.popBackStack()
@@ -200,8 +206,9 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             productos = productosDeferred.await()
             servicios = serviciosDeferred.await()
 
-            if (!isAdded) return@launch
+            if (!isAdded || view == null) return@launch
 
+            binding.swipeRefresh.isRefreshing = false
             construirChips()
             renderizarProductos()
             renderizarServicios()
@@ -386,32 +393,35 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             val card = MaterialCardView(context).apply {
                 layoutParams = RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    dp(228)
+                    dp(232)
                 ).apply {
-                    setMargins(dp(5), dp(5), dp(5), dp(5))
+                    setMargins(dp(6), dp(6), dp(6), dp(6))
                 }
-                setCardBackgroundColor(ContextCompat.getColor(context, R.color.white))
-                radius = dp(18).toFloat()
-                cardElevation = 0f
-                strokeWidth = dp(1)
-                strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
+                setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
+                radius = dp(22).toFloat()
+                cardElevation = dp(3).toFloat()
+                strokeWidth = 0
             }
 
             val inner = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(12), dp(12), dp(12), dp(12))
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                setPadding(dp(14), dp(14), dp(14), dp(14))
             }
 
             val imgBox = FrameLayout(context).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    dp(98)
+                    dp(108)
                 )
-                setBackgroundResource(R.drawable.bg_chip_unselected)
+                setBackgroundResource(R.drawable.bg_product_image_container)
                 clipToOutline = true
                 addView(
                     ImageView(context).apply {
-                        layoutParams = FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER)
+                        layoutParams = FrameLayout.LayoutParams(dp(44), dp(44), Gravity.CENTER)
                         setImageResource(R.drawable.ic_supplement_bottle)
                     }
                 )
@@ -422,11 +432,11 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dp(9) }
-                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                ).apply { topMargin = dp(10) }
+                setTextColor(ContextCompat.getColor(context, R.color.white))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
                 setTypeface(typeface, Typeface.BOLD)
-                maxLines = 2
+                maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
             }
             inner.addView(tvNombre)
@@ -436,8 +446,8 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 ).apply { topMargin = dp(2) }
-                setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f)
                 maxLines = 1
                 ellipsize = TextUtils.TruncateAt.END
             }
@@ -456,12 +466,16 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             val bottomRow = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
             }
 
             val tvPrecio = TextView(context).apply {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 setTextColor(ContextCompat.getColor(context, R.color.apex_orange))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
                 setTypeface(typeface, Typeface.BOLD)
             }
             bottomRow.addView(tvPrecio)
@@ -497,10 +511,15 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
             )
 
             holder.producto = producto
-            holder.card.alpha = if (agotado) 0.55f else 1f
+            holder.card.setCardBackgroundColor(
+                if (agotado) Color.parseColor("#6B7280")
+                else ContextCompat.getColor(context, R.color.apex_card_dark)
+            )
+            holder.card.alpha = if (agotado) 0.78f else 1f
             holder.tvNombre.text = producto.nombre
+            holder.tvNombre.setTextColor(ContextCompat.getColor(context, R.color.white))
             holder.tvMeta.text = buildString {
-                append(producto.categoria?.nombre ?: "Producto")
+                append(producto.categoria?.nombre ?: "General")
                 if (agotado) {
                     append(" • Agotado")
                 } else {
@@ -508,16 +527,13 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 }
             }
             holder.tvMeta.setTextColor(
-                ContextCompat.getColor(
-                    context,
-                    if (agotado) R.color.apex_nav_inactive else R.color.apex_text_secondary
-                )
+                ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary)
             )
             holder.tvPrecio.text = "${precioNeto.formatearMonedaSinSufijo()} MXN"
             holder.tvPrecio.setTextColor(
                 ContextCompat.getColor(
                     context,
-                    if (agotado) R.color.apex_text_secondary else R.color.apex_orange
+                    if (agotado) R.color.apex_text_on_dark_secondary else R.color.apex_orange
                 )
             )
 
@@ -536,13 +552,36 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
 
             holder.imgBox.tag = null
             holder.imgBox.removeAllViews()
-            holder.imgBox.addView(
-                ImageView(context).apply {
-                    layoutParams = FrameLayout.LayoutParams(dp(42), dp(42), Gravity.CENTER)
-                    setImageResource(R.drawable.ic_supplement_bottle)
+            val placeholderIcon = ImageView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(dp(44), dp(44), Gravity.CENTER)
+                setImageResource(R.drawable.ic_supplement_bottle)
+                colorFilter = if (agotado) {
+                    ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+                } else {
+                    null
                 }
-            )
-            cargarImagen(producto.imagenUrl, holder.imgBox)
+            }
+            holder.imgBox.addView(placeholderIcon)
+            if (agotado) {
+                holder.imgBox.addView(
+                    TextView(context).apply {
+                        text = "AGOTADO"
+                        setTextColor(Color.WHITE)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 9f)
+                        setTypeface(typeface, Typeface.BOLD)
+                        setPadding(dp(7), dp(2), dp(7), dp(2))
+                        setBackgroundColor(Color.parseColor("#CC334155"))
+                        layoutParams = FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            Gravity.TOP or Gravity.START
+                        ).apply {
+                            setMargins(dp(6), dp(6), 0, 0)
+                        }
+                    }
+                )
+            }
+            cargarImagen(producto.imagenUrl, holder.imgBox, desaturar = agotado)
 
             holder.card.setOnClickListener {
                 if (agotado) {
@@ -735,13 +774,17 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
         var servicio: ServicioClienteDto? = null
     }
 
-    private fun cargarImagen(ruta: String?, contenedor: FrameLayout) {
+    private fun cargarImagen(
+        ruta: String?,
+        contenedor: FrameLayout,
+        desaturar: Boolean = false
+    ) {
         val url = RetrofitClient.resolverUrlImagen(ruta) ?: return
         contenedor.tag = url
 
         val cached = bitmapCache.get(url)
         if (cached != null) {
-            mostrarBitmapEnContenedor(contenedor, cached)
+            mostrarBitmapEnContenedor(contenedor, cached, desaturar)
             return
         }
 
@@ -751,12 +794,19 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
 
             withContext(Dispatchers.Main) {
                 if (!isAdded || contenedor.tag != url) return@withContext
-                mostrarBitmapEnContenedor(contenedor, bitmap)
+                mostrarBitmapEnContenedor(contenedor, bitmap, desaturar)
             }
         }
     }
 
-    private fun mostrarBitmapEnContenedor(contenedor: FrameLayout, bitmap: Bitmap) {
+    private fun mostrarBitmapEnContenedor(
+        contenedor: FrameLayout,
+        bitmap: Bitmap,
+        desaturar: Boolean = false
+    ) {
+        val badges = (0 until contenedor.childCount)
+            .map { contenedor.getChildAt(it) }
+            .filter { it is TextView }
         contenedor.removeAllViews()
         contenedor.addView(
             ImageView(requireContext()).apply {
@@ -766,8 +816,14 @@ class TiendaFragment : BaseFragment<FragmentTiendaBinding>() {
                 )
                 scaleType = ImageView.ScaleType.CENTER_CROP
                 setImageBitmap(bitmap)
+                colorFilter = if (desaturar) {
+                    ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+                } else {
+                    null
+                }
             }
         )
+        badges.forEach { contenedor.addView(it) }
     }
 
     private fun decodificarImagen(url: String): Bitmap? = try {

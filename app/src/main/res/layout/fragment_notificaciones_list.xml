@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/apex_bg_screen">
+
+<androidx.core.widget.NestedScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
@@ -113,23 +119,36 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Filter Tabs -->
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tabLayoutNotificaciones"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="44dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:background="@color/white"
-            app:tabBackground="@drawable/bg_tab_selector"
-            app:tabGravity="fill"
-            app:tabIndicator="@null"
-            app:tabMinWidth="76dp"
-            app:tabMode="scrollable"
-            app:tabPaddingEnd="14dp"
-            app:tabPaddingStart="14dp"
-            app:tabSelectedTextColor="@color/white"
-            app:tabTextAppearance="@style/TextAppearance.Apex.TabSmall"
-            app:tabTextColor="@color/apex_text_secondary" />
+            app:cardBackgroundColor="@color/white"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/apex_stroke_light"
+            app:strokeWidth="1dp">
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tabLayoutNotificaciones"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:background="@android:color/transparent"
+                android:padding="0dp"
+                app:tabBackground="@drawable/bg_tab_pill_selector"
+                app:tabContentStart="0dp"
+                app:tabGravity="start"
+                app:tabIndicator="@null"
+                app:tabIndicatorHeight="0dp"
+                app:tabMinWidth="76dp"
+                app:tabMode="scrollable"
+                app:tabPaddingEnd="14dp"
+                app:tabPaddingStart="14dp"
+                app:tabRippleColor="@android:color/transparent"
+                app:tabSelectedTextColor="@color/white"
+                app:tabTextAppearance="@style/TextAppearance.Apex.TabSmall"
+                app:tabTextColor="@color/apex_text_secondary" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Search Bar -->
         <LinearLayout
@@ -160,7 +179,9 @@
                 android:inputType="text"
                 android:textColor="@color/apex_text_primary"
                 android:textColorHint="@color/apex_nav_inactive"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:maxLength="80"
+                android:maxLines="1" />
         </LinearLayout>
 
         <!-- Notifications List Container -->
@@ -175,7 +196,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="gone" />
-
-        <!-- Empty State (inside each tab via RecyclerView) -->
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

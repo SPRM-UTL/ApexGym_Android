@@ -201,11 +201,9 @@ class MembresiaDetailBottomSheetFragment : BottomSheetDialogFragment() {
 
     private fun renderizarDetalle(rootView: View, data: MiMembresiaResponseDto?) {
         val tvEstadoBadge = rootView.findViewById<TextView>(R.id.tvDetailMembresiaEstadoBadge)
-        val tvRenovacionBadge = rootView.findViewById<TextView>(R.id.tvDetailMembresiaRenovacionBadge)
         val tvPlanNombre = rootView.findViewById<TextView>(R.id.tvDetailMembresiaPlanNombre)
         val tvDiasNumero = rootView.findViewById<TextView>(R.id.tvDetailMembresiaDiasNumero)
         val tvDiasEtiqueta = rootView.findViewById<TextView>(R.id.tvDetailMembresiaDiasEtiqueta)
-        val tvProgresoTexto = rootView.findViewById<TextView>(R.id.tvDetailMembresiaProgresoTexto)
         val pbProgreso = rootView.findViewById<ProgressBar>(R.id.pbDetailMembresiaProgreso)
         val tvFechaInicio = rootView.findViewById<TextView>(R.id.tvDetailMembresiaFechaInicio)
         val tvFechaFin = rootView.findViewById<TextView>(R.id.tvDetailMembresiaFechaFin)
@@ -230,11 +228,6 @@ class MembresiaDetailBottomSheetFragment : BottomSheetDialogFragment() {
         if (activa != null) {
             val estadoNombre = (activa.estadoMembresia?.nombre ?: "Vigente").trim()
             tvEstadoBadge?.text = "MEMBRESÍA ${estadoNombre.uppercase(Locale.getDefault())}"
-            tvRenovacionBadge?.text = if (activa.renovacionAutomatica) {
-                "Renovación automática"
-            } else {
-                "Renovación manual"
-            }
             tvPlanNombre?.text = activa.tipoMembresia?.nombre ?: "Plan Activo ApexGym"
 
             val progreso = MembresiaVigenciaHelper.calcularProgreso(
@@ -251,14 +244,12 @@ class MembresiaDetailBottomSheetFragment : BottomSheetDialogFragment() {
                     0L -> "días restantes • Vence hoy"
                     else -> "días restantes de vigencia"
                 }
-                tvProgresoTexto?.text = "${progreso.porcentajeCompletado}% transcurrido"
                 pbProgreso?.progress = progreso.porcentajeCompletado
                 tvDuracion?.text = "${progreso.diasTotales} días"
             } else {
                 val duracionPlan = activa.tipoMembresia?.duracionDias ?: 30
                 tvDiasNumero?.text = (diasRestantes?.coerceAtLeast(0L) ?: duracionPlan.toLong()).toString()
                 tvDiasEtiqueta?.text = "días de duración del plan"
-                tvProgresoTexto?.text = ""
                 pbProgreso?.progress = 0
                 tvDuracion?.text = "$duracionPlan días"
             }
@@ -309,7 +300,6 @@ class MembresiaDetailBottomSheetFragment : BottomSheetDialogFragment() {
             } else {
                 "SIN MEMBRESÍA ACTIVA"
             }
-            tvRenovacionBadge?.text = "Inactiva"
             tvPlanNombre?.text = when {
                 data == null && consultando -> "Consultando membresía..."
                 ultima?.tipoMembresia?.nombre != null -> "Último plan: ${ultima.tipoMembresia.nombre}"
@@ -318,7 +308,6 @@ class MembresiaDetailBottomSheetFragment : BottomSheetDialogFragment() {
 
             tvDiasNumero?.text = "0"
             tvDiasEtiqueta?.text = "días vigentes"
-            tvProgresoTexto?.text = "0%"
             pbProgreso?.progress = 0
 
             if (ultima != null) {

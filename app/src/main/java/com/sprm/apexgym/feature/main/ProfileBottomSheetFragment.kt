@@ -19,12 +19,8 @@ import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.session.SessionManager
 import com.sprm.apexgym.feature.auth.LoginFragment
-import com.sprm.apexgym.feature.caja.ResumenAperturaFragment
-import com.sprm.apexgym.feature.empleados.EmpleadosListFragment
 import com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment
-import com.sprm.apexgym.feature.recepcion.RecepcionDashboardFragment
 import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
-import com.sprm.apexgym.feature.visitas.VisitasListFragment
 import kotlinx.coroutines.launch
 
 class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
@@ -59,18 +55,15 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
         val btnCerrarProfileSheet = view.findViewById<View>(R.id.btnCerrarProfileSheet)
         val btnOpcionMiPerfil = view.findViewById<View>(R.id.btnOpcionMiPerfil)
+        val btnOpcionCambiarContrasena = view.findViewById<View>(R.id.btnOpcionCambiarContrasena)
         val btnOpcionNotificaciones = view.findViewById<View>(R.id.btnOpcionNotificaciones)
         val btnOpcionConfigNotificaciones = view.findViewById<View>(R.id.btnOpcionConfigNotificaciones)
         val btnOpcionHistorialCompras = view.findViewById<View>(R.id.btnOpcionHistorialCompras)
-        val btnOpcionEmpleados = view.findViewById<View>(R.id.btnOpcionEmpleados)
-        val btnOpcionVisitas = view.findViewById<View>(R.id.btnOpcionVisitas)
-        val btnOpcionRecepcion = view.findViewById<View>(R.id.btnOpcionRecepcion)
-        val btnOpcionCaja = view.findViewById<View>(R.id.btnOpcionCaja)
+        val btnOpcionHistorialMembresias = view.findViewById<View>(R.id.btnOpcionHistorialMembresias)
         val btnOpcionCerrarSesion = view.findViewById<View>(R.id.btnOpcionCerrarSesion)
         val tvCerrarSesionTitulo = view.findViewById<TextView>(R.id.tvCerrarSesionTitulo)
         val tvProfileSheetName = view.findViewById<TextView>(R.id.tvProfileSheetName)
         val tvProfileSheetSubtitle = view.findViewById<TextView>(R.id.tvProfileSheetSubtitle)
-        val tvStaffSectionLabel = view.findViewById<View>(R.id.tvStaffSectionLabel)
 
         val esEmpleado = SessionManager.esEmpleado(requireContext())
         val rolSesion = SessionManager.obtenerRol(requireContext())
@@ -86,17 +79,10 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
             "Socio ApexGym"
         }
 
-        tvStaffSectionLabel?.visibility = if (esEmpleado) View.VISIBLE else View.GONE
         btnOpcionNotificaciones?.visibility = View.VISIBLE
         btnOpcionConfigNotificaciones?.visibility = View.GONE
-        listOf(
-            btnOpcionEmpleados,
-            btnOpcionVisitas,
-            btnOpcionRecepcion,
-            btnOpcionCaja
-        ).forEach { opcion ->
-            opcion?.visibility = if (esEmpleado) View.VISIBLE else View.GONE
-        }
+        btnOpcionCambiarContrasena?.visibility = if (esEmpleado) View.GONE else View.VISIBLE
+        btnOpcionHistorialMembresias?.visibility = if (esEmpleado) View.GONE else View.VISIBLE
 
         if (!esEmpleado) {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -121,35 +107,6 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
             dismiss()
         }
 
-        btnOpcionMiPerfil?.setOnClickListener {
-            if (esEmpleado) {
-                MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(SessionManager.obtenerNombre(requireContext()) ?: "Mi cuenta")
-                    .setMessage(
-                        buildString {
-                            append("Correo: ")
-                            append(SessionManager.obtenerEmail(requireContext()) ?: "—")
-                            append("\nRol: ")
-                            append(rolSesion ?: "—")
-                            append("\nSucursal: ")
-                            append(SessionManager.obtenerSucursalNombre(requireContext()))
-                        }
-                    )
-                    .setPositiveButton("Cerrar", null)
-                    .show()
-            } else {
-                val fm = parentFragmentManager
-                dismissAllowingStateLoss()
-                val existing = fm.findFragmentByTag(EditProfileBottomSheetFragment.TAG)
-                if (existing == null) {
-                    EditProfileBottomSheetFragment().show(
-                        fm,
-                        EditProfileBottomSheetFragment.TAG
-                    )
-                }
-            }
-        }
-
         fun navegarAFragment(fragmento: Fragment) {
             if (cerrandoSesion || !isAdded) return
 
@@ -167,6 +124,31 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
                 .replace(R.id.fragment_container, fragmento)
                 .addToBackStack(null)
                 .commit()
+        }
+
+        btnOpcionMiPerfil?.setOnClickListener {
+            if (esEmpleado) {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(SessionManager.obtenerNombre(requireContext()) ?: "Mi cuenta")
+                    .setMessage(
+                        buildString {
+                            append("Correo: ")
+                            append(SessionManager.obtenerEmail(requireContext()) ?: "—")
+                            append("\nRol: ")
+                            append(rolSesion ?: "—")
+                            append("\nSucursal: ")
+                            append(SessionManager.obtenerSucursalNombre(requireContext()))
+                        }
+                    )
+                    .setPositiveButton("Cerrar", null)
+                    .show()
+            } else {
+                navegarAFragment(MiPerfilFragment())
+            }
+        }
+
+        btnOpcionCambiarContrasena?.setOnClickListener {
+            navegarAFragment(CambiarContrasenaFragment())
         }
 
         btnOpcionNotificaciones?.setOnClickListener {
@@ -187,20 +169,8 @@ class ProfileBottomSheetFragment : BottomSheetDialogFragment() {
             navegarAFragment(HistorialComprasFragment())
         }
 
-        btnOpcionEmpleados?.setOnClickListener {
-            navegarAFragment(EmpleadosListFragment())
-        }
-
-        btnOpcionVisitas?.setOnClickListener {
-            navegarAFragment(VisitasListFragment())
-        }
-
-        btnOpcionRecepcion?.setOnClickListener {
-            navegarAFragment(RecepcionDashboardFragment())
-        }
-
-        btnOpcionCaja?.setOnClickListener {
-            navegarAFragment(ResumenAperturaFragment())
+        btnOpcionHistorialMembresias?.setOnClickListener {
+            navegarAFragment(HistorialMembresiasFragment())
         }
 
         btnOpcionCerrarSesion?.setOnClickListener {

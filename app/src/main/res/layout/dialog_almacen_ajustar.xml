@@ -80,7 +80,9 @@
             android:inputType="number"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:digits="0123456789"
+            android:maxLength="6" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -98,7 +100,9 @@
             android:inputType="number"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:digits="0123456789"
+            android:maxLength="6" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -116,7 +120,8 @@
             android:inputType="textCapSentences"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="100" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton

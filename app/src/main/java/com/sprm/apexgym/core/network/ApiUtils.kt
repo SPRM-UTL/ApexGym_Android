@@ -42,11 +42,15 @@ fun Throwable.mensajeUsuario(): String = when (this) {
 }
 
 /** Formatea un monto con separador de miles y dos decimales. */
-fun Double.formatearMoneda(): String =
-    "$" + String.format(Locale.US, "%,.2f", this) + " MXN"
+fun Double.formatearMoneda(): String {
+    val prefijo = if (this < 0) "-$" else "$"
+    return prefijo + String.format(Locale.US, "%,.2f", kotlin.math.abs(this)) + " MXN"
+}
 
-fun Double.formatearMonedaSinSufijo(): String =
-    "$" + String.format(Locale.US, "%,.2f", this)
+fun Double.formatearMonedaSinSufijo(): String {
+    val prefijo = if (this < 0) "-$" else "$"
+    return prefijo + String.format(Locale.US, "%,.2f", kotlin.math.abs(this))
+}
 
 private val FORMATOS_ENTRADA = listOf(
     "yyyy-MM-dd'T'HH:mm:ss.SSSX",

@@ -150,7 +150,8 @@
                         android:inputType="textPersonName|textCapWords"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14.5sp" />
+                        android:textSize="14.5sp"
+                        android:maxLength="60" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -167,7 +168,8 @@
                         android:inputType="textPersonName|textCapWords"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14.5sp" />
+                        android:textSize="14.5sp"
+                        android:maxLength="100" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -227,11 +229,12 @@
                             android:id="@+id/etTelefono"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="phone"
+                            android:inputType="number"
                             android:maxLength="10"
                             android:maxLines="1"
                             android:textColor="@color/apex_text_primary"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:digits="0123456789" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -248,7 +251,8 @@
                         android:inputType="textEmailAddress"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14.5sp" />
+                        android:textSize="14.5sp"
+                        android:maxLength="100" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -384,7 +388,8 @@
                             android:maxLength="5"
                             android:maxLines="1"
                             android:textColor="@color/apex_text_primary"
-                            android:textSize="14sp" />
+                            android:textSize="14sp"
+                            android:digits="0123456789" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 

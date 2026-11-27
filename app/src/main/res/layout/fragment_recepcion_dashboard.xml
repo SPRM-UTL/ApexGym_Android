@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/apex_bg_screen">
+
+<androidx.core.widget.NestedScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
@@ -207,10 +213,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:layout_marginBottom="18dp"
+            android:layout_marginBottom="10dp"
             android:background="@drawable/bg_search_bar"
-            android:clickable="true"
-            android:focusable="true"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
@@ -230,27 +234,50 @@
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
                 android:background="@null"
-                android:clickable="true"
-                android:focusable="false"
                 android:hint="Buscar socio por nombre, correo o teléfono..."
-                android:inputType="none"
+                android:imeOptions="actionSearch"
+                android:inputType="text"
+                android:maxLines="1"
                 android:textColor="@color/apex_text_primary"
                 android:textColorHint="@color/apex_nav_inactive"
-                android:textSize="13.5sp" />
+                android:textSize="13.5sp"
+                android:maxLength="80" />
+
+            <ImageView
+                android:id="@+id/ivClearSearchClient"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="6dp"
+                android:clickable="true"
+                android:contentDescription="Limpiar búsqueda"
+                android:focusable="true"
+                android:padding="4dp"
+                android:src="@drawable/ic_close"
+                android:visibility="gone"
+                app:tint="@color/apex_text_secondary" />
 
             <ImageView
                 android:id="@+id/ivScanQR"
                 android:layout_width="22dp"
                 android:layout_height="22dp"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="10dp"
                 android:contentDescription="Escanear QR"
                 android:src="@drawable/ic_qr_scanner"
                 app:tint="@color/apex_orange" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/llResultadosBusquedaRecepcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:orientation="vertical"
+            android:visibility="gone" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:layout_marginBottom="12dp"
             android:text="Acciones Rápidas"
             android:textColor="@color/apex_text_primary"
@@ -442,3 +469,4 @@
             android:nestedScrollingEnabled="false" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

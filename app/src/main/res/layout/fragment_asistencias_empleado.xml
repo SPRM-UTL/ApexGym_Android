@@ -356,7 +356,9 @@
                 android:inputType="text"
                 android:textColor="@color/apex_text_primary"
                 android:textColorHint="@color/apex_nav_inactive"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:maxLength="80"
+                android:maxLines="1" />
         </LinearLayout>
 
         <!-- Asistencias List -->
@@ -386,6 +388,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:gravity="center"
                 android:text="No hay registros de asistencia"
                 android:textColor="@color/apex_text_secondary"
                 android:textSize="16sp" />
@@ -394,6 +397,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:gravity="center"
                 android:text="Los registros aparecerán aquí"
                 android:textColor="@color/apex_nav_inactive"
                 android:textSize="13sp" />

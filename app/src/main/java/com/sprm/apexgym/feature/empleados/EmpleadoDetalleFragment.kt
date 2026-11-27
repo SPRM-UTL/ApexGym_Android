@@ -94,8 +94,21 @@ class EmpleadoDetalleFragment : BaseFragment<FragmentEmpleadoDetalleBinding>() {
                     empleado.puesto?.nombre,
                     empleado.areaTrabajo?.nombre
                 ).joinToString(" • ").ifBlank { "Puesto no asignado" }
-                binding.tvEmpleadoEstado.text =
-                    empleado.estadoEmpleado?.nombre ?: "Activo"
+                val estadoTexto = empleado.estadoEmpleado?.nombre ?: "Activo"
+                val estadoUpper = estadoTexto.uppercase()
+                binding.tvEmpleadoEstado.text = estadoTexto
+                val (badgeBg, badgeTextColor) = when {
+                    estadoUpper.contains("VACACION") || estadoUpper.contains("PERMISO") || estadoUpper.contains("INCAPAC") ->
+                        R.drawable.bg_badge_orange to R.color.white
+                    estadoUpper.contains("INACTIV") || estadoUpper.contains("BAJA") || estadoUpper.contains("SUSPEND") ->
+                        R.drawable.bg_chip_unselected to R.color.apex_text_secondary
+                    else ->
+                        R.drawable.bg_badge_green to R.color.white
+                }
+                binding.tvEmpleadoEstado.setBackgroundResource(badgeBg)
+                binding.tvEmpleadoEstado.setTextColor(
+                    androidx.core.content.ContextCompat.getColor(requireContext(), badgeTextColor)
+                )
 
                 binding.tvEmpleadoTelefono.text = empleado.telefono ?: "—"
                 binding.tvEmpleadoEmail.text =

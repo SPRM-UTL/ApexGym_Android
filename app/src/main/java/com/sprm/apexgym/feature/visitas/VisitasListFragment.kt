@@ -42,7 +42,8 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
 
         binding.rvVisitas.layoutManager = LinearLayoutManager(requireContext())
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.flRefreshVisitas.setOnClickListener { cargarVisitas() }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarVisitas() }
         binding.flAddVisita.setOnClickListener {
             navegar(CrearEditarVisitaFragment.newInstance())
         }
@@ -67,7 +68,6 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
     }
 
     private fun cargarVisitas() {
-        binding.tvTotalVisitas.text = "…"
         binding.rvVisitas.visibility = View.GONE
         binding.llEmptyVisitas.visibility = View.VISIBLE
         binding.llEmptyVisitas.getChildAt(1)?.let { (it as? TextView)?.text = "Cargando visitas…" }
@@ -78,27 +78,39 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
                     fechaInicio = inicioDeMesIso(),
                     fechaFin = fechaHoyIso()
                 )
+                if (!isAdded || view == null) return@launch
                 visitas = response.dataExitosa().orEmpty()
-                actualizarEstadisticas()
+                actualizarConteosChips()
                 aplicarFiltros()
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
                 visitas = emptyList()
-                actualizarEstadisticas()
+                actualizarConteosChips()
                 aplicarFiltros()
                 binding.llEmptyVisitas.getChildAt(1)?.let {
                     (it as? TextView)?.text = "No se pudo conectar con el servidor"
+                }
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
                 }
             }
         }
     }
 
-    private fun actualizarEstadisticas() {
-        binding.tvTotalVisitas.text = visitas.size.toString()
-        binding.tvVisitasPendientes.text = visitas.count {
-            formatearFecha(it.fechaHora, "yyyy-MM-dd") == fechaHoyIso()
-        }.toString()
-        binding.tvVisitasConvertidos.text = visitas.count { it.costo > 0 }.toString()
-        binding.tvVisitasPerdidos.text = visitas.count { it.costo <= 0 }.toString()
+    private fun actualizarConteosChips() {
+        val hoyIso = fechaHoyIso()
+        val conteos = mapOf(
+            "Todos" to visitas.size,
+            "Hoy" to visitas.count { formatearFecha(it.fechaHora, "yyyy-MM-dd") == hoyIso },
+            "Con costo" to visitas.count { it.costo > 0 },
+            "Gratuitas" to visitas.count { it.costo <= 0 }
+        )
+        chips.forEach { chip ->
+            val key = chip.tag as? String ?: return@forEach
+            val total = conteos[key] ?: 0
+            chip.text = "$key ($total)"
+        }
     }
 
     private fun construirChips() {
@@ -108,7 +120,8 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
 
         listOf("Todos", "Hoy", "Con costo", "Gratuitas").forEachIndexed { index, nombre ->
             val chip = TextView(requireContext()).apply {
-                text = nombre
+                tag = nombre
+                text = "$nombre (0)"
                 gravity = Gravity.CENTER
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
@@ -125,7 +138,7 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
             chips.add(chip)
             container.addView(chip)
             chip.setOnClickListener {
-                filtroSeleccionado = chip.text.toString()
+                filtroSeleccionado = chip.tag as? String ?: "Todos"
                 actualizarEstilos()
                 aplicarFiltros()
             }
@@ -138,7 +151,7 @@ class VisitasListFragment : BaseFragment<FragmentVisitasListBinding>() {
         val blanco = ContextCompat.getColor(requireContext(), R.color.white)
         val primario = ContextCompat.getColor(requireContext(), R.color.apex_text_primary)
         chips.forEach { chip ->
-            if (chip.text.toString() == filtroSeleccionado) {
+            if ((chip.tag as? String) == filtroSeleccionado) {
                 chip.setBackgroundResource(R.drawable.bg_chip_selected)
                 chip.setTextColor(blanco)
             } else {

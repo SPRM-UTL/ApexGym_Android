@@ -64,7 +64,6 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
         binding.tvEmployeeGreeting.text = if (nombre != null) "Hola, $nombre" else "Hola, Empleado"
         binding.tvEmployeeRole.text = SessionManager.obtenerRol(requireContext())
             ?.takeIf { it.isNotBlank() }
-            ?.let { "Rol: $it" }
             ?: "Panel de empleado"
 
         actualizarBannerSucursal(view)
@@ -103,6 +102,11 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
         binding.flEmpleadoNotificaciones.setOnClickListener {
             navegar(NotificacionesListFragment())
         }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener {
+            sincronizarSucursalActiva(view)
+            cargarContadorNotificaciones()
+        }
         primerResume = true
         cargarContadorNotificaciones()
 
@@ -117,7 +121,7 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
 
         binding.btnLogout.setOnClickListener {
             binding.btnLogout.isEnabled = false
-            binding.btnLogout.text = "Cerrando sesión..."
+            binding.tvLogoutTitle.text = "Cerrando sesión..."
 
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
@@ -219,6 +223,9 @@ class EmpleadoDashboardFragment : BaseFragment<FragmentEmpleadoDashboardBinding>
     private fun cargarContadorNotificaciones() {
         viewLifecycleOwner.lifecycleScope.launch {
             val resultado = NotificacionRepository().contarNoLeidas()
+            if (isAdded && view != null) {
+                binding.swipeRefresh.isRefreshing = false
+            }
             if (!isAdded || resultado !is ResultadoNotificaciones.Exito) return@launch
 
             val noLeidas = resultado.datos

@@ -248,7 +248,8 @@
                 android:inputType="textMultiLine"
                 android:maxLines="3"
                 android:textColor="@color/apex_text_primary"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:maxLength="300" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Confirmation Checkbox -->

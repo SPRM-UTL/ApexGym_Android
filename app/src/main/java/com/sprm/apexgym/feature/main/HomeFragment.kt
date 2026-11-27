@@ -8,6 +8,9 @@ import android.content.IntentFilter
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
@@ -47,6 +50,7 @@ import com.sprm.apexgym.core.network.client.ServicioClienteDto
 import com.sprm.apexgym.core.network.client.TipoMembresiaDto
 import com.sprm.apexgym.core.network.repository.NotificacionRepository
 import com.sprm.apexgym.core.network.repository.ResultadoNotificaciones
+import com.sprm.apexgym.core.ui.SkeletonViewHelper
 import com.sprm.apexgym.feature.tienda.CalculoVentaPos
 import com.sprm.apexgym.feature.tienda.HistorialComprasFragment
 import kotlinx.coroutines.Dispatchers
@@ -63,7 +67,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var selectedTabIndex = 0
     private var isQrVisible = false
-    private var pillAnimator: ValueAnimator? = null
+    private var pillAnimating = false
 
     private var listaProductos: List<ProductoClienteDto> = emptyList()
     private var listaServicios: List<ServicioClienteDto> = emptyList()
@@ -71,6 +75,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var miMembresiaData: MiMembresiaResponseDto? = null
     private var cargandoMembresia: Boolean = true
     private var errorCargaMembresia: Boolean = false
+    private var catalogoCargado: Boolean = false
+    private var membresiaCargada: Boolean = false
     private var categoriaSeleccionada: String = "Todos"
     private var textoBusqueda: String = ""
     private var cartListener: (() -> Unit)? = null
@@ -112,13 +118,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val flNotifications = view.findViewById<View>(R.id.flNotifications)
         flNotifications?.setOnClickListener {
-            val existing = childFragmentManager.findFragmentByTag(NotificationsBottomSheetFragment.TAG)
-            if (existing == null) {
-                NotificationsBottomSheetFragment().show(
-                    childFragmentManager,
-                    NotificationsBottomSheetFragment.TAG
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
                 )
-            }
+                .replace(
+                    R.id.fragment_container,
+                    com.sprm.apexgym.feature.notificaciones.NotificacionesListFragment()
+                )
+                .addToBackStack(null)
+                .commit()
         }
         cargarContadorNotificaciones(view)
 
@@ -178,6 +190,27 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             cargarMembresiaDesdeBackend(view)
         }
 
+        val swipeRefresh = view.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefresh)
+        swipeRefresh?.setColorSchemeResources(R.color.apex_orange)
+        swipeRefresh?.setOnRefreshListener {
+            catalogoCargado = false
+            membresiaCargada = false
+            cargarCatalogoDesdeBackend(
+                llHomePopularProductsContainer = llHomePopularProductsContainer,
+                llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
+                llTiendaProductsGridContainer = llTiendaProductsGridContainer,
+                tvTiendaEmptyState = tvTiendaEmptyState,
+                llServiciosListContainer = llServiciosListContainer,
+                tvServiciosEmptyState = tvServiciosEmptyState
+            )
+            cargarMembresiaDesdeBackend(view)
+            cargarContadorNotificaciones(view)
+            cargarResumenComprasInicio(view)
+            if (isQrVisible) {
+                cargarMiQrDesdeBackend(view, regenerar = false)
+            }
+        }
+
         etSearchMockup?.doAfterTextChanged { editable ->
             textoBusqueda = editable?.toString()?.trim().orEmpty()
             renderizarProductosPopularesInicio(llHomePopularProductsContainer)
@@ -219,16 +252,40 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, qrDispatcherCallback)
 
-        fun showSectionForTab(tabIndex: Int, animar: Boolean = true) {
+        fun mostrarSeccionConFade(seccion: View?, animar: Boolean) {
+            if (seccion == null) return
+            seccion.animate().cancel()
+            if (animar) {
+                seccion.alpha = 0.88f
+                seccion.translationY = dpToPx(5).toFloat()
+                seccion.visibility = View.VISIBLE
+                seccion.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(140L)
+                    .setInterpolator(FastOutSlowInInterpolator())
+                    .start()
+            } else {
+                seccion.alpha = 1f
+                seccion.translationY = 0f
+                seccion.visibility = View.VISIBLE
+            }
+        }
+
+        fun showSectionForTab(
+            tabIndex: Int,
+            animar: Boolean = true,
+            limpiarBusqueda: Boolean = false
+        ) {
             isQrVisible = false
             qrDispatcherCallback.isEnabled = false
 
+            if (limpiarBusqueda && textoBusqueda.isNotEmpty()) {
+                etSearchMockup?.setText("")
+            }
+
             if (animar) {
-                val transition = AutoTransition().apply {
-                    duration = 220L
-                    interpolator = FastOutSlowInInterpolator()
-                }
-                TransitionManager.beginDelayedTransition(llMainContentRoot, transition)
+                scrollHome.scrollTo(0, 0)
             }
 
             llQrAccessSection.visibility = View.GONE
@@ -239,14 +296,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     llHomeSection.visibility = View.GONE
                     llTiendaSection.visibility = View.GONE
                     llServiciosSection.visibility = View.GONE
-                    llMembresiaSection?.visibility = View.VISIBLE
+                    mostrarSeccionConFade(llMembresiaSection, animar)
                     llSearchBarRow?.visibility = View.GONE
                 }
                 2 -> {
                     llHomeSection.visibility = View.GONE
                     llMembresiaSection?.visibility = View.GONE
                     llServiciosSection.visibility = View.GONE
-                    llTiendaSection.visibility = View.VISIBLE
+                    mostrarSeccionConFade(llTiendaSection, animar)
                     llSearchBarRow?.visibility = View.VISIBLE
                     etSearchMockup.setHint(R.string.tienda_search_hint)
                 }
@@ -254,7 +311,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     llHomeSection.visibility = View.GONE
                     llMembresiaSection?.visibility = View.GONE
                     llTiendaSection.visibility = View.GONE
-                    llServiciosSection.visibility = View.VISIBLE
+                    mostrarSeccionConFade(llServiciosSection, animar)
                     llSearchBarRow?.visibility = View.VISIBLE
                     etSearchMockup.setHint(R.string.servicios_search_hint)
                 }
@@ -262,14 +319,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     llMembresiaSection?.visibility = View.GONE
                     llTiendaSection.visibility = View.GONE
                     llServiciosSection.visibility = View.GONE
-                    llHomeSection.visibility = View.VISIBLE
-                    llSearchBarRow?.visibility = View.VISIBLE
-                    etSearchMockup.setHint(R.string.home_search_hint)
+                    mostrarSeccionConFade(llHomeSection, animar)
+                    llSearchBarRow?.visibility = View.GONE
                 }
-            }
-
-            if (animar) {
-                scrollHome.smoothScrollTo(0, 0)
             }
         }
 
@@ -279,9 +331,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         showSectionForTab(selectedTabIndex, animar = false)
 
         fun actualizarPildoraSinAnimacion() {
-            if (!isAdded || view == null) return
+            if (!isAdded || view == null || pillAnimating) return
             val activeTab = tabs[selectedTabIndex].container
             if (activeTab.width > 0) {
+                viewActiveNavPill.animate().cancel()
+                viewActiveNavPill.pivotX = 0f
+                viewActiveNavPill.scaleX = 1f
                 viewActiveNavPill.translationX = activeTab.left.toFloat()
                 val pillParams = viewActiveNavPill.layoutParams
                 if (pillParams.width != activeTab.width) {
@@ -293,14 +348,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         llNavTabsRow.post { actualizarPildoraSinAnimacion() }
         llNavTabsRow.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            if (pillAnimator?.isRunning != true) {
+            if (!pillAnimating) {
                 actualizarPildoraSinAnimacion()
             }
         }
 
         tabs.forEachIndexed { index, tabItem ->
             tabItem.container.setOnClickListener {
-                if (isQrVisible && index == selectedTabIndex) {
+                val mismoTab = index == selectedTabIndex
+                if (mismoTab && !isQrVisible) {
+                    scrollHome.smoothScrollTo(0, 0)
+                    return@setOnClickListener
+                }
+                if (isQrVisible && mismoTab) {
                     showSectionForTab(index)
                 } else {
                     animateBottomNavSelection(
@@ -309,12 +369,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         llNavTabsRow = llNavTabsRow,
                         viewActiveNavPill = viewActiveNavPill
                     )
-                    showSectionForTab(index)
+                    showSectionForTab(index, limpiarBusqueda = !mismoTab)
                 }
 
                 if (index == 1) {
-                    cargarMembresiaDesdeBackend(view)
-                } else {
+                    if (!membresiaCargada || miMembresiaData == null || errorCargaMembresia) {
+                        cargarMembresiaDesdeBackend(view)
+                    }
+                } else if (!catalogoCargado || (listaProductos.isEmpty() && listaServicios.isEmpty())) {
                     cargarCatalogoDesdeBackend(
                         llHomePopularProductsContainer = llHomePopularProductsContainer,
                         llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
@@ -328,14 +390,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         val goToMembresiaListener = View.OnClickListener {
+            val mismoTab = selectedTabIndex == 1
             animateBottomNavSelection(
                 targetIndex = 1,
                 tabs = tabs,
                 llNavTabsRow = llNavTabsRow,
                 viewActiveNavPill = viewActiveNavPill
             )
-            showSectionForTab(1)
-            cargarMembresiaDesdeBackend(view)
+            showSectionForTab(1, limpiarBusqueda = !mismoTab)
+            if (!membresiaCargada || miMembresiaData == null || errorCargaMembresia) {
+                cargarMembresiaDesdeBackend(view)
+            }
         }
         val openHistorialComprasListener = View.OnClickListener {
             parentFragmentManager.beginTransaction()
@@ -349,20 +414,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 .addToBackStack(null)
                 .commit()
         }
-        view.findViewById<View>(R.id.chipHomePagos)?.setOnClickListener(openHistorialComprasListener)
         view.findViewById<View>(R.id.cardPagos)?.setOnClickListener(openHistorialComprasListener)
         view.findViewById<View>(R.id.btnPagarMockup)?.setOnClickListener(openHistorialComprasListener)
-        view.findViewById<View>(R.id.chipHomeMembresia)?.setOnClickListener(goToMembresiaListener)
 
         val goToProductosListener = View.OnClickListener {
+            val mismoTab = selectedTabIndex == 2
             animateBottomNavSelection(
                 targetIndex = 2,
                 tabs = tabs,
                 llNavTabsRow = llNavTabsRow,
                 viewActiveNavPill = viewActiveNavPill
             )
-            showSectionForTab(2)
-            if (listaProductos.isEmpty()) {
+            showSectionForTab(2, limpiarBusqueda = !mismoTab)
+            if (!catalogoCargado || listaProductos.isEmpty()) {
                 cargarCatalogoDesdeBackend(
                     llHomePopularProductsContainer = llHomePopularProductsContainer,
                     llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
@@ -374,14 +438,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
         val goToServiciosListener = View.OnClickListener {
+            val mismoTab = selectedTabIndex == 3
             animateBottomNavSelection(
                 targetIndex = 3,
                 tabs = tabs,
                 llNavTabsRow = llNavTabsRow,
                 viewActiveNavPill = viewActiveNavPill
             )
-            showSectionForTab(3)
-            if (listaServicios.isEmpty()) {
+            showSectionForTab(3, limpiarBusqueda = !mismoTab)
+            if (!catalogoCargado || listaServicios.isEmpty()) {
                 cargarCatalogoDesdeBackend(
                     llHomePopularProductsContainer = llHomePopularProductsContainer,
                     llTiendaCategoryChipsContainer = llTiendaCategoryChipsContainer,
@@ -395,7 +460,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         view.findViewById<View>(R.id.cardTienda)?.setOnClickListener(goToServiciosListener)
         view.findViewById<View>(R.id.btnComprarMockup)?.setOnClickListener(goToServiciosListener)
         view.findViewById<View>(R.id.btnVerCatalogoMockup)?.setOnClickListener(goToProductosListener)
-        view.findViewById<View>(R.id.chipHomeInsumos)?.setOnClickListener(goToProductosListener)
 
         val flQrCodeBox = view.findViewById<View>(R.id.flQrCodeBox)
         val btnGenerarNuevoQr = view.findViewById<View>(R.id.btnGenerarNuevoQr)
@@ -423,7 +487,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         view.findViewById<View>(R.id.fabQrMockup)?.setOnClickListener(openQrAccessListener)
-        view.findViewById<View>(R.id.chipHomeAccesoQr)?.setOnClickListener(openQrAccessListener)
         view.findViewById<View>(R.id.btnMembresiaAbrirQr)?.setOnClickListener(openQrAccessListener)
 
         val openMembresiaDetailListener = View.OnClickListener {
@@ -474,7 +537,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             showSectionForTab(selectedTabIndex)
         }
         view.findViewById<View>(R.id.btnQrBack)?.setOnClickListener(closeQrListener)
-        view.findViewById<View>(R.id.btnQrClose)?.setOnClickListener(closeQrListener)
 
         btnGenerarNuevoQr?.setOnClickListener {
             flQrCodeBox?.animate()
@@ -513,11 +575,25 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         llServiciosListContainer: LinearLayout?,
         tvServiciosEmptyState: TextView?
     ) {
-        tvTiendaEmptyState?.visibility = View.VISIBLE
-        tvTiendaEmptyState?.text = "Cargando productos disponibles..."
-
-        tvServiciosEmptyState?.visibility = View.VISIBLE
-        tvServiciosEmptyState?.text = "Cargando servicios disponibles..."
+        if (listaProductos.isNotEmpty()) {
+            construirChipsCategoriasReales(
+                llTiendaCategoryChipsContainer,
+                llTiendaProductsGridContainer,
+                tvTiendaEmptyState
+            )
+            renderizarProductosPopularesInicio(llHomePopularProductsContainer)
+            renderizarGridProductos(llTiendaProductsGridContainer, tvTiendaEmptyState)
+        } else if (!catalogoCargado) {
+            tvTiendaEmptyState?.visibility = View.GONE
+            SkeletonViewHelper.mostrarSkeletonProductosPopular(llHomePopularProductsContainer)
+            SkeletonViewHelper.mostrarSkeletonProductosGrid(llTiendaProductsGridContainer)
+        }
+        if (listaServicios.isNotEmpty()) {
+            renderizarListaServicios(llServiciosListContainer, tvServiciosEmptyState)
+        } else if (!catalogoCargado) {
+            tvServiciosEmptyState?.visibility = View.GONE
+            SkeletonViewHelper.mostrarSkeletonServiciosLista(llServiciosListContainer)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -553,12 +629,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 listaServicios = emptyList()
             }
 
+            catalogoCargado = true
             if (!isAdded) return@launch
             view?.let { root ->
                 val tvServSub = root.findViewById<TextView>(R.id.tvHomeServiciosSubtitulo)
                 if (listaServicios.isNotEmpty()) {
                     tvServSub?.text = "${listaServicios.size} disponibles\nen sucursal"
                 }
+                root.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.swipeRefresh)
+                    ?.isRefreshing = false
             }
             renderizarListaServicios(llServiciosListContainer, tvServiciosEmptyState)
         }
@@ -679,37 +758,59 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         if (container == null) return
         container.removeAllViews()
 
-        val filtrados = listaProductos
-            .filter { prod ->
-                textoBusqueda.isEmpty() ||
-                    prod.nombre.contains(textoBusqueda, ignoreCase = true) ||
-                    prod.descripcion?.contains(textoBusqueda, ignoreCase = true) == true ||
-                    prod.categoria?.nombre?.contains(textoBusqueda, ignoreCase = true) == true
-            }
+        val productosDestacados = listaProductos
             .sortedBy { it.stockActual <= 0 }
+            .take(4)
 
-        if (filtrados.isEmpty()) {
+        if (productosDestacados.isEmpty()) {
             val tvVacio = TextView(requireContext()).apply {
-                text = if (listaProductos.isEmpty()) {
-                    "No hay productos disponibles por el momento"
-                } else {
-                    "No se encontraron productos para \"$textoBusqueda\""
-                }
+                text = "No hay productos disponibles por el momento"
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f)
+                gravity = Gravity.CENTER
                 setPadding(dpToPx(4), dpToPx(16), dpToPx(4), dpToPx(16))
             }
             container.addView(tvVacio)
             return
         }
 
-        val productosDestacados = filtrados.take(8)
-        productosDestacados.forEachIndexed { index, producto ->
-            val card = crearTarjetaProductoCarruselInicio(
-                producto = producto,
-                esUltimo = index == productosDestacados.lastIndex
+        productosDestacados.chunked(2).forEachIndexed { filaIndex, par ->
+            val fila = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                weightSum = 2f
+                isBaselineAligned = false
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    if (filaIndex > 0) topMargin = dpToPx(14)
+                }
+            }
+            fila.addView(
+                crearTarjetaProductoTiendaGrid(
+                    producto = par[0],
+                    esColumnaIzquierda = true
+                )
             )
-            container.addView(card)
+            if (par.size > 1) {
+                fila.addView(
+                    crearTarjetaProductoTiendaGrid(
+                        producto = par[1],
+                        esColumnaIzquierda = false
+                    )
+                )
+            } else {
+                fila.addView(
+                    Space(requireContext()).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            0,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            1f
+                        ).apply { marginStart = dpToPx(7) }
+                    }
+                )
+            }
+            container.addView(fila)
         }
     }
 
@@ -725,9 +826,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 prod.categoria?.nombre?.equals(categoriaSeleccionada, ignoreCase = true) == true
 
             val coincideBusqueda = textoBusqueda.isEmpty() ||
-                prod.nombre.contains(textoBusqueda, ignoreCase = true) ||
-                prod.descripcion?.contains(textoBusqueda, ignoreCase = true) == true ||
-                prod.categoria?.nombre?.contains(textoBusqueda, ignoreCase = true) == true
+                prod.nombre.contains(textoBusqueda, ignoreCase = true)
 
             coincideCategoria && coincideBusqueda
         }.sortedBy { it.stockActual <= 0 }
@@ -795,8 +894,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         val filtrados = listaServicios.filter { serv ->
             textoBusqueda.isEmpty() ||
-                serv.nombre.contains(textoBusqueda, ignoreCase = true) ||
-                serv.descripcion?.contains(textoBusqueda, ignoreCase = true) == true
+                serv.nombre.contains(textoBusqueda, ignoreCase = true)
         }
 
         if (filtrados.isEmpty()) {
@@ -816,162 +914,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
     }
 
-    private fun crearTarjetaProductoCarruselInicio(
-        producto: ProductoClienteDto,
-        esUltimo: Boolean
-    ): MaterialCardView {
-        val context = requireContext()
-        val card = MaterialCardView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(148), dpToPx(202)).apply {
-                if (!esUltimo) marginEnd = dpToPx(12)
-            }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
-            radius = dpToPx(18).toFloat()
-            cardElevation = dpToPx(3).toFloat()
-            strokeWidth = 0
-        }
-
-        val inner = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
-        }
-
-        val imgBox = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dpToPx(86)
-            )
-            setBackgroundResource(R.drawable.bg_product_image_container)
-            clipToOutline = true
-
-            val icon = ImageView(context).apply {
-                layoutParams = FrameLayout.LayoutParams(dpToPx(38), dpToPx(38), Gravity.CENTER)
-                setImageResource(R.drawable.ic_supplement_bottle)
-            }
-            addView(icon)
-        }
-        cargarImagenEnContenedor(producto.imagenUrl, imgBox)
-        inner.addView(imgBox)
-
-        val tvNombre = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dpToPx(10)
-            }
-            text = producto.nombre
-            setTextColor(ContextCompat.getColor(context, R.color.white))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-            setTypeface(typeface, Typeface.BOLD)
-            maxLines = 2
-            ellipsize = TextUtils.TruncateAt.END
-        }
-        inner.addView(tvNombre)
-
-        val agotado = producto.stockActual <= 0
-        val precioNeto = CalculoVentaPos.precioConDescuento(producto.precioVenta, producto.descuentoPorcentaje)
-        card.alpha = if (agotado) 0.55f else 1f
-
-        val tvCategoria = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dpToPx(2)
-            }
-            text = if (agotado) "Agotado temporalmente" else (producto.categoria?.nombre ?: "Producto")
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_on_dark_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f)
-            maxLines = 1
-            ellipsize = TextUtils.TruncateAt.END
-        }
-        inner.addView(tvCategoria)
-
-        inner.addView(
-            Space(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    0,
-                    1f
-                )
-            }
-        )
-
-        val bottomRow = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-        }
-
-        val tvPrecio = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            text = "${formatearPrecio(precioNeto)} MXN"
-            setTextColor(
-                ContextCompat.getColor(
-                    context,
-                    if (agotado) R.color.apex_text_on_dark_secondary else R.color.apex_orange
-                )
-            )
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f)
-            setTypeface(typeface, Typeface.BOLD)
-        }
-        bottomRow.addView(tvPrecio)
-
-        val btnAdd = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(26), dpToPx(26))
-            setBackgroundResource(if (agotado) R.drawable.bg_chip_unselected else R.drawable.bg_circle_orange)
-            val plusIcon = ImageView(context).apply {
-                layoutParams = FrameLayout.LayoutParams(dpToPx(14), dpToPx(14), Gravity.CENTER)
-                setImageResource(R.drawable.ic_plus)
-                ImageViewCompat.setImageTintList(
-                    this,
-                    ColorStateList.valueOf(
-                        ContextCompat.getColor(
-                            context,
-                            if (agotado) R.color.apex_nav_inactive else R.color.white
-                        )
-                    )
-                )
-            }
-            addView(plusIcon)
-            setOnClickListener {
-                if (agotado) {
-                    Toast.makeText(context, "${producto.nombre} está agotado temporalmente.", Toast.LENGTH_SHORT).show()
-                } else {
-                    val res = CartManager.agregarProducto(context, producto, 1)
-                    Toast.makeText(context, res.mensaje, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-        bottomRow.addView(btnAdd)
-
-        inner.addView(bottomRow)
-        card.addView(inner)
-
-        card.setOnClickListener {
-            if (agotado) {
-                Toast.makeText(context, "${producto.nombre} está agotado temporalmente.", Toast.LENGTH_SHORT).show()
-            } else {
-                abrirDetalleProducto(producto)
-            }
-        }
-
-        return card
-    }
-
     private fun crearTarjetaProductoTiendaGrid(
         producto: ProductoClienteDto,
         esColumnaIzquierda: Boolean
     ): MaterialCardView {
         val context = requireContext()
+        val agotado = producto.stockActual <= 0
+        val precioNeto = CalculoVentaPos.precioConDescuento(producto.precioVenta, producto.descuentoPorcentaje)
+
         val card = MaterialCardView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, dpToPx(232), 1f).apply {
                 if (esColumnaIzquierda) {
@@ -980,7 +930,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     marginStart = dpToPx(7)
                 }
             }
-            setCardBackgroundColor(ContextCompat.getColor(context, R.color.apex_card_dark))
+            setCardBackgroundColor(
+                if (agotado) Color.parseColor("#6B7280")
+                else ContextCompat.getColor(context, R.color.apex_card_dark)
+            )
+            alpha = if (agotado) 0.78f else 1f
             radius = dpToPx(22).toFloat()
             cardElevation = dpToPx(3).toFloat()
             strokeWidth = 0
@@ -1006,10 +960,34 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             val icon = ImageView(context).apply {
                 layoutParams = FrameLayout.LayoutParams(dpToPx(44), dpToPx(44), Gravity.CENTER)
                 setImageResource(R.drawable.ic_supplement_bottle)
+                colorFilter = if (agotado) {
+                    ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+                } else {
+                    null
+                }
             }
             addView(icon)
+            if (agotado) {
+                addView(
+                    TextView(context).apply {
+                        text = "AGOTADO"
+                        setTextColor(Color.WHITE)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 9f)
+                        setTypeface(typeface, Typeface.BOLD)
+                        setPadding(dpToPx(7), dpToPx(2), dpToPx(7), dpToPx(2))
+                        setBackgroundColor(Color.parseColor("#CC334155"))
+                        layoutParams = FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            Gravity.TOP or Gravity.START
+                        ).apply {
+                            setMargins(dpToPx(6), dpToPx(6), 0, 0)
+                        }
+                    }
+                )
+            }
         }
-        cargarImagenEnContenedor(producto.imagenUrl, imgBox)
+        cargarImagenEnContenedor(producto.imagenUrl, imgBox, desaturar = agotado)
         inner.addView(imgBox)
 
         val tvNombre = TextView(context).apply {
@@ -1027,10 +1005,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             ellipsize = TextUtils.TruncateAt.END
         }
         inner.addView(tvNombre)
-
-        val agotado = producto.stockActual <= 0
-        val precioNeto = CalculoVentaPos.precioConDescuento(producto.precioVenta, producto.descuentoPorcentaje)
-        card.alpha = if (agotado) 0.55f else 1f
 
         val subtituloCategoria = buildString {
             append(producto.categoria?.nombre ?: "General")
@@ -1310,8 +1284,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private fun cargarMembresiaDesdeBackend(rootView: View) {
         val tvMembresiaPlanesEmpty = rootView.findViewById<TextView>(R.id.tvMembresiaPlanesEmpty)
-        tvMembresiaPlanesEmpty?.visibility = View.VISIBLE
-        tvMembresiaPlanesEmpty?.text = "Cargando planes de membresía..."
+        val llMembresiaPlanesContainer = rootView.findViewById<LinearLayout>(R.id.llMembresiaPlanesContainer)
+        if (listaPlanesMembresia.isNotEmpty() || miMembresiaData != null) {
+            renderizarSeccionMembresia(rootView)
+        } else if (!membresiaCargada) {
+            tvMembresiaPlanesEmpty?.visibility = View.GONE
+            SkeletonViewHelper.mostrarSkeletonMembresiaPlanes(llMembresiaPlanesContainer)
+        }
 
         cargandoMembresia = true
         errorCargaMembresia = false
@@ -1342,6 +1321,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
 
             cargandoMembresia = false
+            membresiaCargada = true
             errorCargaMembresia = !exitoMembresia
 
             if (!isAdded) return@launch
@@ -1375,8 +1355,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val tvMembresiaFechaFin = rootView.findViewById<TextView>(R.id.tvMembresiaFechaFin)
         val tvMembresiaPlanesEmpty = rootView.findViewById<TextView>(R.id.tvMembresiaPlanesEmpty)
         val llMembresiaPlanesContainer = rootView.findViewById<LinearLayout>(R.id.llMembresiaPlanesContainer)
-        val llMembresiaHistorialWrapper = rootView.findViewById<View>(R.id.llMembresiaHistorialWrapper)
-        val llMembresiaHistorialContainer = rootView.findViewById<LinearLayout>(R.id.llMembresiaHistorialContainer)
 
         val cliente = miMembresiaData?.cliente
         if (cliente != null && !cliente.nombre.isNullOrBlank()) {
@@ -1430,17 +1408,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             listaPlanesMembresia.forEach { plan ->
                 val esPlanActual = idPlanActivo != null && idPlanActivo == plan.id && activa != null
                 llMembresiaPlanesContainer?.addView(crearTarjetaPlanMembresia(plan, esPlanActual))
-            }
-        }
-
-        val historial = miMembresiaData?.historial.orEmpty()
-        llMembresiaHistorialContainer?.removeAllViews()
-        if (historial.isEmpty()) {
-            llMembresiaHistorialWrapper?.visibility = View.GONE
-        } else {
-            llMembresiaHistorialWrapper?.visibility = View.VISIBLE
-            historial.take(5).forEach { item ->
-                llMembresiaHistorialContainer?.addView(crearTarjetaHistorialMembresia(item))
             }
         }
     }
@@ -1628,85 +1595,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         return card
     }
 
-    private fun crearTarjetaHistorialMembresia(item: ClienteMembresiaDto): View {
-        val context = requireContext()
-        val row = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dpToPx(10)
-            }
-            setBackgroundResource(R.drawable.bg_profile_option_card)
-            setPadding(dpToPx(16), dpToPx(14), dpToPx(16), dpToPx(14))
-        }
-
-        val iconCircle = FrameLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dpToPx(40), dpToPx(40))
-            setBackgroundResource(R.drawable.bg_icon_circle_orange_outline)
-
-            val icon = ImageView(context).apply {
-                layoutParams = FrameLayout.LayoutParams(dpToPx(18), dpToPx(18), Gravity.CENTER)
-                setImageResource(R.drawable.ic_membership_card)
-                ImageViewCompat.setImageTintList(
-                    this,
-                    ColorStateList.valueOf(ContextCompat.getColor(context, R.color.apex_orange))
-                )
-            }
-            addView(icon)
-        }
-        row.addView(iconCircle)
-
-        val infoCol = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = dpToPx(12)
-                marginEnd = dpToPx(8)
-            }
-        }
-
-        val tvPlan = TextView(context).apply {
-            text = item.tipoMembresia?.nombre ?: "Membresía ApexGym"
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
-            setTypeface(typeface, Typeface.BOLD)
-        }
-        infoCol.addView(tvPlan)
-
-        val tvFechas = TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dpToPx(2)
-            }
-            text = "${formatearFechaCorta(item.fechaInicio)} al ${formatearFechaCorta(item.fechaFin)}"
-            setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
-        }
-        infoCol.addView(tvFechas)
-        row.addView(infoCol)
-
-        val estadoStr = (item.estadoMembresia?.nombre ?: "Registrada").uppercase(Locale.getDefault())
-        val tvEstado = TextView(context).apply {
-            text = estadoStr
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-            setTypeface(typeface, Typeface.BOLD)
-            setTextColor(
-                if (estadoStr.contains("VIGENTE")) {
-                    ContextCompat.getColor(context, R.color.apex_orange)
-                } else {
-                    ContextCompat.getColor(context, R.color.apex_text_secondary)
-                }
-            )
-        }
-        row.addView(tvEstado)
-
-        return row
-    }
-
     private fun calcularDiasRestantes(fechaFinIso: String?): Long? {
         return MembresiaVigenciaHelper.calcularDiasRestantes(fechaFinIso)
     }
@@ -1723,12 +1611,16 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         return "$${formato.format(monto)}"
     }
 
-    private fun cargarImagenEnContenedor(rutaImagen: String?, contenedor: FrameLayout) {
+    private fun cargarImagenEnContenedor(
+        rutaImagen: String?,
+        contenedor: FrameLayout,
+        desaturar: Boolean = false
+    ) {
         val urlCompleta = RetrofitClient.resolverUrlImagen(rutaImagen) ?: return
 
         val cached = bitmapCache.get(urlCompleta)
         if (cached != null) {
-            mostrarBitmapEnContenedor(cached, contenedor)
+            mostrarBitmapEnContenedor(cached, contenedor, desaturar)
             return
         }
 
@@ -1753,15 +1645,22 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 bitmapCache.put(urlCompleta, bitmap)
                 withContext(Dispatchers.Main) {
                     if (isAdded) {
-                        mostrarBitmapEnContenedor(bitmap, contenedor)
+                        mostrarBitmapEnContenedor(bitmap, contenedor, desaturar)
                     }
                 }
             }
         }
     }
 
-    private fun mostrarBitmapEnContenedor(bitmap: Bitmap, contenedor: FrameLayout) {
+    private fun mostrarBitmapEnContenedor(
+        bitmap: Bitmap,
+        contenedor: FrameLayout,
+        desaturar: Boolean = false
+    ) {
         val context = contenedor.context
+        val badges = (0 until contenedor.childCount)
+            .map { contenedor.getChildAt(it) }
+            .filter { it is TextView }
         contenedor.removeAllViews()
         val imageView = ImageView(context).apply {
             layoutParams = FrameLayout.LayoutParams(
@@ -1770,8 +1669,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             )
             scaleType = ImageView.ScaleType.CENTER_CROP
             setImageBitmap(bitmap)
+            colorFilter = if (desaturar) {
+                ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
+            } else {
+                null
+            }
         }
         contenedor.addView(imageView)
+        badges.forEach { contenedor.addView(it) }
     }
 
     private fun animateBottomNavSelection(
@@ -1784,36 +1689,40 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         selectedTabIndex = targetIndex
 
         val startX = viewActiveNavPill.translationX
-        val startWidth = viewActiveNavPill.width
+        val startWidth = viewActiveNavPill.width.coerceAtLeast(1)
         val targetContainer = tabs[targetIndex].container
+        pillAnimating = true
 
         llNavTabsRow.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
             override fun onPreDraw(): Boolean {
                 llNavTabsRow.viewTreeObserver.removeOnPreDrawListener(this)
 
                 val endX = targetContainer.left.toFloat()
-                val endWidth = targetContainer.width
+                val endWidth = targetContainer.width.coerceAtLeast(1)
 
-                pillAnimator?.cancel()
-                pillAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-                    duration = 320L
-                    interpolator = FastOutSlowInInterpolator()
-                    addUpdateListener { anim ->
-                        val fraction = anim.animatedFraction
-                        viewActiveNavPill.translationX = startX + (endX - startX) * fraction
-                        val currentWidth = (startWidth + (endWidth - startWidth) * fraction).toInt()
-                        val params = viewActiveNavPill.layoutParams
-                        params.width = currentWidth
-                        viewActiveNavPill.layoutParams = params
-                    }
-                    start()
+                val params = viewActiveNavPill.layoutParams
+                if (params.width != endWidth) {
+                    params.width = endWidth
+                    viewActiveNavPill.layoutParams = params
                 }
+
+                viewActiveNavPill.animate().cancel()
+                viewActiveNavPill.pivotX = 0f
+                viewActiveNavPill.translationX = startX
+                viewActiveNavPill.scaleX = startWidth.toFloat() / endWidth.toFloat()
+                viewActiveNavPill.animate()
+                    .translationX(endX)
+                    .scaleX(1f)
+                    .setDuration(260L)
+                    .setInterpolator(FastOutSlowInInterpolator())
+                    .withEndAction { pillAnimating = false }
+                    .start()
                 return true
             }
         })
 
         val transition = ChangeBounds().apply {
-            duration = 320L
+            duration = 260L
             interpolator = FastOutSlowInInterpolator()
         }
         TransitionManager.beginDelayedTransition(llNavTabsRow, transition)
@@ -1836,7 +1745,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     dpToPx(48),
                     0f
                 )
-                item.container.setPadding(dpToPx(16), 0, dpToPx(16), 0)
+                item.container.setPadding(dpToPx(14), 0, dpToPx(14), 0)
 
                 ImageViewCompat.setImageTintList(item.icon, ColorStateList.valueOf(colorActive))
 
@@ -1906,8 +1815,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     "SIN MEMBRESÍA VIGENTE"
                 }
                 tvNombre?.text = nombreCompleto
+                val diasQr = MembresiaVigenciaHelper
+                    .calcularDiasRestantes(data.membresia?.fechaFin)
+                    ?.coerceAtLeast(0L)
+                    ?: data.diasRestantes.toLong().coerceAtLeast(0L)
+                val textoDiasQr = MembresiaVigenciaHelper.formatearTextoDiasRestantes(diasQr)
                 tvCodigo?.text = if (data.vigente) {
-                    "Código: ${data.codigoQr ?: "—"} • ${data.diasRestantes} días restantes"
+                    "Código: ${data.codigoQr ?: "—"} • $textoDiasQr"
                 } else {
                     data.mensaje ?: "Membresía inactiva"
                 }
@@ -2010,8 +1924,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     override fun onDestroyView() {
         cartListener?.let { CartManager.removeListener(it) }
         cartListener = null
-        pillAnimator?.cancel()
-        pillAnimator = null
+        view?.findViewById<View>(R.id.viewActiveNavPill)?.animate()?.cancel()
+        pillAnimating = false
         super.onDestroyView()
     }
 }

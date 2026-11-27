@@ -82,44 +82,19 @@
                 android:textSize="12sp" />
         </LinearLayout>
 
-        <LinearLayout
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnTransferirStockItem"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:weightSum="2">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAjustarStockItem"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="5dp"
-                android:layout_weight="1"
-                android:text="Ajustar stock"
-                android:textAllCaps="false"
-                android:textColor="@color/apex_text_primary"
-                android:textSize="12.5sp"
-                android:textStyle="bold"
-                app:cornerRadius="20dp"
-                app:strokeColor="@color/apex_stroke_light"
-                app:strokeWidth="1.2dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnTransferirStockItem"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="5dp"
-                android:layout_weight="1"
-                android:text="Transferir"
-                android:textAllCaps="false"
-                android:textColor="@color/apex_orange"
-                android:textSize="12.5sp"
-                android:textStyle="bold"
-                app:cornerRadius="20dp"
-                app:strokeColor="@color/apex_orange"
-                app:strokeWidth="1.2dp" />
-        </LinearLayout>
+            android:text="Transferir"
+            android:textAllCaps="false"
+            android:textColor="@color/apex_orange"
+            android:textSize="12.5sp"
+            android:textStyle="bold"
+            app:cornerRadius="20dp"
+            app:strokeColor="@color/apex_orange"
+            app:strokeWidth="1.2dp" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

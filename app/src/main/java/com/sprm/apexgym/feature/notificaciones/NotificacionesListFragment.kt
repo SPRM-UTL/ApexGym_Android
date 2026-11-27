@@ -64,6 +64,8 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
         super.onViewCreated(view, savedInstanceState)
 
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarNotificaciones(silencioso = true) }
 
         // La API todavía no expone preferencias de notificaciones: no se muestra un acceso sin función.
         binding.flConfig.visibility = View.INVISIBLE
@@ -175,6 +177,7 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
             val resultado = repositorio.listar()
             cargando = false
             if (!isAdded || view == null) return@launch
+            binding.swipeRefresh.isRefreshing = false
 
             when (resultado) {
                 is ResultadoNotificaciones.Exito -> {
@@ -295,7 +298,11 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
 
         columnaTexto.addView(
             TextView(context).apply {
-                text = notificacion.titulo.ifBlank { "Notificación" }
+                text = NotificacionFormatter.formatearTitulo(
+                    titulo = notificacion.titulo,
+                    mensaje = notificacion.mensaje,
+                    tipo = notificacion.tipo
+                )
                 setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
                 setTypeface(typeface, Typeface.BOLD)
@@ -371,7 +378,11 @@ class NotificacionesListFragment : BaseFragment<FragmentNotificacionesListBindin
 
         contenido.addView(
             TextView(context).apply {
-                text = notificacion.mensaje
+                text = NotificacionFormatter.formatearMensaje(
+                    mensaje = notificacion.mensaje,
+                    titulo = notificacion.titulo,
+                    tipo = notificacion.tipo
+                )
                 setTextColor(ContextCompat.getColor(context, R.color.apex_text_secondary))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                 setLineSpacing(0f, 1.1f)

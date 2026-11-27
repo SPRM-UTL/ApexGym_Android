@@ -88,6 +88,32 @@
                     android:background="@drawable/bg_search_bar"
                     android:paddingHorizontal="14dp"
                     android:spinnerMode="dropdown" />
+
+                <LinearLayout
+                    android:id="@+id/llResponsableApertura"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="RESPONSABLE DE TURNO"
+                        android:textColor="@color/apex_text_secondary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <androidx.appcompat.widget.AppCompatSpinner
+                        android:id="@+id/spResponsableApertura"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_search_bar"
+                        android:paddingHorizontal="14dp"
+                        android:spinnerMode="dropdown" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -130,7 +156,9 @@
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
                         android:textSize="20sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:digits="0123456789."
+                        android:maxLength="10" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
@@ -292,7 +320,8 @@
                         android:minLines="3"
                         android:maxLines="4"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:maxLength="500" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

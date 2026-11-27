@@ -31,6 +31,8 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
 
     private var aperturaId: Int = 0
     private var apertura: AperturaCajaDto? = null
+    private var saldoDisponibleActual: Double? = null
+    private var aperturaAbierta: Boolean = false
     private var movimientos: List<MovimientoCajaDto> = emptyList()
     private var filtroSeleccionado = "Todos"
     private val chips = mutableListOf<TextView>()
@@ -44,11 +46,21 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
 
         binding.rvMovimientos.layoutManager = LinearLayoutManager(requireContext())
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarMovimientos() }
+
         binding.flAddMovement.setOnClickListener {
-            if (apertura == null) {
+            val actual = apertura
+            if (actual == null) {
                 Toast.makeText(requireContext(), "No hay una caja abierta", Toast.LENGTH_SHORT).show()
+            } else if (!aperturaAbierta) {
+                Toast.makeText(
+                    requireContext(),
+                    "La apertura ya está cerrada; no admite nuevos movimientos",
+                    Toast.LENGTH_LONG
+                ).show()
             } else {
-                NuevoMovimientoSheetFragment.newInstance(apertura!!.id)
+                NuevoMovimientoSheetFragment.newInstance(actual.id, saldoDisponibleActual)
                     .show(parentFragmentManager, NuevoMovimientoSheetFragment.TAG)
             }
         }
@@ -71,10 +83,14 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val aperturas = RetrofitClient.empleadoService.obtenerAperturas().dataExitosa().orEmpty()
+                if (!isAdded || view == null) return@launch
+
                 val aperturaEncontrada = if (aperturaId > 0) {
                     aperturas.firstOrNull { it.id == aperturaId }
                 } else {
-                    aperturas.filter { it.estado?.uppercase() != "CERRADA" }.maxByOrNull { it.id }
+                    aperturas
+                        .filter { CajaValidacionLogic.esAperturaAbierta(it.estado) }
+                        .maxByOrNull { it.id }
                 }
 
                 apertura = aperturaEncontrada ?: if (aperturaId > 0) {
@@ -85,6 +101,9 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
 
                 val actual = apertura
                 if (actual == null) {
+                    aperturaAbierta = false
+                    saldoDisponibleActual = null
+                    binding.flAddMovement.alpha = 0.5f
                     binding.tvCajaNombre.text = "No hay caja abierta"
                     binding.tvAperturaInfo.text = "Abre una caja para registrar movimientos"
                     binding.tvSaldoActual.text = 0.0.formatearMonedaSinSufijo()
@@ -96,16 +115,29 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
                 val resumen = RetrofitClient.empleadoService
                     .obtenerResumenApertura(actual.id)
                     .dataExitosa()
+                if (!isAdded || view == null) return@launch
+
+                val estadoReal = resumen?.apertura?.estado ?: actual.estado
+                aperturaAbierta = CajaValidacionLogic.esAperturaAbierta(estadoReal)
+                saldoDisponibleActual = resumen?.saldoDisponible ?: actual.montoInicial
+                binding.flAddMovement.alpha = if (aperturaAbierta) 1f else 0.5f
 
                 movimientos = resumen?.movimientos.orEmpty()
-                mostrarCabecera(actual, resumen)
+                mostrarCabecera(resumen?.apertura ?: actual, resumen)
                 aplicarFiltro()
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
+                aperturaAbierta = false
+                binding.flAddMovement.alpha = 0.5f
                 binding.tvCajaNombre.text = "Sin conexión"
                 binding.tvAperturaInfo.text = "No se pudo conectar con el servidor"
                 binding.tvSaldoActual.text = "—"
                 movimientos = emptyList()
                 aplicarFiltro()
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
     }
@@ -207,23 +239,19 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
                 val movimiento = filtrados[position]
                 val esSalida = movimiento.tipo?.uppercase() == "SALIDA"
                 holder.tvTitulo.text = movimiento.concepto ?: "Movimiento #${movimiento.id}"
-                holder.tvDetalle.text = buildString {
-                    append(movimiento.tipo ?: "—")
-                    append(" • ")
-                    append(formatearFecha(movimiento.createdAt, "dd/MM/yyyy HH:mm"))
-                    append(" • ")
-                    append(movimiento.estado ?: "—")
-                }
+                holder.tvDetalle.text = listOfNotNull(
+                    movimiento.tipo?.uppercase(),
+                    movimiento.estado?.uppercase(),
+                    movimiento.createdAt?.takeIf { it.isNotBlank() }?.let { formatearFecha(it, "dd/MM/yyyy HH:mm") }
+                ).joinToString(" • ").ifBlank { "—" }
+
                 holder.tvMonto.text =
                     (if (esSalida) "-" else "+") + movimiento.monto.formatearMonedaSinSufijo()
-                holder.tvAccion.text = if (movimiento.estado?.uppercase() == "PENDIENTE") {
-                    "Validar"
-                } else {
-                    ""
-                }
+                holder.tvAccion.text =
+                    if (aperturaAbierta && movimiento.estado?.uppercase() == "PENDIENTE") "Validar" else ""
 
                 holder.itemView.setOnClickListener {
-                    if (movimiento.estado?.uppercase() == "PENDIENTE") {
+                    if (aperturaAbierta && movimiento.estado?.uppercase() == "PENDIENTE") {
                         confirmarValidacion(movimiento)
                     }
                 }
@@ -250,6 +278,7 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitClient.empleadoService.validarMovimiento(movimiento.id)
+                if (!isAdded || view == null) return@launch
                 if (response.dataExitosa() == null) {
                     Toast.makeText(
                         requireContext(),
@@ -261,6 +290,7 @@ class MovimientosCajaFragment : BaseFragment<FragmentMovimientosCajaBinding>() {
                     cargarMovimientos()
                 }
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
                 Toast.makeText(
                     requireContext(),
                     "No se pudo conectar con el servidor",

@@ -62,8 +62,8 @@
     <string name="notifications_empty_subtitle">Aquí aparecerán los avisos sobre tu membresía, pagos y novedades de ApexGym.</string>
 
     <string name="home_search_hint">Buscar productos o servicios…</string>
-    <string name="tienda_search_hint">Buscar productos o categorías…</string>
-    <string name="servicios_search_hint">Buscar servicios disponibles…</string>
+    <string name="tienda_search_hint">Buscar productos…</string>
+    <string name="servicios_search_hint">Buscar servicios…</string>
     <string name="chip_membresia">Membresía</string>
     <string name="chip_pagos">Pagos</string>
     <string name="chip_acceso_qr">Acceso QR</string>
@@ -89,7 +89,7 @@
     <string name="qr_refresh_time_default">00:45 s</string>
     <string name="qr_member_name">José</string>
     <string name="qr_member_id">ID: #APX-84920</string>
-    <string name="qr_instruction_text">Acerca este código al lector del torniquete\npara ingresar</string>
+    <string name="qr_instruction_text">Acerca este código al lector QR para ingresar</string>
     <string name="qr_btn_generate">Generar nuevo código</string>
     <string name="qr_btn_report">Reportar un problema</string>
 

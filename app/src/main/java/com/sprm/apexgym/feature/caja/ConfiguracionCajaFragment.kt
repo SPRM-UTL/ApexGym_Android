@@ -6,7 +6,6 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -16,13 +15,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.switchmaterial.SwitchMaterial
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
+import com.sprm.apexgym.core.network.api.ActualizarCajaRequest
 import com.sprm.apexgym.core.network.api.CajaDto
 import com.sprm.apexgym.core.network.api.CrearCajaRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.mensajeDeError
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.databinding.FragmentConfiguracionCajaBinding
 import kotlinx.coroutines.launch
 
@@ -37,7 +39,9 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
 
         binding.rvCajas.layoutManager = LinearLayoutManager(requireContext())
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.btnAgregarCaja.setOnClickListener { mostrarDialogoNuevaCaja() }
+        binding.btnAgregarCaja.setOnClickListener { mostrarDialogoCaja(cajaExistente = null) }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarCajas() }
 
         cargarCajas()
     }
@@ -45,9 +49,12 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
     private fun cargarCajas() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                cajas = RetrofitClient.empleadoService.obtenerCajas().dataExitosa().orEmpty()
+                val res = RetrofitClient.empleadoService.obtenerCajas()
+                if (!isAdded || view == null) return@launch
+                cajas = res.dataExitosa().orEmpty()
                 renderizarCajas()
             } catch (_: Exception) {
+                if (!isAdded || view == null) return@launch
                 cajas = emptyList()
                 renderizarCajas()
                 Toast.makeText(
@@ -55,6 +62,10 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
                     "No se pudo conectar con el servidor",
                     Toast.LENGTH_LONG
                 ).show()
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
     }
@@ -71,27 +82,26 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
                     holder.tvDetalle.text = "Usa el botón para crear la primera caja"
                     holder.tvEstado.text = ""
                     holder.tvEstado.visibility = View.GONE
+                    holder.itemView.setOnClickListener(null)
                 } else {
                     val caja = cajas[position]
+                    val activa = CajaValidacionLogic.esEstadoCajaActivo(caja.estado)
                     holder.tvTitulo.text = caja.nombre ?: "Caja #${caja.id}"
                     holder.tvDetalle.text = caja.ubicacion
                         ?.takeIf { it.isNotBlank() }
                         ?: "Sin ubicación registrada"
-                    holder.tvEstado.text = caja.estado ?: "—"
+                    holder.tvEstado.text = if (activa) "ACTIVO" else (caja.estado?.uppercase() ?: "INACTIVO")
                     holder.tvEstado.visibility = View.VISIBLE
                     holder.tvEstado.setBackgroundResource(
-                        if (caja.estado?.uppercase() == "ACTIVA") {
-                            R.drawable.bg_badge_orange
-                        } else {
-                            R.drawable.bg_chip_unselected
-                        }
+                        if (activa) R.drawable.bg_badge_orange else R.drawable.bg_chip_unselected
                     )
                     holder.tvEstado.setTextColor(
                         ContextCompat.getColor(
                             requireContext(),
-                            if (caja.estado?.uppercase() == "ACTIVA") R.color.white else R.color.apex_text_secondary
+                            if (activa) R.color.white else R.color.apex_text_secondary
                         )
                     )
+                    holder.itemView.setOnClickListener { mostrarDialogoCaja(cajaExistente = caja) }
                 }
             }
 
@@ -99,7 +109,7 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
         }
     }
 
-    private fun mostrarDialogoNuevaCaja() {
+    private fun mostrarDialogoCaja(cajaExistente: CajaDto?) {
         val context = requireContext()
         val themedCtx = androidx.appcompat.view.ContextThemeWrapper(
             context,
@@ -121,6 +131,8 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             maxLines = 1
+            filters = InputFilters.plainText(80)
+            if (cajaExistente != null) setText(cajaExistente.nombre.orEmpty())
         }
         tilNombre.addView(etNombre)
         container.addView(tilNombre)
@@ -140,15 +152,31 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
             setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 14.5f)
             maxLines = 1
+            filters = InputFilters.plainText(150)
+            if (cajaExistente != null) setText(cajaExistente.ubicacion.orEmpty())
         }
         tilUbicacion.addView(etUbicacion)
         container.addView(tilUbicacion)
 
+        val swActiva = if (cajaExistente != null) {
+            SwitchMaterial(context).apply {
+                text = "Caja activa"
+                isChecked = CajaValidacionLogic.esEstadoCajaActivo(cajaExistente.estado)
+                setTextColor(ContextCompat.getColor(context, R.color.apex_text_primary))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dpToPx(12) }
+            }.also { container.addView(it) }
+        } else {
+            null
+        }
+
         val dialogo = MaterialAlertDialogBuilder(context)
-            .setTitle("Nueva Caja")
+            .setTitle(if (cajaExistente == null) "Nueva Caja" else "Editar Caja")
             .setView(container)
             .setNegativeButton("Cancelar", null)
-            .setPositiveButton("Crear", null)
+            .setPositiveButton(if (cajaExistente == null) "Crear" else "Guardar", null)
             .create()
 
         dialogo.setOnShowListener {
@@ -159,11 +187,14 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
                         tilNombre.error = "Ingresa el nombre de la caja"
                         return@setOnClickListener
                     }
+                    val ubicacion = etUbicacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
                     dialogo.dismiss()
-                    crearCaja(
-                        nombre,
-                        etUbicacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
-                    )
+                    if (cajaExistente == null) {
+                        crearCaja(nombre, ubicacion)
+                    } else {
+                        val nuevoEstado = if (swActiva?.isChecked != false) "ACTIVO" else "INACTIVO"
+                        actualizarCaja(cajaExistente.id, nombre, ubicacion, nuevoEstado)
+                    }
                 }
         }
         dialogo.show()
@@ -173,8 +204,9 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val response = RetrofitClient.empleadoService.crearCaja(
-                    CrearCajaRequest(nombre = nombre, ubicacion = ubicacion)
+                    CrearCajaRequest(nombre = nombre, ubicacion = ubicacion, estado = "ACTIVO")
                 )
+                if (!isAdded || view == null) return@launch
                 if (response.dataExitosa() == null) {
                     Toast.makeText(
                         requireContext(),
@@ -186,11 +218,35 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
                     cargarCajas()
                 }
             } catch (_: Exception) {
-                Toast.makeText(
-                    requireContext(),
-                    "No se pudo conectar con el servidor",
-                    Toast.LENGTH_LONG
-                ).show()
+                if (isAdded && view != null) {
+                    Toast.makeText(requireContext(), "No se pudo conectar con el servidor", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun actualizarCaja(id: Int, nombre: String, ubicacion: String?, estado: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = RetrofitClient.empleadoService.actualizarCaja(
+                    id,
+                    ActualizarCajaRequest(nombre = nombre, ubicacion = ubicacion, estado = estado)
+                )
+                if (!isAdded || view == null) return@launch
+                if (response.dataExitosa() == null) {
+                    Toast.makeText(
+                        requireContext(),
+                        response.mensajeDeError() ?: "No se pudo actualizar la caja",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } else {
+                    Toast.makeText(requireContext(), "Caja actualizada", Toast.LENGTH_SHORT).show()
+                    cargarCajas()
+                }
+            } catch (_: Exception) {
+                if (isAdded && view != null) {
+                    Toast.makeText(requireContext(), "No se pudo conectar con el servidor", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -213,6 +269,8 @@ class ConfiguracionCajaFragment : BaseFragment<FragmentConfiguracionCajaBinding>
             cardElevation = 0f
             strokeWidth = dpToPx(1)
             strokeColor = ContextCompat.getColor(context, R.color.apex_stroke_light)
+            isClickable = true
+            isFocusable = true
         }
 
         val row = LinearLayout(context).apply {

@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.util.Base64
+import android.util.Patterns
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.EditText
@@ -23,6 +24,8 @@ import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.network.normalizarFechaAEnviar
+import com.sprm.apexgym.core.ui.InputFilters
+import com.sprm.apexgym.core.ui.InputValidationRules
 import com.sprm.apexgym.databinding.FragmentCrearEditarEmpleadoBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,15 +64,28 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
         binding.tvTitle.text = if (empleadoId > 0) "Editar Empleado" else "Nuevo Empleado"
         binding.tvChangeAvatarHint.text = "Toca para seleccionar una foto"
 
+        binding.etNombres.filters = InputFilters.personName(60)
+        binding.etApellidos.filters = InputFilters.personName(100)
+        binding.etTelefono.filters = InputFilters.digitsOnly(10)
+        binding.etEmail.filters = InputFilters.noWhitespace(100)
+        binding.etDireccion.filters = InputFilters.plainText(150)
+        binding.etNumeroExterior.filters = InputFilters.addressNumber(20)
+        binding.etNumeroInterior.filters = InputFilters.addressNumber(20)
+        binding.etColonia.filters = InputFilters.plainText(100)
+        binding.etCodigoPostal.filters = InputFilters.digitsOnly(5)
+        binding.etMunicipio.filters = InputFilters.personName(100)
+        binding.etEstado.filters = InputFilters.personName(100)
+        binding.etEntreCalles.filters = InputFilters.plainText(200)
+
         val abrirGaleria = View.OnClickListener { selectorImagen.launch("image/*") }
         binding.flChangeAvatar.setOnClickListener(abrirGaleria)
         binding.ivEmpleadoAvatar.setOnClickListener(abrirGaleria)
 
         binding.etFechaNacimiento.setOnClickListener {
-            mostrarSelectorFecha(binding.etFechaNacimiento, 1998)
+            mostrarSelectorFecha(binding.etFechaNacimiento, 1998, limitarAHoy = true)
         }
         binding.etFechaIngreso.setOnClickListener {
-            mostrarSelectorFecha(binding.etFechaIngreso, Calendar.getInstance().get(Calendar.YEAR))
+            mostrarSelectorFecha(binding.etFechaIngreso, Calendar.getInstance().get(Calendar.YEAR), limitarAHoy = false)
         }
 
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
@@ -79,7 +95,7 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
         cargarDatos()
     }
 
-    private fun mostrarSelectorFecha(campo: EditText, anioDefault: Int) {
+    private fun mostrarSelectorFecha(campo: EditText, anioDefault: Int, limitarAHoy: Boolean = false) {
         val cal = Calendar.getInstance()
         val textoActual = campo.text?.toString()?.trim().orEmpty()
         val partes = textoActual.split("/", "-")
@@ -109,7 +125,11 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
             anio,
             mes,
             dia
-        ).show()
+        ).apply {
+            if (limitarAHoy) {
+                datePicker.maxDate = System.currentTimeMillis()
+            }
+        }.show()
     }
 
     private fun procesarImagenSeleccionada(uri: Uri) {
@@ -231,14 +251,12 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
         todosEmpleados: List<EmpleadoDto>,
         usuarioActualId: Int?
     ) {
-        val ocupadosPorOtros = todosEmpleados
-            .filter { it.id != empleadoId }
-            .mapNotNull { it.usuario?.id ?: it.usuarioId }
-            .toSet()
-
-        usuariosDisponibles = todosUsuarios.filter { u ->
-            u.id == usuarioActualId || !ocupadosPorOtros.contains(u.id)
-        }
+        usuariosDisponibles = EmpleadoUsuarioFiltro.filtrarUsuariosDisponibles(
+            todosUsuarios = todosUsuarios,
+            todosEmpleados = todosEmpleados,
+            empleadoId = empleadoId,
+            usuarioActualId = usuarioActualId
+        )
 
         val lista = mutableListOf<Pair<Int?, String>>(null to SIN_USUARIO)
         usuariosDisponibles.forEach { u ->
@@ -355,6 +373,8 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
         val nombre = binding.etNombres.text?.toString()?.trim().orEmpty()
         val apellidos = binding.etApellidos.text?.toString()?.trim().orEmpty()
         val telefono = binding.etTelefono.text?.toString()?.trim().orEmpty()
+        val correo = binding.etEmail.text?.toString()?.trim().orEmpty()
+        val codigoPostal = binding.etCodigoPostal.text?.toString()?.trim().orEmpty()
         val fechaNacimiento = normalizarFechaAEnviar(
             binding.etFechaNacimiento.text?.toString().orEmpty()
         )
@@ -369,10 +389,16 @@ class CrearEditarEmpleadoFragment : BaseFragment<FragmentCrearEditarEmpleadoBind
         }
 
         when {
-            nombre.isBlank() -> return aviso("Ingresa el nombre del empleado")
-            apellidos.isBlank() -> return aviso("Ingresa los apellidos del empleado")
-            telefono.length != 10 || telefono.any { !it.isDigit() } ->
+            !InputValidationRules.esNombrePersonaValido(nombre) ->
+                return aviso("Ingresa un nombre válido (solo letras)")
+            !InputValidationRules.esNombrePersonaValido(apellidos) ->
+                return aviso("Ingresa apellidos válidos (solo letras)")
+            !InputValidationRules.esTelefonoValido(telefono) ->
                 return aviso("El teléfono debe tener 10 dígitos")
+            correo.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(correo).matches() ->
+                return aviso("Ingresa un correo electrónico válido")
+            codigoPostal.isNotEmpty() && !InputValidationRules.esCodigoPostalValido(codigoPostal) ->
+                return aviso("El código postal debe tener exactamente 5 dígitos")
             fechaNacimiento == null -> return aviso("Selecciona una fecha de nacimiento válida")
             fechaIngreso == null -> return aviso("Selecciona una fecha de ingreso válida")
             puesto == null -> return aviso("Selecciona un puesto")
