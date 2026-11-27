@@ -145,10 +145,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:imeOptions="actionNext"
-                    android:inputType="text"
+                    android:inputType="textNoSuggestions|textVisiblePassword"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="40" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -177,7 +178,8 @@
                     android:inputType="textEmailAddress"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="100" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <TextView
@@ -216,7 +218,8 @@
                     android:inputType="textPersonName|textCapWords"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="60" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -252,7 +255,8 @@
                         android:inputType="textPersonName|textCapWords"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:maxLength="60" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -280,7 +284,8 @@
                         android:inputType="textPersonName|textCapWords"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:maxLength="60" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
@@ -410,11 +415,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:imeOptions="actionNext"
-                    android:inputType="phone"
+                    android:inputType="number"
                     android:maxLength="10"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:digits="0123456789" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -443,7 +449,8 @@
                     android:inputType="textPostalAddress|textCapSentences"
                     android:maxLines="2"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="200" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -488,7 +495,8 @@
                         android:inputType="textPersonName|textCapWords"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:maxLength="80" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -514,11 +522,12 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:imeOptions="actionNext"
-                        android:inputType="phone"
+                        android:inputType="number"
                         android:maxLength="10"
                         android:maxLines="1"
                         android:textColor="@color/apex_text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:digits="0123456789" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
@@ -568,7 +577,8 @@
                     android:inputType="textPassword"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="64" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -599,7 +609,8 @@
                     android:inputType="textPassword"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="64" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -630,7 +641,8 @@
                     android:inputType="textPassword"
                     android:maxLines="1"
                     android:textColor="@color/apex_text_primary"
-                    android:textSize="14.5sp" />
+                    android:textSize="14.5sp"
+                    android:maxLength="64" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton

@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/apex_bg_screen">
+
+<androidx.core.widget.NestedScrollView
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/apex_bg_screen"
@@ -48,20 +54,10 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <FrameLayout
-                android:id="@+id/flFilter"
+            <View
                 android:layout_width="46dp"
                 android:layout_height="46dp"
-                android:background="@drawable/bg_circle_white_elevated"
-                android:elevation="2dp">
-
-                <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_filter_funnel"
-                    app:tint="@color/apex_text_primary" />
-            </FrameLayout>
+                android:visibility="invisible" />
         </LinearLayout>
 
         <!-- Filter Chips -->
@@ -112,7 +108,9 @@
             android:inputType="text"
             android:textColor="@color/apex_text_primary"
             android:textColorHint="@color/apex_nav_inactive"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="80"
+            android:maxLines="1" />
     </LinearLayout>
 
     <!-- Cortes List -->
@@ -142,6 +140,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:gravity="center"
             android:text="No hay cortes registrados"
             android:textColor="@color/apex_text_secondary"
             android:textSize="16sp" />
@@ -150,9 +149,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
+            android:gravity="center"
             android:text="Los cortes de caja aparecerán aquí"
             android:textColor="@color/apex_nav_inactive"
             android:textSize="13sp" />
     </LinearLayout>
 </LinearLayout>
 </androidx.core.widget.NestedScrollView>
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>

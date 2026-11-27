@@ -86,6 +86,45 @@
             app:cornerRadius="23dp" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvSaldoDisponibleSheet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="18dp"
+        android:layout_marginBottom="10dp"
+        android:text="Saldo disponible en caja: —"
+        android:textColor="@color/apex_text_secondary"
+        android:textSize="12.5sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/llResponsableMovimiento"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="18dp"
+        android:layout_marginBottom="12dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RESPONSABLE DEL MOVIMIENTO"
+            android:textColor="@color/apex_text_secondary"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/spResponsableMovimiento"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_search_bar"
+            android:paddingHorizontal="14dp"
+            android:spinnerMode="dropdown" />
+    </LinearLayout>
+
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.Apex.TextInputLayout"
         android:layout_width="match_parent"
@@ -101,7 +140,8 @@
             android:inputType="textCapSentences"
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
-            android:textSize="14.5sp" />
+            android:textSize="14.5sp"
+            android:maxLength="255" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -120,7 +160,9 @@
             android:maxLines="1"
             android:textColor="@color/apex_text_primary"
             android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:digits="0123456789."
+            android:maxLength="9" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -140,7 +182,8 @@
             android:minLines="2"
             android:maxLines="3"
             android:textColor="@color/apex_text_primary"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="500" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout

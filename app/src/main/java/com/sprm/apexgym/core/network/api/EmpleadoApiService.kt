@@ -49,7 +49,13 @@ data class MetodoPagoDto(
 data class CrearCajaRequest(
     val nombre: String,
     val ubicacion: String? = null,
-    val estado: String = "ACTIVA"
+    val estado: String = "ACTIVO"
+)
+
+data class ActualizarCajaRequest(
+    val nombre: String? = null,
+    val ubicacion: String? = null,
+    val estado: String? = null
 )
 
 // ── Empleados ────────────────────────────────────────────────────────────────
@@ -57,7 +63,8 @@ data class CrearCajaRequest(
 data class UsuarioEmpleadoDto(
     val id: Int = 0,
     val nombre: String? = null,
-    val email: String? = null
+    val email: String? = null,
+    val roles: List<CatalogoDto>? = null
 )
 
 data class SucursalDto(
@@ -243,6 +250,7 @@ data class MovimientoCajaDto(
     val estado: String? = null,
     val desglose: String? = null,
     val observaciones: String? = null,
+    val empleado: EmpleadoDto? = null,
     val createdAt: String? = null
 )
 
@@ -259,9 +267,13 @@ data class CorteCajaDto(
     val estado: String? = null,
     val desgloseInicio: String? = null,
     val desgloseFin: String? = null,
+    val validadoPor: Int? = null,
     val fechaValidacion: String? = null,
     val observaciones: String? = null,
-    val fechaCorte: String? = null
+    val fechaCorte: String? = null,
+    val aperturaCaja: AperturaCajaDto? = null,
+    val empleado: EmpleadoDto? = null,
+    val createdAt: String? = null
 )
 
 data class VentaMetodoDto(
@@ -446,6 +458,8 @@ data class ItemNombreDto(
 data class DetalleVentaItemDto(
     val id: Int = 0,
     val cantidad: Int = 1,
+    val precioUnitario: Double? = null,
+    val descuentoUnitario: Double? = null,
     val subtotal: Double? = null,
     val descripcion: String? = null,
     val tipoItem: String? = null,
@@ -472,6 +486,8 @@ data class VentaDto(
     val empleadoId: Int? = null,
     val metodoPagoId: Int? = null,
     val folioVenta: FolioVentaDto? = null,
+    val cliente: ClienteAsistenciaDto? = null,
+    val empleado: EmpleadoDto? = null,
     val pagoDigital: PagoDigitalDto? = null,
     val metodoPago: MetodoPagoDto? = null,
     val detalleVenta: List<DetalleVentaItemDto>? = null,
@@ -814,9 +830,30 @@ interface EmpleadoApiService {
         @Query("sucursalId") sucursalId: Int? = null
     ): Response<ApiResponse<List<CorteCajaDto>>>
 
+    @PUT("api/cajas/{id}")
+    suspend fun actualizarCaja(
+        @Path("id") id: Int,
+        @Body request: ActualizarCajaRequest
+    ): Response<ApiResponse<CajaDto>>
+
+    @DELETE("api/cajas/{id}")
+    suspend fun eliminarCaja(
+        @Path("id") id: Int
+    ): Response<ApiResponse<Any>>
+
+    @DELETE("api/aperturas-caja/{id}")
+    suspend fun eliminarApertura(
+        @Path("id") id: Int
+    ): Response<ApiResponse<Any>>
+
     @POST("api/cortes-caja")
     suspend fun crearCorte(
         @Body request: CrearCorteRequest
+    ): Response<ApiResponse<CorteCajaDto>>
+
+    @PUT("api/cortes-caja/{id}/validar")
+    suspend fun validarCorte(
+        @Path("id") id: Int
     ): Response<ApiResponse<CorteCajaDto>>
 
     // Visitas

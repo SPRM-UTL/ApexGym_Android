@@ -85,8 +85,16 @@ class NotificacionDetalleFragment : BaseFragment<FragmentNotificacionDetalleBind
     private fun bind(datos: NotificacionDto) {
         notificacion = datos
 
-        binding.tvNotifTitulo.text = datos.titulo.ifBlank { "Notificación" }
-        binding.tvNotifMensaje.text = datos.mensaje
+        binding.tvNotifTitulo.text = NotificacionFormatter.formatearTitulo(
+            titulo = datos.titulo,
+            mensaje = datos.mensaje,
+            tipo = datos.tipo
+        )
+        binding.tvNotifMensaje.text = NotificacionFormatter.formatearMensaje(
+            mensaje = datos.mensaje,
+            titulo = datos.titulo,
+            tipo = datos.tipo
+        )
         binding.tvNotifTipo.text = formatearTipoNotificacion(datos.tipo)
         binding.tvNotifHora.text = formatearHora(datos.createdAt)
         binding.tvNotifRemitente.text = if (datos.remitenteId != null) {
@@ -187,10 +195,20 @@ class NotificacionDetalleFragment : BaseFragment<FragmentNotificacionDetalleBind
 
     private fun compartirNotificacion() {
         val actual = notificacion ?: return
+        val tituloLimpio = NotificacionFormatter.formatearTitulo(
+            titulo = actual.titulo,
+            mensaje = actual.mensaje,
+            tipo = actual.tipo
+        )
+        val mensajeLimpio = NotificacionFormatter.formatearMensaje(
+            mensaje = actual.mensaje,
+            titulo = actual.titulo,
+            tipo = actual.tipo
+        )
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, actual.titulo)
-            putExtra(Intent.EXTRA_TEXT, "${actual.titulo}\n\n${actual.mensaje}")
+            putExtra(Intent.EXTRA_SUBJECT, tituloLimpio)
+            putExtra(Intent.EXTRA_TEXT, "$tituloLimpio\n\n$mensajeLimpio")
         }
         startActivity(Intent.createChooser(intent, "Compartir notificación"))
     }

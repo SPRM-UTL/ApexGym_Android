@@ -26,7 +26,6 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
-import com.sprm.apexgym.core.network.api.AjustarInventarioAlmacenRequest
 import com.sprm.apexgym.core.network.api.AlmacenDto
 import com.sprm.apexgym.core.network.api.CrearAlmacenRequest
 import com.sprm.apexgym.core.network.api.InventarioAlmacenProductoDto
@@ -36,14 +35,15 @@ import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.network.mensajeUsuario
 import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.databinding.FragmentAlmacenesBinding
 import com.sprm.apexgym.databinding.ItemInventarioAlmacenBinding
 import kotlinx.coroutines.launch
 
 /**
  * Gestión multialmacén de la sucursal activa (`x-sucursal-id`):
- * lista almacenes, consulta existencias por almacén, permite crear nuevos almacenes,
- * ajustar stock y transferir unidades entre almacenes de la misma sucursal.
+ * lista almacenes, consulta existencias por almacén, permite crear nuevos almacenes
+ * y transferir unidades entre almacenes de la misma sucursal. El ingreso de stock se realiza vía pedidos de compra.
  */
 class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
 
@@ -52,6 +52,8 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
     private var inventarioActual: List<AlmacenStockLogic.ItemStockAlmacen> = emptyList()
     private var textoBusqueda: String = ""
     private var soloStockBajo: Boolean = false
+    private var paginaActual: Int = 1
+    private var ubicacionAlmacenActual: String = ""
 
     private lateinit var inventarioAdapter: InventarioAlmacenAdapter
 
@@ -61,15 +63,30 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
-        binding.flRefresh.setOnClickListener { cargarAlmacenes() }
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarAlmacenes() }
 
-        binding.tvAlmacenesSucursal.text =
-            "SUCURSAL • ${SessionManager.obtenerSucursalNombre(requireContext()).uppercase()}"
+        val sucursalNombre = SessionManager.obtenerSucursalNombre(requireContext())
+            .trim()
+            .replace(Regex("^sucursal\\s+", RegexOption.IGNORE_CASE), "")
+            .ifBlank { SessionManager.obtenerSucursalNombre(requireContext()).trim() }
+        binding.tvAlmacenesSucursal.text = "SUCURSAL • ${sucursalNombre.uppercase()}"
 
-        inventarioAdapter = InventarioAlmacenAdapter(
-            onAjustar = { item -> mostrarSheetAjustarStock(item) },
-            onTransferir = { item -> mostrarSheetTransferir(productoInicial = item) }
-        )
+        inventarioAdapter = InventarioAlmacenAdapter { item ->
+            mostrarSheetTransferir(productoInicial = item)
+        }
+        binding.tvIrPedidosCompraAlmacen.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out,
+                    android.R.anim.fade_in,
+                    android.R.anim.fade_out
+                )
+                .replace(R.id.fragment_container, PedidosCompraFragment())
+                .addToBackStack(null)
+                .commit()
+        }
 
         binding.rvInventarioAlmacen.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -82,6 +99,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
         }
         binding.etBuscarProductoAlmacen.doAfterTextChanged { editable ->
             textoBusqueda = editable?.toString().orEmpty()
+            paginaActual = 1
             binding.ivLimpiarBusquedaAlmacen.visibility =
                 if (textoBusqueda.isNotBlank()) View.VISIBLE else View.GONE
             aplicarFiltroInventario()
@@ -89,7 +107,19 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
 
         binding.tvFiltroStockBajo.setOnClickListener {
             soloStockBajo = !soloStockBajo
+            paginaActual = 1
             actualizarEstiloFiltroStockBajo()
+            aplicarFiltroInventario()
+        }
+
+        binding.btnPaginaAnteriorAlmacen.setOnClickListener {
+            if (paginaActual > 1) {
+                paginaActual -= 1
+                aplicarFiltroInventario()
+            }
+        }
+        binding.btnPaginaSiguienteAlmacen.setOnClickListener {
+            paginaActual += 1
             aplicarFiltroInventario()
         }
 
@@ -104,6 +134,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
         binding.tvInventarioAlmacenVacio.visibility = View.VISIBLE
         binding.tvInventarioAlmacenVacio.text = "Cargando almacenes de la sucursal…"
         binding.rvInventarioAlmacen.visibility = View.GONE
+        binding.llPaginacionAlmacen.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -135,6 +166,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
                 renderizarChipsAlmacenes()
 
                 if (elegido == null) {
+                    ubicacionAlmacenActual = ""
                     binding.tvAlmacenActivoNombre.text = "Sin almacenes activos"
                     binding.tvAlmacenPrincipalBadge.visibility = View.GONE
                     binding.tvAlmacenActivoDetalle.text = "Crea el primer almacén para esta sucursal."
@@ -150,6 +182,10 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
                 binding.tvInventarioAlmacenVacio.visibility = View.VISIBLE
                 binding.tvInventarioAlmacenVacio.text = e.mensajeUsuario()
                 binding.rvInventarioAlmacen.visibility = View.GONE
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
+                }
             }
         }
     }
@@ -186,6 +222,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
                 setOnClickListener {
                     if (almacenSeleccionadoId != almacen.id) {
                         almacenSeleccionadoId = almacen.id
+                        paginaActual = 1
                         renderizarChipsAlmacenes()
                         actualizarCabeceraAlmacen(almacen, incluirKpis = true)
                         cargarInventarioAlmacen(almacen.id)
@@ -200,19 +237,11 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
         binding.tvAlmacenActivoNombre.text = almacen.nombre
         binding.tvAlmacenPrincipalBadge.visibility =
             if (almacen.esPrincipal) View.VISIBLE else View.GONE
-        val tipoLegible = when (almacen.tipo.trim().uppercase()) {
-            "PRINCIPAL" -> "Principal"
-            "BODEGA" -> "Bodega"
-            "MOSTRADOR" -> "Mostrador"
-            "SECUNDARIO" -> "Secundario"
-            "" -> "Almacén"
-            else -> almacen.tipo.lowercase().replaceFirstChar { it.uppercase() }
-        }
-        binding.tvAlmacenActivoDetalle.text = buildString {
-            append(tipoLegible)
-            almacen.codigo?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
-            almacen.ubicacion?.takeIf { it.isNotBlank() }?.let { append(" • $it") }
-        }
+        ubicacionAlmacenActual = almacen.ubicacion
+            ?.replace(Regex("\\s*\\([^)]*sucursal[^)]*\\)", RegexOption.IGNORE_CASE), "")
+            ?.trim()
+            .orEmpty()
+        binding.tvAlmacenActivoDetalle.text = ubicacionAlmacenActual
         if (incluirKpis) {
             actualizarKpis(
                 almacen.totalProductos,
@@ -224,14 +253,21 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
 
     private fun actualizarKpis(productos: Int, unidades: Int, stockBajo: Int) {
         binding.tvKpiAlmacenProductos.text = productos.toString()
-        binding.tvKpiAlmacenUnidades.text = unidades.toString()
         binding.tvKpiAlmacenStockBajo.text = stockBajo.toString()
+        if (almacenSeleccionadoId == null) return
+        val etiquetaUnidades = if (unidades == 1) "1 unidad" else "$unidades unidades"
+        binding.tvAlmacenActivoDetalle.text = if (ubicacionAlmacenActual.isNotBlank()) {
+            "$ubicacionAlmacenActual • $etiquetaUnidades"
+        } else {
+            "$etiquetaUnidades en existencia"
+        }
     }
 
     private fun cargarInventarioAlmacen(almacenId: Int) {
         binding.tvInventarioAlmacenVacio.visibility = View.VISIBLE
         binding.tvInventarioAlmacenVacio.text = "Cargando inventario del almacén…"
         binding.rvInventarioAlmacen.visibility = View.GONE
+        binding.llPaginacionAlmacen.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -245,6 +281,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
                     binding.tvInventarioAlmacenVacio.text =
                         response.mensajeDeError() ?: "No se pudo cargar el inventario del almacén."
                     binding.rvInventarioAlmacen.visibility = View.GONE
+                    binding.llPaginacionAlmacen.visibility = View.GONE
                     return@launch
                 }
 
@@ -264,6 +301,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
                 binding.tvInventarioAlmacenVacio.visibility = View.VISIBLE
                 binding.tvInventarioAlmacenVacio.text = e.mensajeUsuario()
                 binding.rvInventarioAlmacen.visibility = View.GONE
+                binding.llPaginacionAlmacen.visibility = View.GONE
             }
         }
     }
@@ -274,11 +312,26 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
             busqueda = textoBusqueda,
             soloStockBajo = soloStockBajo
         )
-        inventarioAdapter.actualizar(filtrados)
+        val totalPaginas = ((filtrados.size + TAMANO_PAGINA - 1) / TAMANO_PAGINA).coerceAtLeast(1)
+        paginaActual = paginaActual.coerceIn(1, totalPaginas)
+        val paginaItems = filtrados.drop((paginaActual - 1) * TAMANO_PAGINA).take(TAMANO_PAGINA)
+        inventarioAdapter.actualizar(paginaItems)
 
         val vacio = filtrados.isEmpty()
         binding.tvInventarioAlmacenVacio.visibility = if (vacio) View.VISIBLE else View.GONE
         binding.rvInventarioAlmacen.visibility = if (vacio) View.GONE else View.VISIBLE
+
+        if (!vacio && filtrados.size > TAMANO_PAGINA) {
+            binding.llPaginacionAlmacen.visibility = View.VISIBLE
+            binding.tvInfoPaginacionAlmacen.text = "Página $paginaActual de $totalPaginas"
+            binding.btnPaginaAnteriorAlmacen.isEnabled = paginaActual > 1
+            binding.btnPaginaAnteriorAlmacen.alpha = if (paginaActual > 1) 1f else 0.45f
+            binding.btnPaginaSiguienteAlmacen.isEnabled = paginaActual < totalPaginas
+            binding.btnPaginaSiguienteAlmacen.alpha = if (paginaActual < totalPaginas) 1f else 0.45f
+        } else {
+            binding.llPaginacionAlmacen.visibility = View.GONE
+        }
+
         if (vacio) {
             binding.tvInventarioAlmacenVacio.text = when {
                 inventarioActual.isEmpty() -> "No hay productos en este almacén."
@@ -347,6 +400,10 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
             tipoSeleccionado = tipos.getOrNull(pos)?.second ?: "BODEGA"
         }
 
+        etNombre.filters = InputFilters.plainText(120)
+        etCodigo.filters = InputFilters.codeAlphanumeric(40)
+        etUbicacion.filters = InputFilters.plainText(200)
+
         etNombre.doAfterTextChanged { tilNombre.error = null }
         btnCerrar.setOnClickListener { dialog.dismiss() }
 
@@ -399,88 +456,6 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
                     if (isAdded) {
                         btnGuardar.isEnabled = true
                         btnGuardar.text = "Crear almacén"
-                        Toast.makeText(context, e.mensajeUsuario(), Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
-        dialog.show()
-    }
-
-    private fun mostrarSheetAjustarStock(item: AlmacenStockLogic.ItemStockAlmacen) {
-        val almacenId = almacenSeleccionadoId ?: return
-        val context = requireContext()
-        val (dialog, sheetView) = crearBottomSheet(R.layout.dialog_almacen_ajustar)
-
-        val btnCerrar = sheetView.findViewById<View>(R.id.btnCerrarAjusteAlmacen)
-        val tvTitulo = sheetView.findViewById<TextView>(R.id.tvTituloAjusteAlmacen)
-        val tilStockActual = sheetView.findViewById<TextInputLayout>(R.id.tilStockActualAjuste)
-        val etStockActual = sheetView.findViewById<TextInputEditText>(R.id.etStockActualAjuste)
-        val tilStockMinimo = sheetView.findViewById<TextInputLayout>(R.id.tilStockMinimoAjuste)
-        val etStockMinimo = sheetView.findViewById<TextInputEditText>(R.id.etStockMinimoAjuste)
-        val etEstante = sheetView.findViewById<TextInputEditText>(R.id.etEstanteAjuste)
-        val btnGuardar = sheetView.findViewById<MaterialButton>(R.id.btnGuardarAjusteAlmacen)
-
-        tvTitulo.text = item.nombre
-        etStockActual.setText(item.stockActual.toString())
-        etStockMinimo.setText(item.stockMinimo.toString())
-        etEstante.setText(item.ubicacionEstante.orEmpty())
-
-        etStockActual.doAfterTextChanged { tilStockActual.error = null }
-        etStockMinimo.doAfterTextChanged { tilStockMinimo.error = null }
-        btnCerrar.setOnClickListener { dialog.dismiss() }
-
-        btnGuardar.setOnClickListener {
-            val stockActual = etStockActual.text?.toString()?.trim()?.toIntOrNull()
-            val stockMinimo = etStockMinimo.text?.toString()?.trim()?.toIntOrNull() ?: item.stockMinimo
-            val estante = etEstante.text?.toString()?.trim()?.takeIf { it.isNotEmpty() }
-
-            val validacion = AlmacenStockLogic.validarAjusteStock(
-                stockActual = stockActual,
-                stockMinimo = stockMinimo,
-                ubicacionEstante = estante
-            )
-            if (!validacion.valido || stockActual == null) {
-                tilStockActual.error = validacion.mensajeError ?: "Ingresa un stock válido"
-                return@setOnClickListener
-            }
-
-            btnGuardar.isEnabled = false
-            btnGuardar.text = "Guardando…"
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val response = RetrofitClient.empleadoService.ajustarInventarioAlmacen(
-                        id = almacenId,
-                        productoId = item.productoId,
-                        request = AjustarInventarioAlmacenRequest(
-                            stockActual = stockActual,
-                            stockMinimo = stockMinimo,
-                            ubicacionEstante = estante
-                        )
-                    )
-                    val actualizado = response.dataExitosa()
-                    if (!isAdded) return@launch
-                    if (actualizado == null) {
-                        btnGuardar.isEnabled = true
-                        btnGuardar.text = "Guardar cambios"
-                        Toast.makeText(
-                            context,
-                            response.mensajeDeError() ?: "No se pudo ajustar el stock",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        return@launch
-                    }
-                    dialog.dismiss()
-                    Toast.makeText(
-                        context,
-                        "Stock actualizado (${actualizado.stockActual} u. en almacén)",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    cargarAlmacenes(seleccionarId = almacenId)
-                } catch (e: Exception) {
-                    if (isAdded) {
-                        btnGuardar.isEnabled = true
-                        btnGuardar.text = "Guardar cambios"
                         Toast.makeText(context, e.mensajeUsuario(), Toast.LENGTH_LONG).show()
                     }
                 }
@@ -553,6 +528,7 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
             tilCantidad.error = null
         }
 
+        etCantidad.filters = InputFilters.digitsOnly(6)
         etCantidad.doAfterTextChanged { tilCantidad.error = null }
         btnCerrar.setOnClickListener { dialog.dismiss() }
 
@@ -627,7 +603,6 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
     )
 
     private class InventarioAlmacenAdapter(
-        private val onAjustar: (AlmacenStockLogic.ItemStockAlmacen) -> Unit,
         private val onTransferir: (AlmacenStockLogic.ItemStockAlmacen) -> Unit
     ) : RecyclerView.Adapter<InventarioAlmacenAdapter.Holder>() {
 
@@ -685,7 +660,6 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
             holder.binding.tvProductoAlmacenStockTotal.text =
                 "Sucursal: ${item.stockTotalSucursal} u."
 
-            holder.binding.btnAjustarStockItem.setOnClickListener { onAjustar(item) }
             holder.binding.btnTransferirStockItem.isEnabled = item.stockActual > 0
             holder.binding.btnTransferirStockItem.alpha = if (item.stockActual > 0) 1f else 0.45f
             holder.binding.btnTransferirStockItem.setOnClickListener {
@@ -709,4 +683,8 @@ class AlmacenesFragment : BaseFragment<FragmentAlmacenesBinding>() {
         valor.toFloat(),
         resources.displayMetrics
     ).toInt()
+
+    companion object {
+        private const val TAMANO_PAGINA = 5
+    }
 }

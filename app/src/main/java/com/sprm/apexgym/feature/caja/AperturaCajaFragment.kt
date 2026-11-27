@@ -20,26 +20,28 @@ import com.sprm.apexgym.R
 import com.sprm.apexgym.core.base.BaseFragment
 import com.sprm.apexgym.core.network.api.CajaDto
 import com.sprm.apexgym.core.network.api.CrearAperturaRequest
+import com.sprm.apexgym.core.network.api.EmpleadoDto
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearMoneda
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.network.mensajeDeError
 import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.databinding.FragmentAperturaCajaBinding
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import kotlin.math.abs
 
 class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
 
     private var cajas: List<CajaDto> = emptyList()
+    private var empleadosResponsables: List<EmpleadoDto> = emptyList()
     private val conteoDenominaciones = linkedMapOf<String, Int>().apply {
         DesgloseEfectivo.DENOMINACIONES.forEach { put(it.clave, 0) }
     }
-    private lateinit var denominacionAdapter: DenominacionAdapter
+    private lateinit var denominacionAdapter: DenominacionEfectivoAdapter
     private var fondoEditadoManualmente = false
     private var actualizandoFondoDesdeDesglose = false
 
@@ -50,7 +52,7 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
 
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
 
-        denominacionAdapter = DenominacionAdapter(
+        denominacionAdapter = DenominacionEfectivoAdapter(
             items = DesgloseEfectivo.DENOMINACIONES,
             conteo = conteoDenominaciones,
             onCambioCantidad = { actualizarResumenDesglose(sincronizarFondo = true) }
@@ -64,6 +66,9 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
         }
 
         binding.tvLimpiarDesglose.setOnClickListener { limpiarDesglose() }
+
+        binding.etFondoInicial.filters = InputFilters.decimalAmount(maxIntegers = 6, maxDecimals = 2)
+        binding.etObservacionesApertura.filters = InputFilters.plainText(500, allowNewLines = true)
 
         binding.etFondoInicial.doAfterTextChanged { editable ->
             if (!actualizandoFondoDesdeDesglose) {
@@ -87,29 +92,62 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = RetrofitClient.empleadoService.obtenerCajas()
+                val ctx = requireContext()
+                val cajasDef = async { RetrofitClient.empleadoService.obtenerCajas() }
+                val aperturasDef = async { RetrofitClient.empleadoService.obtenerAperturas() }
+                val empleadosDef = async {
+                    EmpleadoSelectorHelper.prepararSelector(
+                        ctx,
+                        binding.llResponsableApertura,
+                        binding.spResponsableApertura
+                    )
+                }
+
+                val response = cajasDef.await()
+                val aperturasResp = aperturasDef.await()
+                val empleadosRes = empleadosDef.await()
                 if (!isAdded || view == null) return@launch
-                cajas = response.dataExitosa().orEmpty()
+
+                empleadosResponsables = empleadosRes.empleados
+                val todasCajas = response.dataExitosa().orEmpty()
+                val aperturasAbiertasIds = aperturasResp.dataExitosa()
+                    .orEmpty()
+                    .filter { CajaValidacionLogic.esAperturaAbierta(it.estado) }
+                    .map { it.cajaId }
+                    .toSet()
+
+                cajas = todasCajas.filter { caja ->
+                    CajaValidacionLogic.esEstadoCajaActivo(caja.estado) &&
+                        caja.id !in aperturasAbiertasIds
+                }
 
                 if (cajas.isEmpty()) {
+                    val mensaje = when {
+                        todasCajas.isEmpty() ->
+                            response.mensajeDeError()
+                                ?: "No hay cajas registradas. Créalas en Configuración de caja."
+                        todasCajas.none { CajaValidacionLogic.esEstadoCajaActivo(it.estado) } ->
+                            "No hay cajas activas disponibles para abrir."
+                        else ->
+                            "Todas las cajas activas ya tienen una apertura abierta."
+                    }
                     binding.spCaja.adapter = ArrayAdapter(
                         requireContext(),
                         android.R.layout.simple_spinner_dropdown_item,
-                        listOf("Sin cajas registradas")
+                        listOf("Sin cajas disponibles")
                     )
-                    Toast.makeText(
-                        requireContext(),
-                        response.mensajeDeError()
-                            ?: "No hay cajas registradas. Créalas en Configuración de caja.",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast.makeText(requireContext(), mensaje, Toast.LENGTH_LONG).show()
                     return@launch
                 }
 
                 binding.spCaja.adapter = ArrayAdapter(
                     requireContext(),
                     android.R.layout.simple_spinner_dropdown_item,
-                    cajas.map { it.nombre ?: "Caja #${it.id}" }
+                    cajas.map { caja ->
+                        val ubic = caja.ubicacion?.takeIf { it.isNotBlank() }
+                        if (ubic != null) "${caja.nombre ?: "Caja #${caja.id}"} ($ubic)"
+                        else caja.nombre ?: "Caja #${caja.id}"
+                    }
                 )
                 binding.btnAbrirCaja.isEnabled = true
                 actualizarResumenDesglose(sincronizarFondo = false)
@@ -182,11 +220,15 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
             ?.toDoubleOrNull()
 
     private fun abrirCaja() {
-        val empleadoId = SessionManager.obtenerEmpleadoId(requireContext())
+        val empleadoId = EmpleadoSelectorHelper.resolverEmpleadoId(
+            requireContext(),
+            empleadosResponsables,
+            binding.spResponsableApertura
+        )
         if (empleadoId == null) {
             Toast.makeText(
                 requireContext(),
-                "Tu usuario no tiene un empleado asociado. No es posible abrir caja.",
+                "Selecciona un empleado responsable para abrir la caja.",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -194,7 +236,7 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
 
         val caja = cajas.getOrNull(binding.spCaja.selectedItemPosition)
         if (caja == null) {
-            Toast.makeText(requireContext(), "Selecciona una caja", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Selecciona una caja disponible", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -202,9 +244,15 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
         val desgloseJson = DesgloseEfectivo.serializarJson(conteoDenominaciones)
         val montoTexto = leerFondoInicial()
         val monto = montoTexto ?: if (resumen.piezasTotales > 0) resumen.total else null
+        val obs = binding.etObservacionesApertura.text?.toString()
 
-        if (monto == null || monto < 0) {
-            Toast.makeText(requireContext(), "Ingresa un fondo inicial válido", Toast.LENGTH_SHORT).show()
+        val errorValidacion = CajaValidacionLogic.validarMontoApertura(monto, obs)
+        if (errorValidacion != null || monto == null) {
+            Toast.makeText(
+                requireContext(),
+                errorValidacion ?: "Ingresa un fondo inicial válido",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
@@ -237,7 +285,7 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
         binding.btnAbrirCaja.isEnabled = false
         binding.btnAbrirCaja.text = "Abriendo..."
 
-        val fechaApertura = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+        val fechaApertura = CajaValidacionLogic.formatearFechaAperturaUtc()
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -280,113 +328,6 @@ class AperturaCajaFragment : BaseFragment<FragmentAperturaCajaBinding>() {
                     binding.btnAbrirCaja.text = "Abrir Caja"
                 }
             }
-        }
-    }
-
-    private class DenominacionAdapter(
-        private val items: List<DenominacionEfectivo>,
-        private val conteo: MutableMap<String, Int>,
-        private val onCambioCantidad: () -> Unit
-    ) : RecyclerView.Adapter<DenominacionAdapter.DenominacionHolder>() {
-
-        class DenominacionHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            val tvDenominacion: TextView = itemView.findViewById(R.id.tvDenominacion)
-            val tvTipoDenominacion: TextView = itemView.findViewById(R.id.tvTipoDenominacion)
-            val btnMenos: TextView = itemView.findViewById(R.id.btnMenos)
-            val etCantidad: EditText = itemView.findViewById(R.id.etCantidad)
-            val btnMas: TextView = itemView.findViewById(R.id.btnMas)
-            val tvSubtotal: TextView = itemView.findViewById(R.id.tvSubtotal)
-            val vDivider: View = itemView.findViewById(R.id.vDivider)
-            var watcher: TextWatcher? = null
-            var actualizandoTexto = false
-        }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DenominacionHolder {
-            val vista = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_denominacion_efectivo, parent, false)
-            return DenominacionHolder(vista)
-        }
-
-        override fun onBindViewHolder(holder: DenominacionHolder, position: Int) {
-            val item = items[position]
-            val cantidadInicial = DesgloseEfectivo.normalizarCantidad(conteo[item.clave] ?: 0)
-
-            holder.tvDenominacion.text = item.etiqueta
-            holder.tvTipoDenominacion.text = item.tipo.etiqueta
-            holder.vDivider.visibility = if (position == items.lastIndex) View.GONE else View.VISIBLE
-
-            holder.watcher?.let { holder.etCantidad.removeTextChangedListener(it) }
-            holder.actualizandoTexto = true
-            holder.etCantidad.setText(if (cantidadInicial > 0) cantidadInicial.toString() else "")
-            holder.actualizandoTexto = false
-
-            actualizarSubtotalFila(holder, item, cantidadInicial)
-
-            val nuevoWatcher = object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
-                override fun afterTextChanged(s: Editable?) {
-                    if (holder.actualizandoTexto) return
-                    val texto = s?.toString()?.trim().orEmpty()
-                    val crudo = texto.toIntOrNull() ?: 0
-                    val normalizada = DesgloseEfectivo.normalizarCantidad(crudo)
-                    if (crudo > DesgloseEfectivo.MAX_CANTIDAD_POR_DENOMINACION) {
-                        holder.actualizandoTexto = true
-                        val textoLimite = normalizada.toString()
-                        holder.etCantidad.setText(textoLimite)
-                        holder.etCantidad.setSelection(textoLimite.length)
-                        holder.actualizandoTexto = false
-                    }
-                    conteo[item.clave] = normalizada
-                    actualizarSubtotalFila(holder, item, normalizada)
-                    onCambioCantidad()
-                }
-            }
-            holder.watcher = nuevoWatcher
-            holder.etCantidad.addTextChangedListener(nuevoWatcher)
-
-            holder.btnMenos.setOnClickListener {
-                val actual = conteo[item.clave] ?: 0
-                aplicarCantidadDesdeBoton(holder, item, actual - 1)
-            }
-
-            holder.btnMas.setOnClickListener {
-                val actual = conteo[item.clave] ?: 0
-                aplicarCantidadDesdeBoton(holder, item, actual + 1)
-            }
-        }
-
-        override fun getItemCount(): Int = items.size
-
-        private fun aplicarCantidadDesdeBoton(
-            holder: DenominacionHolder,
-            item: DenominacionEfectivo,
-            candidato: Int
-        ) {
-            val nuevaCantidad = DesgloseEfectivo.normalizarCantidad(candidato)
-            conteo[item.clave] = nuevaCantidad
-            holder.actualizandoTexto = true
-            val texto = if (nuevaCantidad > 0) nuevaCantidad.toString() else ""
-            holder.etCantidad.setText(texto)
-            holder.etCantidad.setSelection(texto.length)
-            holder.actualizandoTexto = false
-            actualizarSubtotalFila(holder, item, nuevaCantidad)
-            onCambioCantidad()
-        }
-
-        private fun actualizarSubtotalFila(
-            holder: DenominacionHolder,
-            item: DenominacionEfectivo,
-            cantidad: Int
-        ) {
-            val subtotal = item.valor * cantidad
-            holder.tvSubtotal.text = subtotal.formatearMonedaSinSufijo()
-            holder.tvSubtotal.setTextColor(
-                ContextCompat.getColor(
-                    holder.itemView.context,
-                    if (cantidad > 0) R.color.apex_orange else R.color.apex_text_secondary
-                )
-            )
         }
     }
 }

@@ -14,6 +14,8 @@ import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.network.mensajeDeError
+import com.sprm.apexgym.core.ui.InputFilters
+import com.sprm.apexgym.core.ui.InputValidationRules
 import com.sprm.apexgym.databinding.FragmentCrearEditarVisitaBinding
 import kotlinx.coroutines.launch
 
@@ -31,6 +33,8 @@ class CrearEditarVisitaFragment : BaseFragment<FragmentCrearEditarVisitaBinding>
         visitaId = arguments?.getInt(ARG_VISITA_ID, 0) ?: 0
 
         binding.tvTitle.text = if (visitaId > 0) "Editar Visita" else "Nueva Visita"
+        binding.etNombreCompleto.filters = InputFilters.personName(100)
+        binding.etNotasIniciales.filters = InputFilters.plainText(500, allowNewLines = true)
         binding.flClose.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnCancelar.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnGuardar.setOnClickListener { guardarVisita() }
@@ -126,8 +130,12 @@ class CrearEditarVisitaFragment : BaseFragment<FragmentCrearEditarVisitaBinding>
 
     private fun guardarVisita() {
         val nombre = binding.etNombreCompleto.text?.toString()?.trim().orEmpty()
-        if (nombre.isEmpty()) {
-            Toast.makeText(requireContext(), "Ingresa el nombre del visitante", Toast.LENGTH_SHORT).show()
+        if (!InputValidationRules.esNombrePersonaValido(nombre)) {
+            Toast.makeText(
+                requireContext(),
+                "Ingresa un nombre de visitante válido (solo letras)",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 

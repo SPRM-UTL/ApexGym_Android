@@ -24,6 +24,8 @@ import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.CorreoRequest
 import com.sprm.apexgym.core.network.client.RegistroRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
+import com.sprm.apexgym.core.ui.InputFilters
+import com.sprm.apexgym.core.ui.InputValidationRules
 import com.sprm.apexgym.feature.auth.LoginFragment
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -86,6 +88,18 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
         val etEmergenciaNombre = view.findViewById<TextInputEditText>(R.id.etEmergenciaNombre)
         val tilEmergenciaTelefono = view.findViewById<TextInputLayout>(R.id.tilEmergenciaTelefono)
         val etEmergenciaTelefono = view.findViewById<TextInputEditText>(R.id.etEmergenciaTelefono)
+
+        etUsuario.filters = InputFilters.username(40)
+        etCorreo.filters = InputFilters.noWhitespace(100)
+        etContrasena.filters = arrayOf(android.text.InputFilter.LengthFilter(64))
+        etConfirmarContrasena.filters = arrayOf(android.text.InputFilter.LengthFilter(64))
+        etNombre.filters = InputFilters.personName(60)
+        etApellidoPaterno.filters = InputFilters.personName(60)
+        etApellidoMaterno.filters = InputFilters.personName(60)
+        etTelefono.filters = InputFilters.digitsOnly(10)
+        etDireccion.filters = InputFilters.plainText(200)
+        etEmergenciaNombre.filters = InputFilters.personName(80)
+        etEmergenciaTelefono.filters = InputFilters.digitsOnly(10)
 
         etUsuario.doAfterTextChanged { tilUsuario.error = null }
         etCorreo.doAfterTextChanged { tilCorreo.error = null }
@@ -276,17 +290,23 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
                 2 -> {
                     val nombre = etNombre.text?.toString()?.trim().orEmpty()
                     val apellidoPaterno = etApellidoPaterno.text?.toString()?.trim().orEmpty()
+                    val apellidoMaterno = etApellidoMaterno.text?.toString()?.trim().orEmpty()
                     val fechaNacimiento = etFechaNacimiento.text?.toString()?.trim().orEmpty()
 
                     var valido = true
 
-                    if (nombre.isEmpty()) {
-                        tilNombre.error = "Ingresa tu nombre"
+                    if (!InputValidationRules.esNombrePersonaValido(nombre)) {
+                        tilNombre.error = "Ingresa un nombre válido (solo letras)"
                         valido = false
                     }
 
-                    if (apellidoPaterno.isEmpty()) {
-                        tilApellidoPaterno.error = "Ingresa tu apellido paterno"
+                    if (!InputValidationRules.esNombrePersonaValido(apellidoPaterno)) {
+                        tilApellidoPaterno.error = "Ingresa un apellido paterno válido (solo letras)"
+                        valido = false
+                    }
+
+                    if (apellidoMaterno.isNotEmpty() && !InputValidationRules.esNombrePersonaValido(apellidoMaterno)) {
+                        tilApellidoMaterno.error = "El apellido materno solo puede contener letras"
                         valido = false
                     }
 
@@ -310,6 +330,11 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
 
                     if (!telefono.matches(Regex("^\\d{10}$"))) {
                         tilTelefono.error = "Ingresa un teléfono válido de 10 dígitos"
+                        valido = false
+                    }
+
+                    if (emergenciaNombre.isNotEmpty() && !InputValidationRules.esNombrePersonaValido(emergenciaNombre)) {
+                        tilEmergenciaNombre.error = "El nombre de contacto solo puede contener letras"
                         valido = false
                     }
 

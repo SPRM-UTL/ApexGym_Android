@@ -25,6 +25,8 @@ import com.sprm.apexgym.R
 import com.sprm.apexgym.core.network.client.ActualizarMiPerfilRequest
 import com.sprm.apexgym.core.network.client.RetrofitClient
 import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.core.ui.InputFilters
+import com.sprm.apexgym.core.ui.InputValidationRules
 import com.sprm.apexgym.feature.auth.LoginFragment
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -106,6 +108,19 @@ class EditProfileBottomSheetFragment : BottomSheetDialogFragment() {
         val etEditConfirmarContrasena = view.findViewById<TextInputEditText>(R.id.etEditConfirmarContrasena)
 
         val btnGuardarMiPerfil = view.findViewById<MaterialButton>(R.id.btnGuardarMiPerfil)
+
+        etEditUsuario.filters = InputFilters.username(40)
+        etEditCorreo.filters = InputFilters.noWhitespace(100)
+        etEditNombre.filters = InputFilters.personName(60)
+        etEditApellidoPaterno.filters = InputFilters.personName(60)
+        etEditApellidoMaterno.filters = InputFilters.personName(60)
+        etEditTelefono.filters = InputFilters.digitsOnly(10)
+        etEditDireccion.filters = InputFilters.plainText(200)
+        etEditEmergenciaNombre.filters = InputFilters.personName(80)
+        etEditEmergenciaTelefono.filters = InputFilters.digitsOnly(10)
+        etEditContrasenaActual.filters = arrayOf(android.text.InputFilter.LengthFilter(64))
+        etEditNuevaContrasena.filters = arrayOf(android.text.InputFilter.LengthFilter(64))
+        etEditConfirmarContrasena.filters = arrayOf(android.text.InputFilter.LengthFilter(64))
 
         etEditUsuario.doAfterTextChanged { tilEditUsuario.error = null }
         etEditCorreo.doAfterTextChanged { tilEditCorreo.error = null }
@@ -228,13 +243,18 @@ class EditProfileBottomSheetFragment : BottomSheetDialogFragment() {
                 valido = false
             }
 
-            if (nombreStr.isEmpty()) {
-                tilEditNombre.error = "Ingresa tu nombre"
+            if (!InputValidationRules.esNombrePersonaValido(nombreStr)) {
+                tilEditNombre.error = "Ingresa un nombre válido (solo letras)"
                 valido = false
             }
 
-            if (apellidoPaternoStr.isEmpty()) {
-                tilEditApellidoPaterno.error = "Ingresa tu apellido paterno"
+            if (!InputValidationRules.esNombrePersonaValido(apellidoPaternoStr)) {
+                tilEditApellidoPaterno.error = "Ingresa un apellido paterno válido (solo letras)"
+                valido = false
+            }
+
+            if (apellidoMaternoStr.isNotEmpty() && !InputValidationRules.esNombrePersonaValido(apellidoMaternoStr)) {
+                tilEditApellidoMaterno.error = "El apellido materno solo puede contener letras"
                 valido = false
             }
 
@@ -245,6 +265,11 @@ class EditProfileBottomSheetFragment : BottomSheetDialogFragment() {
 
             if (!telefonoStr.matches(Regex("^\\d{10}$"))) {
                 tilEditTelefono.error = "Ingresa un teléfono válido de 10 dígitos"
+                valido = false
+            }
+
+            if (emergenciaNombreStr.isNotEmpty() && !InputValidationRules.esNombrePersonaValido(emergenciaNombreStr)) {
+                tilEditEmergenciaNombre.error = "El nombre de contacto solo puede contener letras"
                 valido = false
             }
 

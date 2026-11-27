@@ -1,6 +1,5 @@
 package com.sprm.apexgym.feature.tienda
 
-import android.content.Intent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.TextUtils
@@ -10,16 +9,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sprm.apexgym.R
+import com.sprm.apexgym.core.network.EmpresaTicketConfig
 import com.sprm.apexgym.core.network.api.TransaccionPagoDto
 import com.sprm.apexgym.core.network.formatearFecha
 import com.sprm.apexgym.core.network.formatearMonedaSinSufijo
 import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.core.ui.TicketImageSharer
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 
 class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
@@ -37,11 +39,14 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
         val id = args.getInt(ARG_ID, 0)
         val concepto = args.getString(ARG_CONCEPTO).orEmpty().ifBlank { "Venta ApexGym" }
         val monto = args.getDouble(ARG_MONTO, 0.0)
-        val estado = args.getString(ARG_ESTADO).orEmpty().ifBlank { "APROBADO" }
+        val estadoRaw = args.getString(ARG_ESTADO).orEmpty().ifBlank { "APROBADO" }
+        val estadoLegible = formatearEstado(estadoRaw)
         val proveedor = args.getString(ARG_PROVEEDOR).orEmpty().ifBlank { "EFECTIVO" }
         val folio = args.getString(ARG_FOLIO)
         val fecha = args.getString(ARG_FECHA)
         val itemsJson = args.getString(ARG_ITEMS_JSON)
+        val clienteNombreArg = args.getString(ARG_CLIENTE_NOMBRE)?.takeIf { it.isNotBlank() }
+        val empleadoNombreArg = args.getString(ARG_EMPLEADO_NOMBRE)?.takeIf { it.isNotBlank() }
 
         val subtotalArg = if (args.containsKey(ARG_SUBTOTAL)) args.getDouble(ARG_SUBTOTAL) else Double.NaN
         val ivaArg = if (args.containsKey(ARG_IVA)) args.getDouble(ARG_IVA) else Double.NaN
@@ -73,14 +78,28 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
 
         val esEmpleado = SessionManager.esEmpleado(requireContext())
         val nombreUsuario = SessionManager.obtenerNombre(requireContext())
-        tvTicketNumber?.text = "#APX-${id.toString().padStart(5, '0')}"
-        tvTicketDate?.text = formatearFecha(fecha)
-        tvTicketClient?.text = if (esEmpleado) "Venta en mostrador" else "Compra en aplicación"
-        tvTicketMembership?.text = if (esEmpleado) {
-            "Atendido por: ${nombreUsuario ?: "Empleado ApexGym"}"
+        val folioMostrado = if (!folio.isNullOrBlank() && folio.startsWith("APX-", ignoreCase = true)) {
+            "#${folio.removePrefix("#")}"
         } else {
-            "Cliente: ${nombreUsuario ?: "Socio ApexGym"}"
+            "#APX-${id.toString().padStart(5, '0')}"
         }
+        val folioVoucherPago = folio?.takeIf {
+            it.isNotBlank() && !it.equals(folioMostrado.removePrefix("#"), ignoreCase = true)
+        }
+
+        tvTicketNumber?.text = folioMostrado
+        tvTicketDate?.text = formatearFecha(fecha)
+        tvTicketClient?.text = clienteNombreArg ?: when {
+            esEmpleado -> "Cliente en mostrador"
+            !nombreUsuario.isNullOrBlank() -> nombreUsuario
+            else -> "Socio ApexGym"
+        }
+        tvTicketMembership?.text = when {
+            empleadoNombreArg != null -> "Atendido por: $empleadoNombreArg"
+            esEmpleado -> "Atendido por: ${nombreUsuario ?: "Empleado ApexGym"}"
+            else -> "Compra en aplicación"
+        }
+
         tvTicketSubtotal?.text = "${subtotalFinal.formatearMonedaSinSufijo()} MXN"
         tvTicketIgv?.text = "${ivaFinal.formatearMonedaSinSufijo()} MXN"
         tvTicketTotal?.text = "${monto.formatearMonedaSinSufijo()} MXN"
@@ -88,48 +107,65 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
         view.findViewById<View>(R.id.llTicketIgvRow)?.visibility =
             if (ivaFinal > 0.0) View.VISIBLE else View.GONE
         view.findViewById<View>(R.id.llTicketDescuentoRow)?.visibility = View.GONE
+        view.findViewById<View>(R.id.vDividerQr)?.visibility = View.GONE
         view.findViewById<View>(R.id.llQrVerificationSection)?.visibility = View.GONE
 
         rvTicketItems?.layoutManager = LinearLayoutManager(requireContext())
         rvTicketItems?.adapter = ItemsAdapter(items)
         rvTicketItems?.isNestedScrollingEnabled = false
 
+        val metodoLegible = etiquetaProveedor(proveedor)
         rvTicketPayments?.layoutManager = LinearLayoutManager(requireContext())
         rvTicketPayments?.adapter = PaymentsAdapter(
             listOf(
                 PagoTicket(
-                    metodo = etiquetaProveedor(proveedor),
-                    estado = estado,
-                    folio = folio,
+                    metodo = metodoLegible,
+                    estado = estadoLegible,
+                    folio = folioVoucherPago,
                     monto = monto
                 )
             )
         )
         rvTicketPayments?.isNestedScrollingEnabled = false
 
+        val tvTicketFooterMessage = view.findViewById<TextView>(R.id.tvTicketFooterMessage)
+        var mensajePieTicket = EmpresaTicketConfig.obtenerMensajeInicial()
+        tvTicketFooterMessage?.text = mensajePieTicket
+        viewLifecycleOwner.lifecycleScope.launch {
+            val mensajeRemoto = EmpresaTicketConfig.obtenerMensajeTicket()
+            if (!isAdded || getView() == null) return@launch
+            mensajePieTicket = mensajeRemoto
+            tvTicketFooterMessage?.text = mensajePieTicket
+        }
+
         view.findViewById<View>(R.id.flClose)?.setOnClickListener {
             parentFragmentManager.popBackStack()
         }
 
         view.findViewById<View>(R.id.flShare)?.setOnClickListener {
-            val texto = buildString {
-                appendLine("ApexGym — Ticket #APX-${id.toString().padStart(5, '0')}")
+            val textoRespaldo = buildString {
+                appendLine("ApexGym — Ticket $folioMostrado")
                 appendLine("Fecha: ${formatearFecha(fecha)}")
+                clienteNombreArg?.let { appendLine("Cliente: $it") }
                 appendLine("Concepto: $concepto")
-                appendLine("Método: ${etiquetaProveedor(proveedor)}")
-                appendLine("Estado: $estado")
-                folio?.takeIf { it.isNotBlank() }?.let { appendLine("Folio: $it") }
+                appendLine("Método: $metodoLegible")
+                appendLine("Estado: $estadoLegible")
+                folioVoucherPago?.let { appendLine("Referencia: $it") }
                 appendLine("Subtotal: ${subtotalFinal.formatearMonedaSinSufijo()} MXN")
                 if (ivaFinal > 0.0) {
                     appendLine("IVA (16%): ${ivaFinal.formatearMonedaSinSufijo()} MXN")
                 }
-                append("Total: ${monto.formatearMonedaSinSufijo()} MXN")
+                appendLine("Total: ${monto.formatearMonedaSinSufijo()} MXN")
+                append(mensajePieTicket)
             }
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, texto)
-            }
-            startActivity(Intent.createChooser(intent, "Compartir ticket"))
+            TicketImageSharer.compartirComprobanteComoImagen(
+                context = requireContext(),
+                cardView = view.findViewById(R.id.cvTicket),
+                nombreArchivoBase = "ticket_${folioMostrado.removePrefix("#")}",
+                tituloChooser = "Compartir ticket",
+                asunto = "Ticket $folioMostrado - ApexGym",
+                textoRespaldo = textoRespaldo
+            )
         }
 
         view.findViewById<View>(R.id.btnDownloadTicket)?.visibility = View.GONE
@@ -157,11 +193,26 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
         }
     }
 
-    private fun etiquetaProveedor(proveedor: String): String = when (proveedor.uppercase()) {
-        "EFECTIVO" -> "Efectivo"
-        "TERMINAL_MANUAL" -> "Terminal manual"
-        "MERCADO_PAGO" -> "Mercado Pago"
-        else -> proveedor.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
+    private fun etiquetaProveedor(proveedor: String): String {
+        val limpio = proveedor.trim()
+        return when (limpio.uppercase()) {
+            "EFECTIVO" -> "Efectivo"
+            "TERMINAL_MANUAL", "TARJETA" -> "Terminal / Tarjeta"
+            "MERCADO_PAGO" -> "Mercado Pago"
+            "TRANSFERENCIA" -> "Transferencia bancaria"
+            else -> if ('_' in limpio && ' ' !in limpio) {
+                limpio.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }
+            } else {
+                limpio
+            }
+        }
+    }
+
+    private fun formatearEstado(estado: String): String = when (estado.trim().uppercase()) {
+        "APROBADO", "COMPLETADA", "COMPLETADO", "PAGADO" -> "Aprobado"
+        "PENDIENTE", "PENDIENTE_PAGO" -> "Pendiente"
+        "CANCELADO", "CANCELADA", "RECHAZADO" -> "Cancelado"
+        else -> estado.lowercase().replaceFirstChar { it.uppercase() }
     }
 
     private inner class ItemsAdapter(
@@ -288,13 +339,17 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
         private const val ARG_ITEMS_JSON = "arg_items_json"
         private const val ARG_SUBTOTAL = "arg_subtotal"
         private const val ARG_IVA = "arg_iva"
+        private const val ARG_CLIENTE_NOMBRE = "arg_cliente_nombre"
+        private const val ARG_EMPLEADO_NOMBRE = "arg_empleado_nombre"
 
         fun newInstance(
             transaccion: TransaccionPagoDto,
             itemsJson: String? = null,
             metodoPago: String? = null,
             subtotal: Double? = null,
-            iva: Double? = null
+            iva: Double? = null,
+            clienteNombre: String? = null,
+            empleadoNombre: String? = null
         ): TicketCompraFragment {
             return TicketCompraFragment().apply {
                 arguments = Bundle().apply {
@@ -308,6 +363,8 @@ class TicketCompraFragment : Fragment(R.layout.fragment_ticket_compra) {
                     putString(ARG_ITEMS_JSON, itemsJson)
                     if (subtotal != null) putDouble(ARG_SUBTOTAL, subtotal)
                     if (iva != null) putDouble(ARG_IVA, iva)
+                    if (!clienteNombre.isNullOrBlank()) putString(ARG_CLIENTE_NOMBRE, clienteNombre)
+                    if (!empleadoNombre.isNullOrBlank()) putString(ARG_EMPLEADO_NOMBRE, empleadoNombre)
                 }
             }
         }

@@ -116,7 +116,9 @@
                         android:inputType="text"
                         android:textColor="@color/apex_text_primary"
                         android:textColorHint="@color/apex_nav_inactive"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:maxLength="80"
+                        android:maxLines="1" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -133,6 +135,31 @@
                     app:cornerRadius="24dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:id="@+id/llResultadosBusqueda"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvTituloCoincidencias"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="Coincidencias encontradas"
+                android:textColor="@color/apex_text_primary"
+                android:textSize="14.5sp"
+                android:textStyle="bold" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvResultadosClientes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+        </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cvClientFound"
@@ -290,40 +317,17 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGrantAccess"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDenyAccess"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_weight="1"
-                        android:text="Denegar"
-                        android:textAllCaps="false"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        app:cornerRadius="24dp"
-                        app:strokeColor="#55FFFFFF"
-                        app:strokeWidth="1dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnGrantAccess"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1.3"
-                        android:text="Permitir Acceso"
-                        android:textAllCaps="false"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        app:backgroundTint="@color/apex_orange"
-                        app:cornerRadius="24dp" />
-                </LinearLayout>
+                    android:layout_height="48dp"
+                    android:text="Permitir Acceso"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="@color/apex_orange"
+                    app:cornerRadius="24dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

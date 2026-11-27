@@ -81,6 +81,7 @@
                 android:imeOptions="actionNext"
                 android:importantForAutofill="no"
                 android:inputType="textEmailAddress"
+                android:maxLength="100"
                 android:maxLines="1"
                 android:saveEnabled="false"
                 android:textColor="@color/apex_text_primary"
@@ -114,31 +115,18 @@
                 android:imeOptions="actionDone"
                 android:importantForAutofill="no"
                 android:inputType="textPassword"
+                android:maxLength="64"
                 android:maxLines="1"
                 android:saveEnabled="false"
                 android:textColor="@color/apex_text_primary"
                 android:textSize="14.5sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
-            android:id="@+id/tvRecuperar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:layout_marginTop="10dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:paddingVertical="6dp"
-            android:text="@string/login_forgot_password"
-            android:textColor="@color/apex_orange"
-            android:textSize="13sp"
-            android:textStyle="bold" />
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnIniciarSesion"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="24dp"
             android:text="@string/login_btn_submit"
             android:textAllCaps="false"
             android:textColor="@color/white"

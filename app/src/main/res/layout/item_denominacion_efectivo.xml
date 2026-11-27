@@ -69,7 +69,8 @@
                 android:textColor="@color/apex_text_primary"
                 android:textColorHint="@color/apex_nav_inactive"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:digits="0123456789" />
 
             <TextView
                 android:id="@+id/btnMas"

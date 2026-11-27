@@ -21,6 +21,7 @@ import com.sprm.apexgym.core.network.dataExitosa
 import com.sprm.apexgym.core.notifications.FcmTokenManager
 import com.sprm.apexgym.core.notifications.NotificacionPermiso
 import com.sprm.apexgym.core.session.SessionManager
+import com.sprm.apexgym.core.ui.InputFilters
 import com.sprm.apexgym.feature.main.CartManager
 import com.sprm.apexgym.feature.main.HomeFragment
 import com.sprm.apexgym.feature.main.RegisterFragment
@@ -82,6 +83,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
         etCorreo.setText("")
         etContrasena.setText("")
+        etCorreo.filters = InputFilters.noWhitespace(100)
+        etContrasena.filters = arrayOf(android.text.InputFilter.LengthFilter(64))
 
         etCorreo.doAfterTextChanged { tilCorreo.error = null }
         etContrasena.doAfterTextChanged { tilContrasena.error = null }

@@ -80,7 +80,9 @@
             android:inputType="text"
             android:textColor="@color/apex_text_primary"
             android:textColorHint="@color/apex_nav_inactive"
-            android:textSize="14sp" />
+            android:textSize="14sp"
+            android:maxLength="80"
+            android:maxLines="1" />
     </LinearLayout>
 
     <!-- Filter Chips -->

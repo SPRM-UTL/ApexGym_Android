@@ -41,6 +41,8 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
 
         binding.flBack.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.rvHistorialAsistencias.layoutManager = LinearLayoutManager(requireContext())
+        binding.swipeRefresh.setColorSchemeResources(R.color.apex_orange)
+        binding.swipeRefresh.setOnRefreshListener { cargarHistorial() }
 
         binding.btnPaginaAnterior.setOnClickListener {
             if (paginaActual > 1) {
@@ -109,6 +111,10 @@ class HistorialAsistenciasFragment : BaseFragment<FragmentHistorialAsistenciasBi
                     binding.llEmptyHistorial.visibility = View.VISIBLE
                     binding.rvHistorialAsistencias.visibility = View.GONE
                     mostrarMensajeVacio("No se pudo conectar con el servidor")
+                }
+            } finally {
+                if (isAdded && view != null) {
+                    binding.swipeRefresh.isRefreshing = false
                 }
             }
         }
