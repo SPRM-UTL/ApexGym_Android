@@ -140,6 +140,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvMiPerfilSubtitulo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
@@ -371,6 +372,7 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/tvHistorialComprasTitulo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Historial de Compras"
@@ -379,6 +381,7 @@
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/tvHistorialComprasSubtitulo"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
